@@ -1,0 +1,62 @@
+﻿@page "/markdown-editor"
+@using Markdig
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<h3>Markdown Editor</h3>
+
+<div class="editor-container">
+    <div class="editor">
+        <h4>Markdown Input</h4>
+        <textarea @bind="markdownText" @oninput="OnInputChange" class="markdown-input" placeholder="Write your markdown here...">@HtmlContent</textarea>
+        <button @onclick="SaveText" class="btn btn-primary">Save</button>
+    </div>
+
+    <div class="preview">
+        <h4>Markdown Preview</h4>
+        @((MarkupString)HtmlContent)
+    </div>
+</div>
+
+@code {
+    private string markdownText = "";
+    private string HtmlContent = "";
+    private ElementReference previewDiv;
+
+    private async Task SaveText()
+    {
+        await JS.InvokeVoidAsync("localStorage.setItem", "savedMarkdown", markdownText);
+        await JS.InvokeVoidAsync("alert", "Markdown text saved!");
+    }
+
+    // // Update the preview whenever the markdownText changes
+    // private async Task OnMarkdownChanged()
+    // {
+    //     await JS.InvokeVoidAsync("console.log", markdownText);
+    //     var htmlContent = Markdown.ToHtml(markdownText);  // Convert Markdown to HTML
+    //     await JS.InvokeVoidAsync("updatePreview", previewDiv, htmlContent); // Update the preview div
+    // }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // This ensures the JavaScript interop only happens after the component is rendered.
+        if (firstRender)
+        {
+            var savedMarkdown = await JS.InvokeAsync<string>("localStorage.getItem", "savedMarkdown");
+            if (!string.IsNullOrEmpty(savedMarkdown))
+            {
+                markdownText = savedMarkdown;
+                StateHasChanged();  // Trigger re-rendering after setting the savedMarkdown
+            }
+        }
+    }
+
+    private async Task OnInputChange(ChangeEventArgs e)
+    {
+        markdownText = e.Value.ToString();
+
+        HtmlContent = Markdown.ToHtml(markdownText);  // Convert Markdown to HTML
+        // await OnMarkdownChanged();
+        StateHasChanged();
+    }
+}
