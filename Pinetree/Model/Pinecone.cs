@@ -5,14 +5,11 @@ namespace Pinetree.Model;
 public class Pinecone
 {
     [Key]
-    public int Id { get; set; }
-    [Required]
+    public long Id { get; set; }
     [MaxLength(200)]
-    public string Title { get; set; } = "";
-    [Required]
-    public string Content { get; set; } = "";
-
-    public int? ParentId { get; set; }
+    public required string Title { get; set; } = "";
+    public required string Content { get; set; } = "";
+    public required int ParentId { get; set; } = -1;
     public Pinecone? Parent { get; set; }
 
     public ICollection<Pinecone> Children { get; set; } = [];

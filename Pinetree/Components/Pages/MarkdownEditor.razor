@@ -1,29 +1,36 @@
 ﻿@page "/markdown-editor"
 @using Markdig
+@using Pinetree.Data
+@using Pinetree.Model
 @inject IJSRuntime JS
 @rendermode InteractiveServer
-
-<h3>Markdown Editor</h3>
+@inject ApplicationDbContext DbContext
 
 <div class="editor-container">
-    <div class="editor">
-        <h4>Markdown Input</h4>
-        <textarea @bind="markdownText" @oninput="OnInputChange" class="markdown-input" placeholder="Write your markdown here...">@HtmlContent</textarea>
+    <div class="title">
+        <input @bind="Context" @oninput="OnInputChange">@Title</input>
         <button @onclick="SaveText" class="btn btn-primary">Save</button>
+    </div>
+    <div class="editor">
+        <textarea @bind="Context" @oninput="OnInputChange" class="markdown-input" placeholder="Write your markdown here...">@MarkdownText</textarea>
     </div>
 
     <div class="preview">
-        <h4>Markdown Preview</h4>
-        @((MarkupString)HtmlContent)
+        @((MarkupString)MarkdownText)
     </div>
 </div>
 
 @code {
-    private string markdownText = "";
-    private string HtmlContent = "";
+    private string Context { get; set; } = "";
+    private string Title { get; set; } = "";
+
+    private string MarkdownText = "";
 
     private void SaveText()
     {
+        var pinecone = new Pinecone() { Content = Context, ParentId = -1, Title = Title };
+        DbContext.Pinecone.Add(pinecone);
+        DbContext.SaveChanges();
         // await JS.InvokeVoidAsync("localStorage.setItem", "savedMarkdown", markdownText);
         // await JS.InvokeVoidAsync("alert", "Markdown text saved!");
     }
@@ -44,8 +51,8 @@
 
     private void OnInputChange(ChangeEventArgs e)
     {
-        markdownText = e.Value?.ToString() ?? "";
-        HtmlContent = Markdown.ToHtml(markdownText);
+        Context = e.Value?.ToString() ?? "";
+        MarkdownText = Markdown.ToHtml(Context);
 
         StateHasChanged();
     }
