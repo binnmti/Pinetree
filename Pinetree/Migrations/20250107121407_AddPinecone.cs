@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Pinetree.Migrations
 {
     /// <inheritdoc />
-    public partial class CreateIdentitySchema : Migration
+    public partial class AddPinecone : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -48,6 +48,26 @@ namespace Pinetree.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Pinecone",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ParentId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Pinecone", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Pinecone_Pinecone_ParentId",
+                        column: x => x.ParentId,
+                        principalTable: "Pinecone",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -194,6 +214,11 @@ namespace Pinetree.Migrations
                 column: "NormalizedUserName",
                 unique: true,
                 filter: "[NormalizedUserName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Pinecone_ParentId",
+                table: "Pinecone",
+                column: "ParentId");
         }
 
         /// <inheritdoc />
@@ -213,6 +238,9 @@ namespace Pinetree.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
+
+            migrationBuilder.DropTable(
+                name: "Pinecone");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

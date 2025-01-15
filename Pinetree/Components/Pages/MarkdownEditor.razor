@@ -21,42 +21,32 @@
 @code {
     private string markdownText = "";
     private string HtmlContent = "";
-    private ElementReference previewDiv;
 
-    private async Task SaveText()
+    private void SaveText()
     {
-        await JS.InvokeVoidAsync("localStorage.setItem", "savedMarkdown", markdownText);
-        await JS.InvokeVoidAsync("alert", "Markdown text saved!");
+        // await JS.InvokeVoidAsync("localStorage.setItem", "savedMarkdown", markdownText);
+        // await JS.InvokeVoidAsync("alert", "Markdown text saved!");
     }
-
-    // // Update the preview whenever the markdownText changes
-    // private async Task OnMarkdownChanged()
-    // {
-    //     await JS.InvokeVoidAsync("console.log", markdownText);
-    //     var htmlContent = Markdown.ToHtml(markdownText);  // Convert Markdown to HTML
-    //     await JS.InvokeVoidAsync("updatePreview", previewDiv, htmlContent); // Update the preview div
-    // }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         // This ensures the JavaScript interop only happens after the component is rendered.
         if (firstRender)
         {
-            var savedMarkdown = await JS.InvokeAsync<string>("localStorage.getItem", "savedMarkdown");
-            if (!string.IsNullOrEmpty(savedMarkdown))
-            {
-                markdownText = savedMarkdown;
-                StateHasChanged();  // Trigger re-rendering after setting the savedMarkdown
-            }
+            // var savedMarkdown = await JS.InvokeAsync<string>("localStorage.getItem", "savedMarkdown");
+            // if (!string.IsNullOrEmpty(savedMarkdown))
+            // {
+            //     markdownText = savedMarkdown;
+            //     StateHasChanged();  // Trigger re-rendering after setting the savedMarkdown
+            // }
         }
     }
 
-    private async Task OnInputChange(ChangeEventArgs e)
+    private void OnInputChange(ChangeEventArgs e)
     {
-        markdownText = e.Value.ToString();
+        markdownText = e.Value?.ToString() ?? "";
+        HtmlContent = Markdown.ToHtml(markdownText);
 
-        HtmlContent = Markdown.ToHtml(markdownText);  // Convert Markdown to HTML
-        // await OnMarkdownChanged();
         StateHasChanged();
     }
 }
