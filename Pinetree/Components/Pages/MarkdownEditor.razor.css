@@ -1,0 +1,35 @@
+﻿.markdown-title {
+    width: 90%;
+    display: flex;
+    gap: 2rem;
+}
+
+.markdown-title input {
+    width: 100%;
+}
+
+.markdown-editor {
+    display: flex;
+    gap: 2rem;
+}
+
+.markdown-editor .editor {
+    width: 50%;
+}
+
+.markdown-editor .editor .markdown-input {
+    width: 100%;
+    height: 90%;
+    font-family: "Courier New", monospace;
+    padding: 1rem;
+    font-size: 1rem;
+}
+
+.markdown-editor .preview {
+    width: 50%;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+    height: 400px;
+    overflow-y: auto;
+}

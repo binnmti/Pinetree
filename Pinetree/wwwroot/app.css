@@ -58,35 +58,3 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
-
-
-
-.editor-container {
-    display: flex;
-    gap: 2rem;
-}
-
-.editor {
-    width: 50%;
-}
-
-.preview {
-    width: 50%;
-    padding: 1rem;
-    border: 1px solid #ddd;
-    background-color: #f9f9f9;
-    height: 400px;
-    overflow-y: auto;
-}
-
-.markdown-input {
-    width: 100%;
-    height: 200px;
-    font-family: "Courier New", monospace;
-    padding: 1rem;
-    font-size: 1rem;
-}
-
-button {
-    margin-top: 1rem;
-}
