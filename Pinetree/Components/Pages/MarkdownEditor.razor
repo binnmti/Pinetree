@@ -5,18 +5,21 @@
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 @inject ApplicationDbContext DbContext
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedLocalStorage ProtectedLocalStore
 
 <div class="editor-container">
-    <div class="title">
-        <input @bind="Context" @oninput="OnInputChange">@Title</input>
-        <button @onclick="SaveText" class="btn btn-primary">Save</button>
+    <div class="markdown-title">
+        <input/><p>@Title</p>
+        <button @onclick="SaveText">Save</button>
     </div>
-    <div class="editor">
-        <textarea @bind="Context" @oninput="OnInputChange" class="markdown-input" placeholder="Write your markdown here...">@MarkdownText</textarea>
-    </div>
-
-    <div class="preview">
-        @((MarkupString)MarkdownText)
+    <div class="markdown-editor">
+        <div class="editor">
+            <textarea @oninput="OnInputChange" class="markdown-input" placeholder="Write your markdown here...">@Context</textarea>
+        </div>
+        <div class="preview">
+            @((MarkupString)MarkdownText)
+        </div>
     </div>
 </div>
 
@@ -31,37 +34,29 @@
         var pinecone = new Pinecone() { Content = Context, ParentId = -1, Title = Title };
         DbContext.Pinecone.Add(pinecone);
         DbContext.SaveChanges();
-        // await JS.InvokeVoidAsync("localStorage.setItem", "savedMarkdown", markdownText);
-        // await JS.InvokeVoidAsync("alert", "Markdown text saved!");
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // This ensures the JavaScript interop only happens after the component is rendered.
         if (firstRender)
         {
-            // var savedMarkdown = await JS.InvokeAsync<string>("localStorage.getItem", "savedMarkdown");
-            // if (!string.IsNullOrEmpty(savedMarkdown))
-            // {
-            //     markdownText = savedMarkdown;
-            //     StateHasChanged();  // Trigger re-rendering after setting the savedMarkdown
-            // }
+            var result = await ProtectedLocalStore.GetAsync<string>("Context");
+            if (result.Success && !string.IsNullOrEmpty(result.Value))
+            {
+                Context = result.Value;
+                MarkdownText = Markdown.ToHtml(Context);
+
+                StateHasChanged();
+            }
         }
     }
 
-    private void OnInputChange(ChangeEventArgs e)
+    private async Task OnInputChange(ChangeEventArgs e)
     {
         Context = e.Value?.ToString() ?? "";
         MarkdownText = Markdown.ToHtml(Context);
 
+        await ProtectedLocalStore.SetAsync("Context", Context);
         StateHasChanged();
     }
-
-    private void SaveText()
-    {
-        // await JS.InvokeVoidAsync("localStorage.setItem", "savedMarkdown", markdownText);
-        // await JS.InvokeVoidAsync("alert", "Markdown text saved!");
-    }
-
-
 }
