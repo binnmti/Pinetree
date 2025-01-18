@@ -1,5 +1,6 @@
 ﻿@page "/markdown-editor"
 @using Markdig
+@using Pinetree.Components.Components
 @using Pinetree.Data
 @using Pinetree.Model
 @inject IJSRuntime JS
@@ -9,6 +10,9 @@
 @inject ProtectedLocalStorage ProtectedLocalStore
 
 <div class="editor-container">
+
+    <TreeView TItem="@(PineconeView)" Nodes="TreeNodes" />
+
     <div class="markdown-title">
         <input/><p>@Title</p>
         <button @onclick="SaveText">Save</button>
@@ -24,6 +28,8 @@
 </div>
 
 @code {
+    public List<PineconeView> TreeNodes { get; set; } = new List<PineconeView>();
+
     private string Context { get; set; } = "";
     private string Title { get; set; } = "";
 

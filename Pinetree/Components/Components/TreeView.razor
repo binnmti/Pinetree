@@ -1,0 +1,38 @@
+﻿@using Pinetree.Model
+@typeparam TItem
+
+@if (Nodes != null && Nodes.Any())
+{
+    <ul>
+        @foreach (var node in Nodes)
+        {
+            <li>
+                <span @onclick="() => ToggleNode(node)">
+                    @if (node.Children.Any())
+                    {
+                        <span>@(node.IsExpanded ? "-" : "+")</span>
+                    }
+                    else
+                    {
+                        <span>&nbsp;</span>
+                    }
+                    @node.Title
+                </span>
+
+                @if (node.IsExpanded && node.Children.Any())
+                {
+                    <TreeView TItem="TItem" Nodes="@(node.Children)" />
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter] public ICollection<PineconeView>? Nodes { get; set; }
+
+    private void ToggleNode(PineconeView node)
+    {
+        node.IsExpanded = !node.IsExpanded;
+    }
+}
