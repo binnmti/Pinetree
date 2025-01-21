@@ -23,7 +23,7 @@
                     <PineTreeView PineTree="@(tree)" />
                 }
             }
-            <button></button>
+            <button @onclick="() => AddChild(PineTree)">+</button>
         </li>
     </ul>
 }
@@ -34,5 +34,9 @@
     private void ToggleNode(PineTree node)
     {
         node.IsExpanded = !node.IsExpanded;
+    }
+
+    private void AddChild(PineTree node)
+    {
     }
 }
