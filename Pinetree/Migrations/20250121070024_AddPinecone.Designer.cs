@@ -12,7 +12,7 @@ using Pinetree.Data;
 namespace Pinetree.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250107121407_AddPinecone")]
+    [Migration("20250121070024_AddPinecone")]
     partial class AddPinecone
     {
         /// <inheritdoc />
@@ -225,27 +225,38 @@ namespace Pinetree.Migrations
 
             modelBuilder.Entity("Pinetree.Model.Pinecone", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("ParentId")
+                    b.Property<long>("GroupId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("ParentId")
                         .HasColumnType("int");
+
+                    b.Property<long?>("ParentId1")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentId");
+                    b.HasIndex("ParentId1");
 
                     b.ToTable("Pinecone");
                 });
@@ -305,7 +316,7 @@ namespace Pinetree.Migrations
                 {
                     b.HasOne("Pinetree.Model.Pinecone", "Parent")
                         .WithMany("Children")
-                        .HasForeignKey("ParentId");
+                        .HasForeignKey("ParentId1");
 
                     b.Navigation("Parent");
                 });

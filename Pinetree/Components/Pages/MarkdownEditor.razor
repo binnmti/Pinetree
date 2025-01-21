@@ -1,4 +1,4 @@
-﻿@page "/markdown-editor"
+﻿@page "/markdown-editor/{id:int?}"
 @using Markdig
 @using Pinetree.Components.Components
 @using Pinetree.Data
@@ -14,7 +14,7 @@
     <PineTreeView PineTree="@(PineTree)" />
 
     <div class="markdown-title">
-        <input/><p>@Title</p>
+        <input @bind="Title"></input>
         <button @onclick="SaveText">Save</button>
     </div>
     <div class="markdown-editor">
@@ -28,27 +28,35 @@
 </div>
 
 @code {
-    public required PineTree PineTree { get; set; }
+    [Parameter]
+    public long Id { get; set; }
 
+    public required PineTree PineTree { get; set; }
     private string Context { get; set; } = "";
     private string Title { get; set; } = "";
-
     private string MarkdownText = "";
 
     private void SaveText()
     {
-        var pinecone = new Pinecone() { Content = Context, ParentId = -1, Title = Title, GroupId = -1 };
+        var pinecone = new Pinecone() { Content = Context, ParentId = -1, Title = Title, GroupId = -1, UserId = "" };
         DbContext.Pinecone.Add(pinecone);
         DbContext.SaveChanges();
+        pinecone.GroupId = pinecone.Id;
+        DbContext.SaveChanges();
+
+        PineTree = PinneconeConvert.ToPineTree(pinecone.Id, DbContext.Pinecone.Where(x => x.GroupId == pinecone.Id).ToList());
+        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // TODO: Get PineTree from database
-            PineTree = new PineTree(1, "AAA", "BCDE");
-
+            var hits = DbContext.Pinecone.Where(x => x.GroupId == Id);
+            if (hits.Any())
+            {
+                PineTree = PinneconeConvert.ToPineTree(Id, hits.ToList());
+            }
             var result = await ProtectedLocalStore.GetAsync<string>("Context");
             if (result.Success && !string.IsNullOrEmpty(result.Value))
             {
