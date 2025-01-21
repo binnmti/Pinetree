@@ -1,0 +1,38 @@
+﻿@using Pinetree.Model
+
+@if (PineTree != null)
+{
+    <ul>
+        @(PineTree.Title)
+        @foreach (var tree in PineTree.Children)
+        {
+            <li>
+                <span @onclick="() => ToggleNode(tree)">
+                    @if (tree.Children.Any())
+                    {
+                        <span>@(tree.IsExpanded ? "-" : "+")</span>
+                    }
+                    else
+                    {
+                        <span>&nbsp;</span>
+                    }
+                    @tree.Title
+                </span>
+
+                @if (tree.IsExpanded && tree.Children.Any())
+                {
+                    <PineTreeView PineTree="@(tree)" />
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter] public required PineTree PineTree { get; set; }
+
+    private void ToggleNode(PineTree node)
+    {
+        node.IsExpanded = !node.IsExpanded;
+    }
+}

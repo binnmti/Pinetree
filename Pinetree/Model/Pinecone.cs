@@ -10,7 +10,9 @@ public class Pinecone
     public required string Title { get; set; } = "";
     public required string Content { get; set; } = "";
     public required int ParentId { get; set; } = -1;
-    public Pinecone? Parent { get; set; }
+    public required long GroupId { get; set; } = -1;
 
+    //
+    public Pinecone? Parent { get; set; }
     public ICollection<Pinecone> Children { get; set; } = [];
 }

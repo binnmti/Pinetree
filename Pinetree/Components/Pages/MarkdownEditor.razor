@@ -11,7 +11,7 @@
 
 <div class="editor-container">
 
-    <TreeView TItem="@(PineconeView)" Nodes="TreeNodes" />
+    <PineTreeView PineTree="@(PineTree)" />
 
     <div class="markdown-title">
         <input/><p>@Title</p>
@@ -28,7 +28,7 @@
 </div>
 
 @code {
-    public List<PineconeView> TreeNodes { get; set; } = new List<PineconeView>();
+    public required PineTree PineTree { get; set; }
 
     private string Context { get; set; } = "";
     private string Title { get; set; } = "";
@@ -37,7 +37,7 @@
 
     private void SaveText()
     {
-        var pinecone = new Pinecone() { Content = Context, ParentId = -1, Title = Title };
+        var pinecone = new Pinecone() { Content = Context, ParentId = -1, Title = Title, GroupId = -1 };
         DbContext.Pinecone.Add(pinecone);
         DbContext.SaveChanges();
     }
@@ -46,14 +46,16 @@
     {
         if (firstRender)
         {
+            // TODO: Get PineTree from database
+            PineTree = new PineTree(1, "AAA", "BCDE");
+
             var result = await ProtectedLocalStore.GetAsync<string>("Context");
             if (result.Success && !string.IsNullOrEmpty(result.Value))
             {
                 Context = result.Value;
                 MarkdownText = Markdown.ToHtml(Context);
-
-                StateHasChanged();
             }
+            StateHasChanged();
         }
     }
 
