@@ -13,8 +13,12 @@
     gap: 2rem;
 }
 
+.markdown-editor .pinetree-view {
+    width: 20%;
+}
+
 .markdown-editor .editor {
-    width: 50%;
+    width: 40%;
 }
 
 .markdown-editor .editor .markdown-input {
@@ -26,7 +30,7 @@
 }
 
 .markdown-editor .preview {
-    width: 50%;
+    width: 40%;
     padding: 1rem;
     border: 1px solid #ddd;
     background-color: #f9f9f9;

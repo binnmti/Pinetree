@@ -10,14 +10,14 @@
 @inject ProtectedLocalStorage ProtectedLocalStore
 
 <div class="editor-container">
-
-    <PineTreeView PineTree="@(PineTree)" />
-
     <div class="markdown-title">
         <input @bind="Title"></input>
         <button @onclick="SaveText">Save</button>
     </div>
     <div class="markdown-editor">
+        <div class="pinetree-view">
+            <PineTreeView PineTree="@(PineTree)" />
+        </div>
         <div class="editor">
             <textarea @oninput="OnInputChange" class="markdown-input" placeholder="Write your markdown here...">@Context</textarea>
         </div>
@@ -53,10 +53,7 @@
         if (firstRender)
         {
             var hits = DbContext.Pinecone.Where(x => x.GroupId == Id);
-            if (hits.Any())
-            {
-                PineTree = PinneconeConvert.ToPineTree(Id, hits.ToList());
-            }
+            PineTree = PinneconeConvert.ToPineTree(Id, hits?.ToList() ?? new List<Pinecone>());
             var result = await ProtectedLocalStore.GetAsync<string>("Context");
             if (result.Success && !string.IsNullOrEmpty(result.Value))
             {

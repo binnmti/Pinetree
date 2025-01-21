@@ -4,7 +4,12 @@ public static class PinneconeConvert
 {
     public static PineTree ToPineTree(long id, List<Pinecone> pinecones)
     {
-        var pinetree = pinecones.Single(p => p.Id == id).ToPineTree();
+        var pinecone = pinecones.SingleOrDefault(p => p.Id == id);
+        if (pinecone is null)
+        {
+            return new PineTree(0, "Untitled", "");
+        }
+        var pinetree = pinecone.ToPineTree();
         pinetree.Create(pinecones);
         return pinetree;
     }

@@ -3,28 +3,28 @@
 @if (PineTree != null)
 {
     <ul>
-        @(PineTree.Title)
-        @foreach (var tree in PineTree.Children)
-        {
-            <li>
-                <span @onclick="() => ToggleNode(tree)">
-                    @if (tree.Children.Any())
-                    {
-                        <span>@(tree.IsExpanded ? "-" : "+")</span>
-                    }
-                    else
-                    {
-                        <span>&nbsp;</span>
-                    }
-                    @tree.Title
-                </span>
+        <li>
+            <span @onclick="() => ToggleNode(PineTree)">
+                @if (PineTree.Children.Any())
+                {
+                    <span>@(PineTree.IsExpanded ? "-" : "+")</span>
+                }
+                else
+                {
+                    <span>&nbsp;</span>
+                }
+                @PineTree.Title
+            </span>
+            @foreach (var tree in PineTree.Children)
+            {
 
                 @if (tree.IsExpanded && tree.Children.Any())
                 {
                     <PineTreeView PineTree="@(tree)" />
                 }
-            </li>
-        }
+            }
+            <button></button>
+        </li>
     </ul>
 }
 
