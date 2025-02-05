@@ -38,7 +38,7 @@
 
     private void SaveText()
     {
-        var pinecone = new Pinecone() { Content = Context, ParentId = -1, Title = Title, GroupId = -1, UserId = "" };
+        var pinecone = new Pinecone() { Title = Title, Content = Context, GroupId = -1, ParentId = null, UserId = "" };
         DbContext.Pinecone.Add(pinecone);
         DbContext.SaveChanges();
         pinecone.GroupId = pinecone.Id;

@@ -235,10 +235,7 @@ namespace Pinetree.Migrations
                     b.Property<long>("GroupId")
                         .HasColumnType("bigint");
 
-                    b.Property<int>("ParentId")
-                        .HasColumnType("int");
-
-                    b.Property<long?>("ParentId1")
+                    b.Property<long?>("ParentId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Title")
@@ -253,7 +250,7 @@ namespace Pinetree.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentId1");
+                    b.HasIndex("ParentId");
 
                     b.ToTable("Pinecone");
                 });
@@ -313,7 +310,7 @@ namespace Pinetree.Migrations
                 {
                     b.HasOne("Pinetree.Model.Pinecone", "Parent")
                         .WithMany("Children")
-                        .HasForeignKey("ParentId1");
+                        .HasForeignKey("ParentId");
 
                     b.Navigation("Parent");
                 });
