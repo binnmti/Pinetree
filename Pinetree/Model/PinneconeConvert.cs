@@ -5,10 +5,11 @@ public static class PinneconeConvert
     public static PineTree ToPineTree(long id, List<Pinecone> pinecones)
     {
         var pinecone = pinecones.SingleOrDefault(p => p.Id == id);
-        if (pinecone is null)
-        {
-            return new PineTree(0, "Untitled", "");
-        }
+        // TODO:設計は後で少し考えよう
+        //if (pinecone is null)
+        //{
+        //    return new PineTree(0, "Untitled", "");
+        //}
         var pinetree = pinecone.ToPineTree();
         pinetree.Create(pinecones);
         return pinetree;
