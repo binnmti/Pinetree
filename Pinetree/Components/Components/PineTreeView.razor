@@ -1,4 +1,5 @@
 ﻿@using Pinetree.Model
+@inject NavigationManager Navigation
 
 @if (PineTree != null)
 {
@@ -15,21 +16,31 @@
                 }
                 @PineTree.Title
             </span>
+            <button @onclick="() => AddChild(PineTree)">+</button>
+
             @foreach (var tree in PineTree.Children)
             {
+                <PineTreeView UserId="@(UserId)" CurrentId="@(CurrentId)" PineTree="@(tree)" />
 
-                @if (tree.IsExpanded && tree.Children.Any())
+
+@*                 @if (tree.IsExpanded && tree.Children.Any())
                 {
                     <PineTreeView PineTree="@(tree)" />
                 }
-            }
-            <button @onclick="() => AddChild(PineTree)">+</button>
+ *@            }
         </li>
     </ul>
 }
 
 @code {
-    [Parameter] public required PineTree PineTree { get; set; }
+    [Parameter]
+    public required string UserId { get; set; }
+
+    [Parameter]
+    public required long CurrentId { get; set; }
+    
+    [Parameter]
+    public required PineTree PineTree { get; set; }
 
     private void ToggleNode(PineTree node)
     {
@@ -38,5 +49,9 @@
 
     private void AddChild(PineTree node)
     {
+        // ParentId = CurrentId, Id = null
+        var url = $"/markdown-editor/{UserId}/{PineTree.Id}/";
+        Navigation.NavigateTo(url);
+        StateHasChanged();
     }
 }
