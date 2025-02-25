@@ -11,21 +11,14 @@
 
 
 <PageTitle>Home</PageTitle>
-
-<h1>Hello, world!</h1>
-
-<button @onclick="AddPinecone">Sandbox</button>
-
-
-Welcome to your new app.
-
+<h1>Hello, Pinetree!</h1>
+<button @onclick="AddPinetree">Try it first!</button>
 
 @code {
     [Parameter]
     public string UserId { get; set; } = "";
 
-
-    private async Task AddPinecone()
+    private async Task AddPinetree()
     {
         if (UserId == "")
         {

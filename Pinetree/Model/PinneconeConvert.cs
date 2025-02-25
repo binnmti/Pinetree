@@ -27,5 +27,5 @@ public static class PinneconeConvert
     }
 
     private static PineTree ToPineTree(this Pinecone pinecone)
-        => new(pinecone.Id, pinecone.Title, pinecone.Content, pinecone?.ParentId ?? -1, pinecone?.GroupId ?? -1);
+        => new(pinecone.Id, pinecone.Title, pinecone.Content, pinecone.ParentId ?? -1, pinecone.GroupId);
 }

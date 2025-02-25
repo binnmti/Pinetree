@@ -18,7 +18,7 @@
     </div>
     <div class="markdown-editor">
         <div class="pinetree-view">
-            <PineTreeView UserId="@(UserId)" PineTree=@(PineTree) />
+            <PineTreeView UserId="@(UserId)" PineTree="@(PineTree)" />
         </div>
         <div class="editor">
             <textarea @oninput="OnInputChange" class="markdown-input" placeholder="Write your markdown here...">@Context</textarea>
