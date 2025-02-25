@@ -1,5 +1,9 @@
 ﻿@using Pinetree.Model
+@using Pinetree.Data
+
+
 @inject NavigationManager Navigation
+@inject ApplicationDbContext DbContext
 
 @if (PineTree != null)
 {
@@ -20,8 +24,7 @@
 
             @foreach (var tree in PineTree.Children)
             {
-                <PineTreeView UserId="@(UserId)" CurrentId="@(CurrentId)" PineTree="@(tree)" />
-
+                <PineTreeView UserId="@(UserId)" PineTree="@(tree)" />
 
 @*                 @if (tree.IsExpanded && tree.Children.Any())
                 {
@@ -37,10 +40,8 @@
     public required string UserId { get; set; }
 
     [Parameter]
-    public required long CurrentId { get; set; }
-    
-    [Parameter]
     public required PineTree PineTree { get; set; }
+
 
     private void ToggleNode(PineTree node)
     {
@@ -49,8 +50,11 @@
 
     private void AddChild(PineTree node)
     {
-        // ParentId = CurrentId, Id = null
-        var url = $"/markdown-editor/{UserId}/{PineTree.Id}/";
+        var pinecone = new Pinecone() { Title = "Untitled", Content = "", GroupId = PineTree.GroupId, ParentId = PineTree.Id, UserId = UserId!, IsSandbox = false };
+        DbContext.Pinecone.Add(pinecone);
+        DbContext.SaveChanges();
+
+        var url = $"/markdown-editor/{UserId}/{pinecone.Id}";
         Navigation.NavigateTo(url);
         StateHasChanged();
     }

@@ -4,36 +4,28 @@ namespace Pinetree.Model;
 
 public static class PinneconeConvert
 {
-    public static PineTree ToPineTree(long currentId, List<Pinecone> pinecones)
+    public static PineTree ToPineTree(List<Pinecone> pinecones)
     {
         var pinecone = pinecones.SingleOrDefault(p => p.ParentId == null);
-        if (pinecone == null)
-        {
-            Debug.Assert(pinecones.Count != 0);
-            return ToPineTree(pinecones.FirstOrDefault());
-        }
-        else
-        {
-            var pinetree = pinecone.ToPineTree();
-            pinetree.Create(currentId, pinecones);
-            return pinetree;
-        }
+        Debug.Assert(pinecone != null);
+
+        var pinetree = pinecone.ToPineTree();
+        pinetree.Create(pinetree.Id, pinecones);
+        return pinetree;
     }
 
-    private static void Create(this PineTree pinetree, long currentId, ICollection<Pinecone> pinecones)
+    private static void Create(this PineTree pinetree, long id, ICollection<Pinecone> pinecones)
     {
-        if (pinetree.Id == currentId)
-        {
-            pinetree.IsCurrent = true;
-        }
         foreach (var pinecone in pinecones)
         {
-            if (pinecone.ParentId != pinetree.Id) continue;
-            pinetree.Children.Add(pinecone.ToPineTree());
-            Create(pinetree, currentId, pinecone.Children);
+            if (pinecone.ParentId != id) continue;
+
+            var current = pinecone.ToPineTree();
+            pinetree.Children.Add(current);
+            current.Create(current.Id, pinecone.Children);
         }
     }
 
     private static PineTree ToPineTree(this Pinecone pinecone)
-        => new(pinecone.Id, pinecone.Title, pinecone.Content, pinecone.ParentId);
+        => new(pinecone.Id, pinecone.Title, pinecone.Content, pinecone?.ParentId ?? -1, pinecone?.GroupId ?? -1);
 }

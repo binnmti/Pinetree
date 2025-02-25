@@ -10,6 +10,8 @@ public class Pinecone
     public required string Title { get; set; }
     public required string Content { get; set; }
     public required long GroupId { get; set; }
+    public required bool IsSandbox { get; set; }
+
     // DB的にここはNULLに出来た方が便利なのでlong?を許容することにした
     // そもそも最親はParentがない。最初の１個を作る時にダミーデータが必要になるが制約によりエラーになる
     public required long? ParentId { get; set; }

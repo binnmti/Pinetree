@@ -1,24 +1,24 @@
-﻿@page "/markdown-editor"
-@page "/markdown-editor/{userId}/{parentId:long?}/{id:long?}"
+﻿@page "/markdown-editor/{userId}/{id:long}"
 
 @using Markdig
 @using Pinetree.Components.Components
 @using Pinetree.Data
 @using Pinetree.Model
-@inject IJSRuntime JS
-@rendermode InteractiveServer
-@inject ApplicationDbContext DbContext
+@using System.Diagnostics;
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject IJSRuntime JS
+@inject ApplicationDbContext DbContext
 @inject ProtectedLocalStorage ProtectedLocalStore
+@rendermode InteractiveServer
 
 <div class="editor-container">
     <div class="markdown-title">
-        <input @bind="Title" placeholder="Untitled"></input>
+        <input @bind="Title" placeholder="Untitled" />
         <button @onclick="SaveText">Save</button>
     </div>
     <div class="markdown-editor">
         <div class="pinetree-view">
-            <PineTreeView UserId="@(UserId)" CurrentId="@(Id ?? -1)" PineTree="@(PineTree)" />
+            <PineTreeView UserId="@(UserId)" PineTree=@(PineTree) />
         </div>
         <div class="editor">
             <textarea @oninput="OnInputChange" class="markdown-input" placeholder="Write your markdown here...">@Context</textarea>
@@ -31,47 +31,24 @@
 
 @code {
     [Parameter]
-    public string? UserId { get; set; }
+    public string UserId { get; set; } = "";
+
     [Parameter]
-    public long? ParentId { get; set; }
-    [Parameter]
-    public long? Id { get; set; }
+    public long Id { get; set; }
 
     public required PineTree PineTree { get; set; }
+
     private string Context { get; set; } = "";
     private string Title { get; set; } = "";
     private string MarkdownText = "";
 
-    private async Task SaveText()
+    private void SaveText()
     {
-        // TODO:Refactor
-        if (Id is null)
-        {
-            var pinecone = new Pinecone() { Title = Title, Content = Context, GroupId = -1, ParentId = ParentId, UserId = UserId! };
-            DbContext.Pinecone.Add(pinecone);
-            DbContext.SaveChanges();
-            if (ParentId == null)
-            {
-                pinecone.GroupId = pinecone.Id;
-            }
-            else
-            {
-                pinecone.GroupId = PineTree.Id;
-            }
-            DbContext.SaveChanges();
-            PineTree = PinneconeConvert.ToPineTree(pinecone.Id, DbContext.Pinecone.Where(x => x.GroupId == pinecone.GroupId).ToList());
-        }
-        else
-        {
-            var hit = DbContext.Pinecone.Single(x => x.Id == Id);
-            hit.Title = Title;
-            hit.Content = Context;
-            DbContext.SaveChanges();
-            PineTree = PinneconeConvert.ToPineTree(hit.Id, DbContext.Pinecone.Where(x => x.GroupId == hit.GroupId).ToList());
-        }
-
-        // await ProtectedLocalStore.SetAsync("Id", pinecone.Id);
-
+        var hit = DbContext.Pinecone.Single(x => x.Id == Id);
+        hit.Title = Title;
+        hit.Content = Context;
+        DbContext.SaveChanges();
+        PineTree = PinneconeConvert.ToPineTree(DbContext.Pinecone.Where(x => x.GroupId == hit.GroupId).ToList());
         StateHasChanged();
     }
 
@@ -79,46 +56,10 @@
     {
         if (firstRender)
         {
-            if (UserId == null)
-            {
-                // ユーザがない場合はGUID
-                var userId = await ProtectedLocalStore.GetAsync<string>("UserId");
-                if (userId.Success && userId.Value != null)
-                {
-                    UserId = userId.Value;
-                }
-                else
-                {
-                    UserId = Guid.NewGuid().ToString("N");
-                    await ProtectedLocalStore.SetAsync("UserId", UserId);
-                }
-                // var id = await ProtectedLocalStore.GetAsync<long>("Id");
-                // if (id.Success)
-                // {
-                //     Id = id.Value;
-                // }
-            }
-            var pinecones = new List<Pinecone>();
-            if (Id is null)
-            {
-                //再親
-                if (ParentId == null)
-                {
-                    PineTree = new PineTree(-1, "Untitled", "", ParentId);
-                }
-                else
-                {
-                    pinecones = DbContext.Pinecone.Where(x => x.UserId == UserId).Where(x => x.GroupId == ParentId).ToList();
-                    var mostParentId = pinecones.Single(p => p.ParentId == null).Id;
-                    pinecones.Add(new Pinecone() { Content = "", Title = "Untitled", GroupId = mostParentId, ParentId = ParentId, UserId = UserId });
-                    PineTree = PinneconeConvert.ToPineTree(-1, pinecones);
-                }
-            }
-            else
-            {
-                pinecones = DbContext.Pinecone.Where(x => x.UserId == UserId).Where(x => x.GroupId == Id).ToList();
-                PineTree = PinneconeConvert.ToPineTree((long)Id, pinecones);
-            }
+            var userIds = DbContext.Pinecone.Where(x => x.UserId == UserId);
+            var groupId = userIds.Single(x => x.Id == Id).GroupId;
+            var pinecones = userIds.Where(x => x.GroupId == groupId).ToList();
+            PineTree = PinneconeConvert.ToPineTree(pinecones);
 
             var result = await ProtectedLocalStore.GetAsync<string>("Context");
             if (result.Success && !string.IsNullOrEmpty(result.Value))

@@ -1,7 +1,55 @@
 ﻿@page "/"
 
+@using Pinetree.Model
+@using Pinetree.Data
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+
+@inject NavigationManager Navigation
+@inject ApplicationDbContext DbContext
+@inject ProtectedLocalStorage ProtectedLocalStore
+@rendermode InteractiveServer
+
+
 <PageTitle>Home</PageTitle>
 
 <h1>Hello, world!</h1>
 
+<button @onclick="AddPinecone">Sandbox</button>
+
+
 Welcome to your new app.
+
+
+@code {
+    [Parameter]
+    public string UserId { get; set; } = "";
+
+
+    private async Task AddPinecone()
+    {
+        if (UserId == "")
+        {
+            // ユーザがない場合はGUID
+            var userId = await ProtectedLocalStore.GetAsync<string>("UserId");
+            if (userId.Success && userId.Value != null)
+            {
+                UserId = userId.Value;
+            }
+            else
+            {
+                UserId = Guid.NewGuid().ToString("N");
+                await ProtectedLocalStore.SetAsync("UserId", UserId);
+            }
+            // IDも保存したいが。。
+        }
+
+        var pinecone = new Pinecone() { Title = "Untitled", Content = "", GroupId = 0, ParentId = null, UserId = UserId!, IsSandbox = true };
+        DbContext.Pinecone.Add(pinecone);
+        DbContext.SaveChanges();
+        pinecone.GroupId = pinecone.Id;
+        DbContext.SaveChanges();
+
+        var url = $"/markdown-editor/{UserId}/{pinecone.Id}";
+        Navigation.NavigateTo(url);
+    }
+}
