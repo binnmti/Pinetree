@@ -11,8 +11,10 @@
 
 
 <PageTitle>Home</PageTitle>
-<h1>Hello, Pinetree!</h1>
-<button @onclick="AddPinetree">Try it first!</button>
+<div style="display: flex; justify-content: center; align-items: center; height: 90vh; text-align: center; flex-direction: column;">
+    <p style="font-size: 5em;">Pinetree is a hierarchical Markdown editor!</p>
+    <button style="font-size: 2.5em;" @onclick="AddPinetree">Try it first!</button>
+</div>
 
 @code {
     [Parameter]

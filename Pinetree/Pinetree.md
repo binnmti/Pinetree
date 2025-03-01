@@ -7,3 +7,7 @@
 # PineTreeMarkdown 
 - 左側にツリー。右側は編集。上部はあり。
 - 先ずはココを徹底的に作りこむ。
+
+- # URL
+https://localhost:7263/markdown-editor/54aecbc6-26d2-48ab-bcea-7461c78c970c/10128
+

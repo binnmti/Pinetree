@@ -11,20 +11,26 @@
 @inject ProtectedLocalStorage ProtectedLocalStore
 @rendermode InteractiveServer
 
+
 <div class="editor-container">
-    <div class="markdown-title">
-        <input @bind="Title" placeholder="Untitled" />
-        <button @onclick="SaveText">Save</button>
-    </div>
-    <div class="markdown-editor">
-        <div class="pinetree-view">
-            <PineTreeView UserId="@(UserId)" PineTree="@(PineTree)" />
+    <div class="row">
+        <div class="col-2 border">
+            <div class="pinetree-view">
+                <PineTreeView UserId="@(UserId)" PineTree="@(PineTree)" />
+            </div>
         </div>
-        <div class="editor">
-            <textarea @oninput="OnInputChange" class="markdown-input" placeholder="Write your markdown here...">@Context</textarea>
-        </div>
-        <div class="preview">
-            @((MarkupString)MarkdownText)
+        <div class="col-10">
+            <div class="markdown-title" >
+                <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" style="width:100%" />
+            </div>
+            <div class="row" style="height:90vh;">
+                <div class="col py-2">
+                    <textarea @bind="@(Context)" style="width:100%; height:100%" @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
+                </div>
+                <div class="col py-2">
+                    <pre class="border" style="width:100%; height:100%">@((MarkupString)MarkdownText)</pre>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -36,48 +42,61 @@
     [Parameter]
     public long Id { get; set; }
 
+    MarkupString markupString = new MarkupString("");
+
     public required PineTree PineTree { get; set; }
 
     private string Context { get; set; } = "";
     private string Title { get; set; } = "";
     private string MarkdownText = "";
+    private CancellationTokenSource DebounceToken = new CancellationTokenSource();
 
-    private void SaveText()
-    {
-        var hit = DbContext.Pinecone.Single(x => x.Id == Id);
-        hit.Title = Title;
-        hit.Content = Context;
-        DbContext.SaveChanges();
-        PineTree = PinneconeConvert.ToPineTree(DbContext.Pinecone.Where(x => x.GroupId == hit.GroupId).ToList());
-        StateHasChanged();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override void OnAfterRender(bool firstRender)
     {
         if (firstRender)
         {
             var userIds = DbContext.Pinecone.Where(x => x.UserId == UserId);
-            var groupId = userIds.Single(x => x.Id == Id).GroupId;
-            var pinecones = userIds.Where(x => x.GroupId == groupId).ToList();
+            var hit = userIds.Single(x => x.Id == Id);
+            Title = hit.Title;
+            Context = hit.Content;
+            var pinecones = userIds.Where(x => x.GroupId == hit.GroupId).ToList();
             PineTree = PinneconeConvert.ToPineTree(pinecones);
-
-            var result = await ProtectedLocalStore.GetAsync<string>("Context");
-            if (result.Success && !string.IsNullOrEmpty(result.Value))
-            {
-                Context = result.Value;
-                MarkdownText = Markdown.ToHtml(Context);
-            }
-
             StateHasChanged();
         }
+    }
+
+    private async Task OnInputTitleChange(ChangeEventArgs e)
+    {
+        Title = e.Value?.ToString() ?? "";
+        await DebounceSave();
     }
 
     private async Task OnInputChange(ChangeEventArgs e)
     {
         Context = e.Value?.ToString() ?? "";
         MarkdownText = Markdown.ToHtml(Context);
+        await DebounceSave();
+    }
 
-        await ProtectedLocalStore.SetAsync("Context", Context);
+    private async Task DebounceSave()
+    {
+        DebounceToken.Cancel();
+        DebounceToken = new CancellationTokenSource();
+        var token = DebounceToken.Token;
+        try
+        {
+            await Task.Delay(500, token);
+            if (!token.IsCancellationRequested)
+            {
+                var hit = DbContext.Pinecone.Single(x => x.Id == Id);
+                hit.Title = Title;
+                hit.Content = Context;
+                DbContext.SaveChanges();
+                PineTree = PinneconeConvert.ToPineTree(DbContext.Pinecone.Where(x => x.GroupId == hit.GroupId).ToList());
+                StateHasChanged();
+            }
+        }
+        catch (TaskCanceledException) { }
         StateHasChanged();
     }
 }

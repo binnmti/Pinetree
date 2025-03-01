@@ -1,4 +1,4 @@
-.page {
+/*.page {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -75,6 +75,8 @@ main {
         padding-right: 1.5rem !important;
     }
 }
+
+*/
 
 #blazor-error-ui {
     color-scheme: light only;

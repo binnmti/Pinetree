@@ -1,4 +1,4 @@
-﻿.markdown-title {
+﻿/*.markdown-title {
     width: 90%;
     display: flex;
     gap: 2rem;
@@ -17,7 +17,7 @@
     width: 20%;
 }
 
-.markdown-editor .editor {
+.markdown-editor .editor {%
     width: 40%;
 }
 
@@ -37,3 +37,4 @@
     height: 400px;
     overflow-y: auto;
 }
+*/
