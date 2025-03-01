@@ -9,28 +9,14 @@
 {
     <ul>
         <li>
-            <span @onclick="() => ToggleNode(PineTree)">
-                @if (PineTree.Children.Any())
-                {
-                    <span>@(PineTree.IsExpanded ? "-" : "+")</span>
-                }
-                else
-                {
-                    <span>&nbsp;</span>
-                }
+            <span @onclick="() => ActivePineTree(PineTree)">
                 @PineTree.Title
             </span>
             <button @onclick="() => AddChild(PineTree)">+</button>
-
             @foreach (var tree in PineTree.Children)
             {
                 <PineTreeView UserId="@(UserId)" PineTree="@(tree)" />
-
-@*                 @if (tree.IsExpanded && tree.Children.Any())
-                {
-                    <PineTreeView PineTree="@(tree)" />
-                }
- *@            }
+            }
         </li>
     </ul>
 }
@@ -43,9 +29,11 @@
     public required PineTree PineTree { get; set; }
 
 
-    private void ToggleNode(PineTree node)
+    private void ActivePineTree(PineTree node)
     {
-        node.IsExpanded = !node.IsExpanded;
+        var url = $"/markdown-editor/{UserId}/{node.Id}";
+        Navigation.NavigateTo(url);
+        StateHasChanged();
     }
 
     private void AddChild(PineTree node)
