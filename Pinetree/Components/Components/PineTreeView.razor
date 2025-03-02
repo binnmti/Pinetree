@@ -9,10 +9,10 @@
 {
     <ul>
         <li>
-            <span @onclick="() => ActivePineTree(PineTree)">
+            <span @onclick="() => ActivePineTree(PineTree.Id)">
                 @PineTree.Title
             </span>
-            <button @onclick="() => AddChild(PineTree)">+</button>
+            <button @onclick="AddChild">+</button>
             @foreach (var tree in PineTree.Children)
             {
                 <PineTreeView UserId="@(UserId)" PineTree="@(tree)" />
@@ -29,19 +29,25 @@
     public required PineTree PineTree { get; set; }
 
 
-    private void ActivePineTree(PineTree node)
+    private void ActivePineTree(long id)
     {
-        var url = $"/markdown-editor/{UserId}/{node.Id}";
+        var url = $"/markdown-editor/{UserId}/{id}";
         Navigation.NavigateTo(url);
         StateHasChanged();
     }
 
-    private void AddChild(PineTree node)
+    private async Task AddChild()
     {
         var pinecone = new Pinecone() { Title = "Untitled", Content = "", GroupId = PineTree.GroupId, ParentId = PineTree.Id, UserId = UserId!, IsSandbox = false };
-        DbContext.Pinecone.Add(pinecone);
-        DbContext.SaveChanges();
-
+        try
+        {
+            await DbContext.Pinecone.AddAsync(pinecone);
+            await DbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error DbContext: {ex.Message}");
+        }
         var url = $"/markdown-editor/{UserId}/{pinecone.Id}";
         Navigation.NavigateTo(url);
         StateHasChanged();

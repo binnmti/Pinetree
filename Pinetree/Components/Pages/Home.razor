@@ -24,25 +24,37 @@
     {
         if (UserId == "")
         {
-            // ユーザがない場合はGUID
-            var userId = await ProtectedLocalStore.GetAsync<string>("UserId");
-            if (userId.Success && userId.Value != null)
+            try
             {
-                UserId = userId.Value;
+                var userId = await ProtectedLocalStore.GetAsync<string>("UserId");
+                if (userId.Success && userId.Value != null)
+                {
+                    UserId = userId.Value;
+                }
+                else
+                {
+                    UserId = Guid.NewGuid().ToString("N");
+                    await ProtectedLocalStore.SetAsync("UserId", UserId);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                UserId = Guid.NewGuid().ToString("N");
-                await ProtectedLocalStore.SetAsync("UserId", UserId);
+                Console.Error.WriteLine($"Error ProtectedLocalStore: {ex.Message}");
             }
-            // IDも保存したいが。。
         }
 
         var pinecone = new Pinecone() { Title = "Untitled", Content = "", GroupId = 0, ParentId = null, UserId = UserId!, IsSandbox = true };
-        DbContext.Pinecone.Add(pinecone);
-        DbContext.SaveChanges();
-        pinecone.GroupId = pinecone.Id;
-        DbContext.SaveChanges();
+        try
+        {
+            await DbContext.Pinecone.AddAsync(pinecone);
+            DbContext.SaveChanges();
+            pinecone.GroupId = pinecone.Id;
+            DbContext.SaveChanges();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error DbContext: {ex.Message}");
+        }
 
         var url = $"/markdown-editor/{UserId}/{pinecone.Id}";
         Navigation.NavigateTo(url);

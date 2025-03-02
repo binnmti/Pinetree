@@ -1,6 +1,7 @@
 ﻿@page "/markdown-editor/{userId}/{id:long}"
 
 @using Markdig
+@using Microsoft.EntityFrameworkCore
 @using Pinetree.Components.Components
 @using Pinetree.Data
 @using Pinetree.Model
@@ -48,18 +49,29 @@
     private string Title { get; set; } = "";
     private string MarkdownText = "";
     private CancellationTokenSource DebounceToken = new CancellationTokenSource();
+    private List<Pinecone> Pinecones = new List<Pinecone>();
 
-    protected override void OnAfterRender(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            var userIds = DbContext.Pinecone.Where(x => x.UserId == UserId);
-            var hit = userIds.Single(x => x.Id == Id);
+            try
+            {
+                var userPinecones = DbContext.Pinecone.Where(x => x.UserId == UserId);
+                var groupId = (await userPinecones.SingleAsync(x => x.Id == Id)).GroupId;
+                Pinecones = await userPinecones.Where(x => x.GroupId == groupId).ToListAsync();
+            }
+            catch(Exception ex)
+            {
+                Console.Error.WriteLine($"Error DbContext: {ex.Message}");
+                return;
+            }
+
+            var hit = Pinecones.Single(x => x.Id == Id);
             Title = hit.Title;
             Context = hit.Content;
             MarkdownText = Markdown.ToHtml(Context);
-            var pinecones = userIds.Where(x => x.GroupId == hit.GroupId).ToList();
-            PineTree = PinneconeConvert.ToPineTree(pinecones);
+            PineTree = PinneconeConvert.ToPineTree(Pinecones);
             StateHasChanged();
         }
     }
@@ -67,17 +79,17 @@
     private async Task OnInputTitleChange(ChangeEventArgs e)
     {
         Title = e.Value?.ToString() ?? "";
-        await DebounceSave();
+        await DebounceSaveAsync();
     }
 
     private async Task OnInputChange(ChangeEventArgs e)
     {
         Context = e.Value?.ToString() ?? "";
         MarkdownText = Markdown.ToHtml(Context);
-        await DebounceSave();
+        await DebounceSaveAsync();
     }
 
-    private async Task DebounceSave()
+    private async Task DebounceSaveAsync()
     {
         DebounceToken.Cancel();
         DebounceToken = new CancellationTokenSource();
@@ -87,11 +99,12 @@
             await Task.Delay(500, token);
             if (!token.IsCancellationRequested)
             {
-                var hit = DbContext.Pinecone.Single(x => x.Id == Id);
+                var hit = Pinecones.Single(x => x.Id == Id);
                 hit.Title = Title;
                 hit.Content = Context;
-                DbContext.SaveChanges();
-                PineTree = PinneconeConvert.ToPineTree(DbContext.Pinecone.Where(x => x.GroupId == hit.GroupId).ToList());
+                await DbContext.SaveChangesAsync();
+
+                PineTree = PinneconeConvert.ToPineTree(Pinecones);
                 StateHasChanged();
             }
         }
