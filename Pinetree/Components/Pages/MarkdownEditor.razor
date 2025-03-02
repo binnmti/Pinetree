@@ -10,7 +10,10 @@
 @inject IJSRuntime JS
 @inject ApplicationDbContext DbContext
 @inject ProtectedLocalStorage ProtectedLocalStore
+@inject NavigationManager Navigation
 @rendermode InteractiveServer
+@implements IDisposable
+
 <div class="editor-container">
     <div class="row">
         <div class="col-2 border">
@@ -41,15 +44,19 @@
     [Parameter]
     public long Id { get; set; }
 
-    MarkupString markupString = new MarkupString("");
-
-    public required PineTree PineTree { get; set; }
-
+    private PineTree PineTree { get; set; } = new PineTree(0, "", "", 0, 0);
     private string Context { get; set; } = "";
     private string Title { get; set; } = "";
-    private string MarkdownText = "";
-    private CancellationTokenSource DebounceToken = new CancellationTokenSource();
-    private List<Pinecone> Pinecones = new List<Pinecone>();
+    private string MarkdownText { get; set; } = "";
+    private CancellationTokenSource DebounceToken { get; set; } = new CancellationTokenSource();
+    private List<Pinecone> Pinecones { get; set; } = new List<Pinecone>();
+    private Pinecone? Current { get; set; }
+
+    public void Dispose()
+    {
+        DebounceToken?.Cancel();
+        DebounceToken?.Dispose();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -58,18 +65,25 @@
             try
             {
                 var userPinecones = DbContext.Pinecone.Where(x => x.UserId == UserId);
-                var groupId = (await userPinecones.SingleAsync(x => x.Id == Id)).GroupId;
-                Pinecones = await userPinecones.Where(x => x.GroupId == groupId).ToListAsync();
+                Current = await userPinecones.SingleOrDefaultAsync(x => x.Id == Id);
+                if (Current == null)
+                {
+                    Console.Error.WriteLine($"No hit by Id");
+
+                    // TODO: Redirect to 404 page
+                    Navigation.NavigateTo("/");
+                    return;
+                }
+                Pinecones = await userPinecones.Where(x => x.GroupId == Current.GroupId).ToListAsync();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error DbContext: {ex.Message}");
+                Console.Error.WriteLine($"An error occurred while fetching data: {ex.Message}");
                 return;
             }
 
-            var hit = Pinecones.Single(x => x.Id == Id);
-            Title = hit.Title;
-            Context = hit.Content;
+            Title = Current.Title;
+            Context = Current.Content;
             MarkdownText = Markdown.ToHtml(Context);
             PineTree = PinneconeConvert.ToPineTree(Pinecones);
             StateHasChanged();
@@ -79,14 +93,20 @@
     private async Task OnInputTitleChange(ChangeEventArgs e)
     {
         Title = e.Value?.ToString() ?? "";
+        PineTree.Update(Id, Title, Context);
+
         await DebounceSaveAsync();
+        StateHasChanged();
     }
 
     private async Task OnInputChange(ChangeEventArgs e)
     {
         Context = e.Value?.ToString() ?? "";
         MarkdownText = Markdown.ToHtml(Context);
+        PineTree.Update(Id, Title, Context);
+
         await DebounceSaveAsync();
+        StateHasChanged();
     }
 
     private async Task DebounceSaveAsync()
@@ -97,18 +117,26 @@
         try
         {
             await Task.Delay(500, token);
-            if (!token.IsCancellationRequested)
-            {
-                var hit = Pinecones.Single(x => x.Id == Id);
-                hit.Title = Title;
-                hit.Content = Context;
-                await DbContext.SaveChangesAsync();
-
-                PineTree = PinneconeConvert.ToPineTree(Pinecones);
-                StateHasChanged();
-            }
         }
-        catch (TaskCanceledException) { }
+        catch (TaskCanceledException ex)
+        {
+            Console.Error.WriteLine($"Task was canceled: {ex.Message}");
+            return;
+        }
+        if (token.IsCancellationRequested) return;
+
+        Debug.Assert(Current != null);
+        Current.Title = Title;
+        Current.Content = Context;
+        try
+        {
+            await DbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"An error occurred while saving changes: {ex.Message}");
+            return;
+        }
         StateHasChanged();
     }
 }
