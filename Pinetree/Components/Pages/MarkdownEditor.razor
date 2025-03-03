@@ -1,68 +1,142 @@
-﻿@page "/markdown-editor"
+﻿@page "/markdown-editor/{userId}/{id:long}"
+
 @using Markdig
+@using Microsoft.EntityFrameworkCore
 @using Pinetree.Components.Components
 @using Pinetree.Data
 @using Pinetree.Model
-@inject IJSRuntime JS
-@rendermode InteractiveServer
-@inject ApplicationDbContext DbContext
+@using System.Diagnostics;
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject IJSRuntime JS
+@inject ApplicationDbContext DbContext
 @inject ProtectedLocalStorage ProtectedLocalStore
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@implements IDisposable
 
 <div class="editor-container">
-
-    <TreeView TItem="@(PineconeView)" Nodes="TreeNodes" />
-
-    <div class="markdown-title">
-        <input/><p>@Title</p>
-        <button @onclick="SaveText">Save</button>
-    </div>
-    <div class="markdown-editor">
-        <div class="editor">
-            <textarea @oninput="OnInputChange" class="markdown-input" placeholder="Write your markdown here...">@Context</textarea>
+    <div class="row">
+        <div class="col-2 border">
+            <div class="pinetree-view">
+                <PineTreeView UserId="@(UserId)" PineTree="@(PineTree)" />
+            </div>
         </div>
-        <div class="preview">
-            @((MarkupString)MarkdownText)
+        <div class="col-10">
+            <div class="markdown-title" >
+                <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" style="width:100%" />
+            </div>
+            <div class="row" style="height:90vh;">
+                <div class="col py-2">
+                    <textarea @bind="@(Context)" style="width:100%; height:100%" @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
+                </div>
+                <div class="col py-2">
+                    <p class="border" style="width:100%; height:100%">@((MarkupString)MarkdownText)</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @code {
-    public List<PineconeView> TreeNodes { get; set; } = new List<PineconeView>();
+    [Parameter]
+    public string UserId { get; set; } = "";
 
+    [Parameter]
+    public long Id { get; set; }
+
+    private PineTree PineTree { get; set; } = new PineTree(0, "", "", 0, 0);
     private string Context { get; set; } = "";
     private string Title { get; set; } = "";
+    private string MarkdownText { get; set; } = "";
+    private CancellationTokenSource DebounceToken { get; set; } = new CancellationTokenSource();
+    private List<Pinecone> Pinecones { get; set; } = new List<Pinecone>();
+    private Pinecone? Current { get; set; }
 
-    private string MarkdownText = "";
-
-    private void SaveText()
+    public void Dispose()
     {
-        var pinecone = new Pinecone() { Content = Context, ParentId = -1, Title = Title };
-        DbContext.Pinecone.Add(pinecone);
-        DbContext.SaveChanges();
+        DebounceToken?.Cancel();
+        DebounceToken?.Dispose();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            var result = await ProtectedLocalStore.GetAsync<string>("Context");
-            if (result.Success && !string.IsNullOrEmpty(result.Value))
+            try
             {
-                Context = result.Value;
-                MarkdownText = Markdown.ToHtml(Context);
+                var userPinecones = DbContext.Pinecone.Where(x => x.UserId == UserId);
+                Current = await userPinecones.SingleOrDefaultAsync(x => x.Id == Id);
+                if (Current == null)
+                {
+                    Console.Error.WriteLine($"No hit by Id");
 
-                StateHasChanged();
+                    // TODO: Redirect to 404 page
+                    Navigation.NavigateTo("/");
+                    return;
+                }
+                Pinecones = await userPinecones.Where(x => x.GroupId == Current.GroupId).ToListAsync();
             }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"An error occurred while fetching data: {ex.Message}");
+                return;
+            }
+
+            Title = Current.Title;
+            Context = Current.Content;
+            MarkdownText = Markdown.ToHtml(Context);
+            PineTree = PinneconeConvert.ToPineTree(Pinecones);
+            StateHasChanged();
         }
+    }
+
+    private async Task OnInputTitleChange(ChangeEventArgs e)
+    {
+        Title = e.Value?.ToString() ?? "";
+        PineTree.Update(Id, Title, Context);
+
+        await DebounceSaveAsync();
+        StateHasChanged();
     }
 
     private async Task OnInputChange(ChangeEventArgs e)
     {
         Context = e.Value?.ToString() ?? "";
         MarkdownText = Markdown.ToHtml(Context);
+        PineTree.Update(Id, Title, Context);
 
-        await ProtectedLocalStore.SetAsync("Context", Context);
+        await DebounceSaveAsync();
+        StateHasChanged();
+    }
+
+    private async Task DebounceSaveAsync()
+    {
+        DebounceToken.Cancel();
+        DebounceToken = new CancellationTokenSource();
+        var token = DebounceToken.Token;
+        try
+        {
+            await Task.Delay(500, token);
+        }
+        catch (TaskCanceledException ex)
+        {
+            Console.Error.WriteLine($"Task was canceled: {ex.Message}");
+            return;
+        }
+        if (token.IsCancellationRequested) return;
+
+        Debug.Assert(Current != null);
+        Current.Title = Title;
+        Current.Content = Context;
+        try
+        {
+            await DbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"An error occurred while saving changes: {ex.Message}");
+            return;
+        }
         StateHasChanged();
     }
 }

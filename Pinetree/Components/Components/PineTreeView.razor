@@ -1,0 +1,55 @@
+﻿@using Pinetree.Model
+@using Pinetree.Data
+
+
+@inject NavigationManager Navigation
+@inject ApplicationDbContext DbContext
+
+@if (PineTree != null)
+{
+    <ul>
+        <li>
+            <span @onclick="() => ActivePineTree(PineTree.Id)">
+                @PineTree.Title
+            </span>
+            <button @onclick="AddChild">+</button>
+            @foreach (var tree in PineTree.Children)
+            {
+                <PineTreeView UserId="@(UserId)" PineTree="@(tree)" />
+            }
+        </li>
+    </ul>
+}
+
+@code {
+    [Parameter]
+    public required string UserId { get; set; }
+
+    [Parameter]
+    public required PineTree PineTree { get; set; }
+
+
+    private void ActivePineTree(long id)
+    {
+        var url = $"/markdown-editor/{UserId}/{id}";
+        Navigation.NavigateTo(url);
+        StateHasChanged();
+    }
+
+    private async Task AddChild()
+    {
+        var pinecone = new Pinecone() { Title = "Untitled", Content = "", GroupId = PineTree.GroupId, ParentId = PineTree.Id, UserId = UserId!, IsSandbox = false };
+        try
+        {
+            await DbContext.Pinecone.AddAsync(pinecone);
+            await DbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error DbContext: {ex.Message}");
+        }
+        var url = $"/markdown-editor/{UserId}/{pinecone.Id}";
+        Navigation.NavigateTo(url);
+        StateHasChanged();
+    }
+}

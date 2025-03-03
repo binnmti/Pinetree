@@ -1,7 +1,62 @@
 ﻿@page "/"
 
+@using Pinetree.Model
+@using Pinetree.Data
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+
+@inject NavigationManager Navigation
+@inject ApplicationDbContext DbContext
+@inject ProtectedLocalStorage ProtectedLocalStore
+@rendermode InteractiveServer
+
+
 <PageTitle>Home</PageTitle>
+<div style="display: flex; justify-content: center; align-items: center; height: 90vh; text-align: center; flex-direction: column;">
+    <p style="font-size: 5em;">Pinetree is a hierarchical Markdown editor!</p>
+    <button style="font-size: 2.5em;" @onclick="AddPinetree">Try it first!</button>
+</div>
 
-<h1>Hello, world!</h1>
+@code {
+    [Parameter]
+    public string UserId { get; set; } = "";
 
-Welcome to your new app.
+    private async Task AddPinetree()
+    {
+        if (UserId == "")
+        {
+            try
+            {
+                var userId = await ProtectedLocalStore.GetAsync<string>("UserId");
+                if (userId.Success && userId.Value != null)
+                {
+                    UserId = userId.Value;
+                }
+                else
+                {
+                    UserId = Guid.NewGuid().ToString("N");
+                    await ProtectedLocalStore.SetAsync("UserId", UserId);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error ProtectedLocalStore: {ex.Message}");
+            }
+        }
+
+        var pinecone = new Pinecone() { Title = "Untitled", Content = "", GroupId = 0, ParentId = null, UserId = UserId!, IsSandbox = true };
+        try
+        {
+            await DbContext.Pinecone.AddAsync(pinecone);
+            DbContext.SaveChanges();
+            pinecone.GroupId = pinecone.Id;
+            DbContext.SaveChanges();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error DbContext: {ex.Message}");
+        }
+
+        var url = $"/markdown-editor/{UserId}/{pinecone.Id}";
+        Navigation.NavigateTo(url);
+    }
+}
