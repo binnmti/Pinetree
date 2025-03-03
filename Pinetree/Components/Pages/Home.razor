@@ -9,18 +9,22 @@
 @inject ProtectedLocalStorage ProtectedLocalStore
 @rendermode InteractiveServer
 
-
 <PageTitle>Home</PageTitle>
-<div style="display: flex; justify-content: center; align-items: center; height: 90vh; text-align: center; flex-direction: column;">
-    <p style="font-size: 5em;">Pinetree is a hierarchical Markdown editor!</p>
-    <button style="font-size: 2.5em;" @onclick="AddPinetree">Try it first!</button>
+<div style="display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; flex-direction: column;">
+    <h1 style="font-size: 4em; margin-bottom: 0.5em;">Welcome to Pinetree</h1>
+    <p style="font-size: 2em; margin-bottom: 1em;">A hierarchical Markdown editor for your needs</p>
+    <img src="Pinetree.png" alt="Pinetree Image" />
+    <div class="mt-4">
+        <button class="btn btn-outline-primary btn-lg m-2" @onclick="Try">Try it now</button>
+        <button class="btn btn-outline-success btn-lg m-2" @onclick="Register">Register</button>
+    </div>
 </div>
-
-@code {
+ 
+ @code {
     [Parameter]
     public string UserId { get; set; } = "";
 
-    private async Task AddPinetree()
+    private async Task Try()
     {
         if (UserId == "")
         {
@@ -58,5 +62,10 @@
 
         var url = $"/markdown-editor/{UserId}/{pinecone.Id}";
         Navigation.NavigateTo(url);
+    }
+
+    private void Register()
+    {
+        Navigation.NavigateTo("Account/Register");
     }
 }
