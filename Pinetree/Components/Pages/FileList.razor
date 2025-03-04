@@ -1,0 +1,86 @@
+﻿@page "/FileList/{userId}"
+
+@using Microsoft.EntityFrameworkCore
+@using Pinetree.Components.Components
+@using Pinetree.Data
+@using Pinetree.Model
+@inject ApplicationDbContext DbContext
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<div class="container mt-4">
+    <div class="row">
+        @foreach (var pinecone in Pinecones)
+        {
+            <div class="col-md-3 mb-4">
+                <div class="card file-item" @onclick="() => OpenFile(pinecone.Id)">
+                    <div class="card-body">
+                        <h5 class="card-title">@pinecone.Title</h5>
+                        <p class="card-text">@(pinecone.Content.Length < 100 ? pinecone.Content : pinecone.Content[0..100])</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <style>
+        .card-text {
+            height: 3em; /* 固定の高さを設定 */
+            overflow: hidden; /* オーバーフローを隠す */
+            text-overflow: ellipsis; /* 省略記号を表示 */
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* 表示する行数を設定 */
+            -webkit-box-orient: vertical;
+        }
+
+        .card-body {
+            cursor: pointer; /* カーソルを指に変える */
+        }
+    </style>
+    @if (TotalPages > 1)
+    {
+        <nav>
+            <ul class="pagination justify-content-center">
+                @for (int i = 1; i <= TotalPages; i++)
+                {
+                    <li class="page-item @(i == CurrentPage ? "active" : "")">
+                        <button class="page-link" @onclick="() => LoadPage(i)">@i</button>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string UserId { get; set; } = "";
+
+    private List<Pinecone> Pinecones { get; set; } = new List<Pinecone>();
+    private int CurrentPage { get; set; } = 1;
+    private int PageSize { get; set; } = 100;
+    private int TotalPages { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Console.WriteLine($"{UserId}");
+        if (firstRender)
+        {
+            await LoadPage(CurrentPage);
+        }
+    }
+
+    private async Task LoadPage(int pageNumber)
+    {
+        CurrentPage = pageNumber;
+        var query = DbContext.Pinecone.Where(x => x.UserId == UserId && x.ParentId == null);
+        TotalPages = (int)Math.Ceiling(await query.CountAsync() / (double)PageSize);
+        Pinecones = await query.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToListAsync();
+        StateHasChanged();
+    }
+
+    private void OpenFile(long id)
+    {
+        var url = $"/markdown-editor/{UserId}/{id}";
+        Navigation.NavigateTo(url);
+    }
+}

@@ -1,6 +1,14 @@
-﻿@inject NavigationManager NavigationManager
-@implements IDisposable
+﻿@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@using Pinetree.Model
+@using Pinetree.Data
+@using System.Diagnostics
 
+@inject ApplicationDbContext DbContext
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@implements IDisposable
+@rendermode InteractiveServer
 
 <nav class="navbar navbar-expand-lg bg-body-tertiary bg-light">
     <div class="container-fluid">
@@ -10,17 +18,22 @@
         </button>
         <div class="collapse navbar-collapse ms-auto" id="navbarSupportedContent">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="auth">
-                        <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
-                    </NavLink>
-                </li>
                 <AuthorizeView>
                     <Authorized>
                         <li class="nav-item">
                             <NavLink class="nav-link" href="Account/Manage">
                                 <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
                             </NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" @onclick="CreateNew">
+                                <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Create New
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" @onclick="FileList">
+                                <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> File List
+                            </button>
                         </li>
                         <li class="nav-item">
                             <form action="Account/Logout" method="post">
@@ -47,7 +60,7 @@
                 </AuthorizeView>
             </ul>
 
-@*          <form class="d-flex" role="search">
+            @*          <form class="d-flex" role="search">
                 <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
                 <button class="btn btn-outline-success" type="submit">Search</button>
             </form>
@@ -59,6 +72,38 @@
 
 @code {
     private string? currentUrl;
+
+    private async Task CreateNew()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userId = authState.User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        Debug.Assert(userId != null);
+        var pinecone = new Pinecone() { Title = "Untitled", Content = "", GroupId = 0, ParentId = null, UserId = userId, IsSandbox = true };
+        try
+        {
+            await DbContext.Pinecone.AddAsync(pinecone);
+            DbContext.SaveChanges();
+            pinecone.GroupId = pinecone.Id;
+            DbContext.SaveChanges();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error DbContext: {ex.Message}");
+        }
+        var url = $"/markdown-editor/{userId}/{pinecone.Id}";
+        NavigationManager.NavigateTo(url);
+    }
+
+    private async Task FileList()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userId = authState.User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        Debug.Assert(userId != null);
+        var url = $"/FileList/{userId}";
+        NavigationManager.NavigateTo(url);
+    }
 
     protected override void OnInitialized()
     {

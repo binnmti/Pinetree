@@ -1,6 +1,6 @@
 ﻿namespace Pinetree.Model;
 
-public static class PinneconeUpdater
+public static class PinetreeUpdater
 {
 
     public static PineTree Update(this PineTree tree, long id, string title, string content)

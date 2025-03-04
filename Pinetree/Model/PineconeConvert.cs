@@ -2,7 +2,7 @@
 
 namespace Pinetree.Model;
 
-public static class PinneconeConvert
+public static class PineconeConvert
 {
     public static PineTree ToPineTree(List<Pinecone> pinecones)
     {
