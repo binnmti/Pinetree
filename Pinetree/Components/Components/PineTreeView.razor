@@ -1,22 +1,32 @@
-﻿@using Pinetree.Model
+﻿@using Microsoft.EntityFrameworkCore
+@using Pinetree.Components.Services
+@using Pinetree.Model
 @using Pinetree.Data
-
 
 @inject NavigationManager Navigation
 @inject ApplicationDbContext DbContext
+@inject IJSRuntime JS
 
 @if (PineTree != null)
 {
-    <ul>
-        <li>
-            <div class="d-flex justify-content-start">
-                <span @onclick="() => ActivePineTree(PineTree.Id)">@PineTree.Title</span>
-                <span @onclick="AddChild"><i class="bi bi-plus-circle"></i></span>
+    <ul class="list-unstyled" style="padding-left: 0.75rem;">
+        <li style="">
+            <div class="d-flex justify-content-between list-group-item-action">
+                <i class="bi bi-file-earmark-text"></i>
+                @if (PineTree.Id == Id)
+                {
+                    <div class="title px-1 flex-grow-1 border" @onclick="() => ActivePineTree(PineTree.Id)" style="font-weight: bold; background-color:aliceblue">@PineTree.Title</div>
+                }
+                else
+                {
+                    <div class="title px-1 flex-grow-1" @onclick="() => ActivePineTree(PineTree.Id)">@PineTree.Title</div>
+                }
+                <i @onclick="AddChild" class="bi bi-file-earmark-plus border px-1" style="cursor:pointer"></i>
+                <i @onclick="ConfirmDelete" class="bi bi-trash2 border px-1" style="cursor:pointer"></i>
             </div>
-
             @foreach (var tree in PineTree.Children)
             {
-                <PineTreeView UserId="@(UserId)" PineTree="@(tree)" />
+                <PineTreeView UserId="@(UserId)" PineTree="@(tree)" id="@(Id)" />
             }
         </li>
     </ul>
@@ -25,6 +35,9 @@
 @code {
     [Parameter]
     public required string UserId { get; set; }
+
+    [Parameter]
+    public long Id { get; set; }
 
     [Parameter]
     public required PineTree PineTree { get; set; }
@@ -50,6 +63,33 @@
             Console.Error.WriteLine($"Error DbContext: {ex.Message}");
         }
         var url = $"/{UserId}/Edit/{pinecone.Id}";
+        Navigation.NavigateTo(url);
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (PineTree.ParentId == -1)
+        {
+            await JS.InvokeVoidAsync("alert", "You can't delete the first");
+        }
+        else
+        {
+            var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this item?");
+            if (confirmed)
+            {
+                await DeleteChild();
+            }
+        }
+    }
+
+    private async Task DeleteChild()
+    {
+        var pinecone = await DbContext.Pinecone.FindAsync(PineTree.Id);
+        if (pinecone == null) return;
+
+        await PineconeService.DeleteAsync(DbContext, pinecone);
+        var url = $"/{UserId}/Edit/{PineTree.ParentId}";
         Navigation.NavigateTo(url);
         StateHasChanged();
     }

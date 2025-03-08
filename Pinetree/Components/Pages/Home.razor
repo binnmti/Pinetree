@@ -53,8 +53,7 @@
             userId = Guid.NewGuid().ToString("N");
             await ProtectedLocalStore.SetAsync("UserId", userId);
         }
-        var service = new PineconeService(DbContext);
-        var url = await service.CreatePineconeAsync(userId);
+        var url = await PineconeService.CreateAsync(DbContext, userId);
         Navigation.NavigateTo(url);
     }
 

@@ -1,16 +1,5 @@
-﻿/*ul {
-    list-style-type: none;
-    padding-left: 1rem;
+﻿.title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-
-li {
-    margin: 0.2rem 0;
-    cursor: pointer;
-}
-
-li span {
-    display: inline-block;
-    margin-right: 0.5rem;
-    font-weight: bold;
-}
-*/

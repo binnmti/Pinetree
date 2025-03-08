@@ -17,7 +17,7 @@
 @rendermode InteractiveServer
 @implements IDisposable
 
-<div class="editor-container" style="overflow-x: auto;">
+<div class="editor-container">
     @if (!IsAuthenticated)
     {
         <div class="row">
@@ -40,8 +40,8 @@
                         </button>
                     </div>
                 }
-                <div class="list-group" style="overflow-x:scroll">
-                    <PineTreeView UserId="@(UserId)" PineTree="@(PineTree)" />
+                <div class="list-group" style="overflow-x:auto">
+                    <PineTreeView UserId="@(UserId)" PineTree="@(PineTree)" Id="@(Id)" />
                 </div>
             </div>
         </div>
@@ -83,6 +83,13 @@
         DebounceToken?.Dispose();
     }
 
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        IsAuthenticated = user.Identity != null && user.Identity.IsAuthenticated;
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -102,11 +109,11 @@
                 Navigation.NavigateTo("/");
                 return;
             }
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-            IsAuthenticated = user.Identity != null && user.Identity.IsAuthenticated;
             if (IsAuthenticated)
             {
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                var user = authState.User;
+
                 var currentUserId = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
                 if (currentUserId == null || currentUserId != UserId)
                 {
