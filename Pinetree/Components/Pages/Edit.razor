@@ -1,4 +1,4 @@
-﻿@page "/markdown-editor/{userId}/{id:long}"
+﻿@page "/{userId}/Edit/{id:long}"
 
 @using Microsoft.AspNetCore.Authorization
 @using Markdig
@@ -153,7 +153,7 @@
 
     private void OnFileListClick()
     {
-        Navigation.NavigateTo($"FileList/{UserId}");
+        Navigation.NavigateTo($"/{UserId}/List");
     }
 
     private async Task DebounceSaveAsync()

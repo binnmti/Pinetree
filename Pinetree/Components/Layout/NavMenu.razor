@@ -97,7 +97,7 @@
         var user = authState.User;
         var userName = authState.User.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
         Debug.Assert(userName != null);
-        var url = $"/FileList/{userName}";
+        var url = $"/{userName}/List";
         NavigationManager.NavigateTo(url);
     }
 

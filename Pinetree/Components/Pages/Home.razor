@@ -34,7 +34,7 @@
             if (user.Identity != null && user.Identity.IsAuthenticated)
             {
                 var userName = authState.User.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
-                var url = $"/FileList/{userName}";
+                var url = $"/{userName}/List";
                 Navigation.NavigateTo(url);
             }
         }

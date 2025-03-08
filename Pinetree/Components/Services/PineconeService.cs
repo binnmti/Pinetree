@@ -1,4 +1,5 @@
-﻿using Pinetree.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using Pinetree.Data;
 using Pinetree.Model;
 
 namespace Pinetree.Components.Services;
@@ -14,12 +15,20 @@ public class PineconeService
 
     public async Task<string> CreatePineconeAsync(string userId)
     {
-        var pinecone = new Pinecone { Title = "Untitled", Content = "", GroupId = 0, ParentId = null, UserId = userId, IsSandbox = true };
+        var baseTitle = "Untitled";
+        var title = baseTitle;
+        var counter = 1;
+        while (await _dbContext.Pinecone.AnyAsync(p => p.UserId == userId && p.Title == title))
+        {
+            title = $"{baseTitle} {counter}";
+            counter++;
+        }
+        var pinecone = new Pinecone { Title = title, Content = "", GroupId = 0, ParentId = null, UserId = userId, IsSandbox = true };
         await _dbContext.Pinecone.AddAsync(pinecone);
         await _dbContext.SaveChangesAsync();
         pinecone.GroupId = pinecone.Id;
         await _dbContext.SaveChangesAsync();
 
-        return $"/markdown-editor/{userId}/{pinecone.Id}";
+        return $"/{userId}/Edit/{pinecone.Id}";
     }
 }
