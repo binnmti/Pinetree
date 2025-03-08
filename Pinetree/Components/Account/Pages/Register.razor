@@ -33,6 +33,11 @@
                 <ValidationMessage For="() => Input.Email" class="text-danger" />
             </div>
             <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.UserName" id="Input.UserName" class="form-control" autocomplete="username" aria-required="true" placeholder="UserName" />
+                <label for="Input.UserName">UserName</label>
+                <ValidationMessage For="() => Input.UserName" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
                 <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
                 <label for="Input.Password">Password</label>
                 <ValidationMessage For="() => Input.Password" class="text-danger" />
@@ -69,7 +74,21 @@
     {
         var user = CreateUser();
 
-        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+        var existingUser = await UserManager.FindByNameAsync(Input.UserName);
+        if (existingUser != null)
+        {
+            identityErrors = new List<IdentityError> { new IdentityError { Description = "UserName is already taken." } };
+            return;
+        }
+
+        var existingEmailUser = await UserManager.FindByEmailAsync(Input.Email);
+        if (existingEmailUser != null)
+        {
+            identityErrors = new List<IdentityError> { new IdentityError { Description = "Email is already taken." } };
+            return;
+        }
+
+        await UserStore.SetUserNameAsync(user, Input.UserName, CancellationToken.None);
         var emailStore = GetEmailStore();
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
         var result = await UserManager.CreateAsync(user, Input.Password);
@@ -130,6 +149,10 @@
         [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
+
+        [Required]
+        [Display(Name = "UserName")]
+        public string UserName { get; set; } = "";
 
         [Required]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
