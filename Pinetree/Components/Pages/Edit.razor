@@ -17,7 +17,7 @@
 @rendermode InteractiveServer
 @implements IDisposable
 
-<div class="editor-container">
+<div class="editor-container" style="overflow-x: auto;">
     @if (!IsAuthenticated)
     {
         <div class="row">
@@ -40,11 +40,13 @@
                         </button>
                     </div>
                 }
-                <PineTreeView UserId="@(UserId)" PineTree="@(PineTree)" />
+                <div class="list-group" style="overflow-x:scroll">
+                    <PineTreeView UserId="@(UserId)" PineTree="@(PineTree)" />
+                </div>
             </div>
         </div>
         <div class="col-10">
-            <div class="markdown-title" >
+            <div class="markdown-title">
                 <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" style="width:100%" />
             </div>
             <div class="row" style="height:90vh;">

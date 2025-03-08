@@ -9,10 +9,11 @@
 {
     <ul>
         <li>
-            <span @onclick="() => ActivePineTree(PineTree.Id)">
-                @PineTree.Title
-            </span>
-            <button @onclick="AddChild">+</button>
+            <div class="d-flex justify-content-start">
+                <span @onclick="() => ActivePineTree(PineTree.Id)">@PineTree.Title</span>
+                <span @onclick="AddChild"><i class="bi bi-plus-circle"></i></span>
+            </div>
+
             @foreach (var tree in PineTree.Children)
             {
                 <PineTreeView UserId="@(UserId)" PineTree="@(tree)" />
@@ -31,7 +32,7 @@
 
     private void ActivePineTree(long id)
     {
-        var url = $"/markdown-editor/{UserId}/{id}";
+        var url = $"/{UserId}/Edit/{id}";
         Navigation.NavigateTo(url);
         StateHasChanged();
     }

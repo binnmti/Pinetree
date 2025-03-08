@@ -18,7 +18,7 @@ public class PineconeService
         var baseTitle = "Untitled";
         var title = baseTitle;
         var counter = 1;
-        while (await _dbContext.Pinecone.AnyAsync(p => p.UserId == userId && p.Title == title))
+        while (await _dbContext.Pinecone.AnyAsync(p => p.UserId == userId && p.Title == title && p.ParentId == null))
         {
             title = $"{baseTitle} {counter}";
             counter++;
