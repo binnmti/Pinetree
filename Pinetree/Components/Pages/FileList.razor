@@ -1,39 +1,64 @@
 ﻿@page "/FileList/{userId}"
+@attribute [Authorize]
 
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
+@using Pinetree.Components.Services
 @using Pinetree.Components.Components
 @using Pinetree.Data
 @using Pinetree.Model
+@using System.Security.Claims
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @rendermode InteractiveServer
 
-<div class="container mt-4">
+<div class="editor-container">
     <div class="row">
-        @foreach (var pinecone in Pinecones)
-        {
-            <div class="col-md-3 mb-4">
-                <div class="card file-item" @onclick="() => OpenFile(pinecone.Id)">
-                    <div class="card-body">
-                        <h5 class="card-title">@pinecone.Title</h5>
-                        <p class="card-text">@(pinecone.Content.Length < 100 ? pinecone.Content : pinecone.Content[0..100])</p>
-                    </div>
-                </div>
+        <div class="col-2">
+            <div class="list-group">
+                <button type="button" class="list-group-item list-group-item-action" @onclick="CreateFile">
+                    <i class="bi bi-file-earmark-plus"></i> Create File
+                </button>
             </div>
-        }
+        </div>
+        <div class="col-10">
+            <div class="row">
+            @foreach (var pinecone in Pinecones)
+                {
+                    <div class="col-md-3 mb-4">
+                        <div class="card file-item">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h5 class="card-title">@pinecone.Title</h5>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-light btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+                                            <li><a class="dropdown-item" href="#" @onclick="() => OpenFile(pinecone.Id)">Open</a></li>
+                                            <li><a class="dropdown-item" href="#" @onclick="() => DeletePinecone(pinecone.Id)">Delete</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <p class="card-text">@(pinecone.Content.Length < 100 ? pinecone.Content : pinecone.Content[0..100])</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
     </div>
     <style>
         .card-text {
-            height: 3em; /* 固定の高さを設定 */
-            overflow: hidden; /* オーバーフローを隠す */
-            text-overflow: ellipsis; /* 省略記号を表示 */
-            display: -webkit-box;
-            -webkit-line-clamp: 2; /* 表示する行数を設定 */
-            -webkit-box-orient: vertical;
-        }
-
-        .card-body {
-            cursor: pointer; /* カーソルを指に変える */
+        height: 3em;
+        overflow: hidden; 
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
         }
     </style>
     @if (TotalPages > 1)
@@ -62,11 +87,23 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Console.WriteLine($"{UserId}");
         if (firstRender)
         {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var currentUserId = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
+            if (currentUserId == null || currentUserId != UserId)
+            {
+                Navigation.NavigateTo("/");
+            }
             await LoadPage(CurrentPage);
         }
+    }
+
+    private async Task CreateFile()
+    {
+        var url = await new PineconeService(DbContext).CreatePineconeAsync(UserId);
+        Navigation.NavigateTo(url);
     }
 
     private async Task LoadPage(int pageNumber)
@@ -82,5 +119,16 @@
     {
         var url = $"/markdown-editor/{UserId}/{id}";
         Navigation.NavigateTo(url);
+    }
+
+    private async Task DeletePinecone(long id)
+    {
+        var pinecone = await DbContext.Pinecone.FindAsync(id);
+        if (pinecone == null) return;
+
+        DbContext.Pinecone.Remove(pinecone);
+        await DbContext.SaveChangesAsync();
+        Pinecones.Remove(pinecone);
+        StateHasChanged();
     }
 }

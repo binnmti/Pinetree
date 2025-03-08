@@ -1,12 +1,15 @@
 ﻿@page "/"
 
+@using Pinetree.Components.Services
 @using Pinetree.Model
 @using Pinetree.Data
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using System.Security.Claims
 
 @inject NavigationManager Navigation
 @inject ApplicationDbContext DbContext
 @inject ProtectedLocalStorage ProtectedLocalStore
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -15,52 +18,43 @@
     <p style="font-size: 2em; margin-bottom: 1em;">A hierarchical Markdown editor for your needs</p>
     <img src="Pinetree.png" alt="Pinetree Image" />
     <div class="mt-4">
-        <button class="btn btn-outline-primary btn-lg m-2" @onclick="Try">Try it now</button>
-        <button class="btn btn-outline-success btn-lg m-2" @onclick="Register">Register</button>
+        <button class="btn btn-outline-primary btn-lg m-2" @onclick="TryItNow"><i class="bi bi-tools"></i>Try it now</button>
+        <button class="btn btn-outline-success btn-lg m-2" @onclick="Register"><i class="bi bi-person"></i>Register</button>
     </div>
 </div>
- 
- @code {
-    [Parameter]
-    public string UserId { get; set; } = "";
 
-    private async Task Try()
+@code {
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (UserId == "")
+        if (firstRender)
         {
-            try
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity != null && user.Identity.IsAuthenticated)
             {
-                var userId = await ProtectedLocalStore.GetAsync<string>("UserId");
-                if (userId.Success && userId.Value != null)
-                {
-                    UserId = userId.Value;
-                }
-                else
-                {
-                    UserId = Guid.NewGuid().ToString("N");
-                    await ProtectedLocalStore.SetAsync("UserId", UserId);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error ProtectedLocalStore: {ex.Message}");
+                var userName = authState.User.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
+                var url = $"/FileList/{userName}";
+                Navigation.NavigateTo(url);
             }
         }
+    }
 
-        var pinecone = new Pinecone() { Title = "Untitled", Content = "", GroupId = 0, ParentId = null, UserId = UserId!, IsSandbox = true };
-        try
+    private async Task TryItNow()
+    {
+        string userId;
+        var userIdResult = await ProtectedLocalStore.GetAsync<string>("UserId");
+        if (userIdResult.Success && userIdResult.Value != null)
         {
-            await DbContext.Pinecone.AddAsync(pinecone);
-            DbContext.SaveChanges();
-            pinecone.GroupId = pinecone.Id;
-            DbContext.SaveChanges();
+            userId = userIdResult.Value;
         }
-        catch (Exception ex)
+        else
         {
-            Console.Error.WriteLine($"Error DbContext: {ex.Message}");
+            userId = Guid.NewGuid().ToString("N");
+            await ProtectedLocalStore.SetAsync("UserId", userId);
         }
-
-        var url = $"/markdown-editor/{UserId}/{pinecone.Id}";
+        var service = new PineconeService(DbContext);
+        var url = await service.CreatePineconeAsync(userId);
         Navigation.NavigateTo(url);
     }
 

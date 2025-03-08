@@ -1,5 +1,6 @@
 ﻿@page "/markdown-editor/{userId}/{id:long}"
 
+@using Microsoft.AspNetCore.Authorization
 @using Markdig
 @using Microsoft.EntityFrameworkCore
 @using Pinetree.Components.Components
@@ -7,22 +8,38 @@
 @using Pinetree.Model
 @using System.Diagnostics;
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using System.Security.Claims
 @inject IJSRuntime JS
 @inject ApplicationDbContext DbContext
 @inject ProtectedLocalStorage ProtectedLocalStore
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @rendermode InteractiveServer
 @implements IDisposable
 
 <div class="editor-container">
+    @if (!IsAuthenticated)
+    {
+        <div class="row">
+            <div class="col">
+                <div class="alert alert-primary" role="alert">
+                    <i class="bi bi-info-circle-fill"></i>
+                    If you want to create multiple files, please <a href="Account/Register" class="alert-link">register</a>.
+                </div>
+            </div>
+        </div>
+    }
     <div class="row">
         <div class="col-2 border">
             <div class="pinetree-view">
-                <ul>
-                    <li @onclick="OnFileListClick">
-                        File List
-                    </li>
-                </ul>
+                @if (IsAuthenticated)
+                {
+                    <div class="list-group">
+                        <button type="button" class="list-group-item list-group-item-action" @onclick="OnFileListClick">
+                            <i class="bi bi-card-list" aria-hidden="true"></i> File List
+                        </button>
+                    </div>
+                }
                 <PineTreeView UserId="@(UserId)" PineTree="@(PineTree)" />
             </div>
         </div>
@@ -53,6 +70,7 @@
     private string Context { get; set; } = "";
     private string Title { get; set; } = "";
     private string MarkdownText { get; set; } = "";
+    private bool IsAuthenticated { get; set; }
     private CancellationTokenSource DebounceToken { get; set; } = new CancellationTokenSource();
     private List<Pinecone> Pinecones { get; set; } = new List<Pinecone>();
     private Pinecone? Current { get; set; }
@@ -69,21 +87,40 @@
         {
             try
             {
-                var userPinecones = DbContext.Pinecone.Where(x => x.UserId == UserId);
-                Current = await userPinecones.SingleOrDefaultAsync(x => x.Id == Id);
-                if (Current == null)
+                Current = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == Id);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"An error occurred while fetching data: {ex.Message}");
+                Navigation.NavigateTo("/");
+                return;
+            }
+            if (Current == null)
+            {
+                Navigation.NavigateTo("/");
+                return;
+            }
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            IsAuthenticated = user.Identity != null && user.Identity.IsAuthenticated;
+            if (IsAuthenticated)
+            {
+                var currentUserId = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
+                if (currentUserId == null || currentUserId != UserId)
                 {
-                    Console.Error.WriteLine($"No hit by Id");
-
-                    // TODO: Redirect to 404 page
                     Navigation.NavigateTo("/");
                     return;
                 }
+            }
+            try
+            {
+                var userPinecones = DbContext.Pinecone.Where(x => x.UserId == UserId);
                 Pinecones = await userPinecones.Where(x => x.GroupId == Current.GroupId).ToListAsync();
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"An error occurred while fetching data: {ex.Message}");
+                Navigation.NavigateTo("/");
                 return;
             }
 

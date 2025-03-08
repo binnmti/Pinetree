@@ -1,12 +1,15 @@
 ﻿@using System.Security.Claims
 @using Microsoft.EntityFrameworkCore
+@using Pinetree.Components.Services
 @using Pinetree.Model
 @using Pinetree.Data
 @using System.Diagnostics
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 
 @inject ApplicationDbContext DbContext
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ProtectedLocalStorage ProtectedLocalStore
 @implements IDisposable
 @rendermode InteractiveServer
 
@@ -21,39 +24,44 @@
                 <AuthorizeView>
                     <Authorized>
                         <li class="nav-item">
-                            <NavLink class="nav-link" href="Account/Manage">
-                                <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
-                            </NavLink>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" @onclick="CreateNew">
-                                <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Create New
+                            <button class="nav-link" @onclick="CreateFile">
+                                <i class="bi bi-file-earmark-plus" aria-hidden="true"></i> Create File
                             </button>
                         </li>
                         <li class="nav-item">
                             <button class="nav-link" @onclick="FileList">
-                                <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> File List
+                                <i class="bi bi-card-list" aria-hidden="true"></i> File List
                             </button>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="Account/Manage">
+                                <i class="bi bi-person-fill" aria-hidden="true"></i> @context.User.Identity?.Name
+                            </NavLink>
                         </li>
                         <li class="nav-item">
                             <form action="Account/Logout" method="post">
                                 <AntiforgeryToken />
                                 <input type="hidden" name="ReturnUrl" value="@currentUrl" />
                                 <button type="submit" class="nav-link">
-                                    <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                                    <i class="bi bi-arrow-bar-up" aria-hidden="true"></i> Logout
                                 </button>
                             </form>
                         </li>
                     </Authorized>
                     <NotAuthorized>
                         <li class="nav-item">
+                            <NavLink class="nav-link" @onclick="TryItNow" style="cursor:pointer">
+                                <i class="bi bi-tools"></i> Try It Now
+                            </NavLink>
+                        </li>
+                        <li class="nav-item">
                             <NavLink class="nav-link" href="Account/Register">
-                                <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
+                                <i class="bi bi-person" aria-hidden="true"></i> Register
                             </NavLink>
                         </li>
                         <li class="nav-item">
                             <NavLink class="nav-link" href="Account/Login">
-                                <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
+                                <i class="bi bi-person-badge" aria-hidden="true"></i> Login
                             </NavLink>
                         </li>
                     </NotAuthorized>
@@ -73,25 +81,13 @@
 @code {
     private string? currentUrl;
 
-    private async Task CreateNew()
+    private async Task CreateFile()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        var userId = authState.User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-        Debug.Assert(userId != null);
-        var pinecone = new Pinecone() { Title = "Untitled", Content = "", GroupId = 0, ParentId = null, UserId = userId, IsSandbox = true };
-        try
-        {
-            await DbContext.Pinecone.AddAsync(pinecone);
-            DbContext.SaveChanges();
-            pinecone.GroupId = pinecone.Id;
-            DbContext.SaveChanges();
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error DbContext: {ex.Message}");
-        }
-        var url = $"/markdown-editor/{userId}/{pinecone.Id}";
+        var userName = authState.User.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
+        Debug.Assert(userName != null);
+        var url = await new PineconeService(DbContext).CreatePineconeAsync(userName);
         NavigationManager.NavigateTo(url);
     }
 
@@ -99,12 +95,30 @@
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        var userId = authState.User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-        Debug.Assert(userId != null);
-        var url = $"/FileList/{userId}";
+        var userName = authState.User.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
+        Debug.Assert(userName != null);
+        var url = $"/FileList/{userName}";
         NavigationManager.NavigateTo(url);
     }
 
+    private async Task TryItNow()
+    {
+        string userId;
+        var userIdResult = await ProtectedLocalStore.GetAsync<string>("UserId");
+        if (userIdResult.Success && userIdResult.Value != null)
+        {
+            userId = userIdResult.Value;
+        }
+        else
+        {
+            userId = Guid.NewGuid().ToString("N");
+            await ProtectedLocalStore.SetAsync("UserId", userId);
+        }
+        var service = new PineconeService(DbContext);
+        var url = await service.CreatePineconeAsync(userId);
+        NavigationManager.NavigateTo(url);
+    }
+    
     protected override void OnInitialized()
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
