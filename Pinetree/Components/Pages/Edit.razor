@@ -41,7 +41,7 @@
                     </div>
                 }
                 <div class="list-group" style="overflow-x:auto">
-                    <PineTreeView UserId="@(UserId)" PineTree="@(PineTree)" Id="@(Id)" />
+                    <PineTreeView UserId="@(UserId)" PineTree="@(PineTree)" Id="@(Id)" OnChildEvent="SetCurrent" />
                 </div>
             </div>
         </div>
@@ -69,13 +69,12 @@
     public long Id { get; set; }
 
     private PineTree PineTree { get; set; } = new PineTree(0, "", "", 0, 0);
+    private PineTree Current { get; set; } = new PineTree(0, "", "", 0, 0);
     private string Context { get; set; } = "";
     private string Title { get; set; } = "";
     private string MarkdownText { get; set; } = "";
     private bool IsAuthenticated { get; set; }
     private CancellationTokenSource DebounceToken { get; set; } = new CancellationTokenSource();
-    private List<Pinecone> Pinecones { get; set; } = new List<Pinecone>();
-    private Pinecone? Current { get; set; }
 
     public void Dispose()
     {
@@ -87,44 +86,37 @@
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
+        // Since it is related to screen drawing, set it in OnInitializedAsync.
         IsAuthenticated = user.Identity != null && user.Identity.IsAuthenticated;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (IsAuthenticated)
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;            var currentUserId = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
+            if (currentUserId == null || currentUserId != UserId)
+            {
+                Navigation.NavigateTo("/");
+                return;
+            }
+        }
+
         if (firstRender)
         {
             try
             {
-                Current = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == Id);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"An error occurred while fetching data: {ex.Message}");
-                Navigation.NavigateTo("/");
-                return;
-            }
-            if (Current == null)
-            {
-                Navigation.NavigateTo("/");
-                return;
-            }
-            if (IsAuthenticated)
-            {
-                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-                var user = authState.User;
-
-                var currentUserId = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
-                if (currentUserId == null || currentUserId != UserId)
+                var hit = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == Id);
+                if (hit == null)
                 {
                     Navigation.NavigateTo("/");
                     return;
                 }
-            }
-            try
-            {
                 var userPinecones = DbContext.Pinecone.Where(x => x.UserId == UserId);
-                Pinecones = await userPinecones.Where(x => x.GroupId == Current.GroupId).ToListAsync();
+                var pinecones = await userPinecones.Where(x => x.GroupId == hit.GroupId).ToListAsync();
+                PineTree = PineconeConvert.ToPineTree(pinecones);
+                SetCurrent(Id);
             }
             catch (Exception ex)
             {
@@ -132,11 +124,6 @@
                 Navigation.NavigateTo("/");
                 return;
             }
-
-            Title = Current.Title;
-            Context = Current.Content;
-            MarkdownText = Markdown.ToHtml(Context);
-            PineTree = PineconeConvert.ToPineTree(Pinecones);
             StateHasChanged();
         }
     }
@@ -144,8 +131,7 @@
     private async Task OnInputTitleChange(ChangeEventArgs e)
     {
         Title = e.Value?.ToString() ?? "";
-        PineTree.Update(Id, Title, Context);
-
+        Current.Title = Title;
         await DebounceSaveAsync();
         StateHasChanged();
     }
@@ -154,8 +140,7 @@
     {
         Context = e.Value?.ToString() ?? "";
         MarkdownText = Markdown.ToHtml(Context);
-        PineTree.Update(Id, Title, Context);
-
+        Current.Content = Context;
         await DebounceSaveAsync();
         StateHasChanged();
     }
@@ -180,12 +165,11 @@
             return;
         }
         if (token.IsCancellationRequested) return;
-
-        Debug.Assert(Current != null);
-        Current.Title = Title;
-        Current.Content = Context;
         try
         {
+            var current = await DbContext.Pinecone.SingleAsync(x => x.Id == Id);
+            current.Title = Title;
+            current.Content = Context;
             await DbContext.SaveChangesAsync();
         }
         catch (Exception ex)
@@ -193,6 +177,16 @@
             Console.Error.WriteLine($"An error occurred while saving changes: {ex.Message}");
             return;
         }
+        StateHasChanged();
+    }
+
+    private void SetCurrent(long id)
+    {
+        Id = id;
+        Current = PineTree.SetCurrent(id);
+        Title = Current.Title;
+        Context = Current.Content;
+        MarkdownText = Markdown.ToHtml(Context);
         StateHasChanged();
     }
 }

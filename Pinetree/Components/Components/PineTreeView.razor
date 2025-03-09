@@ -12,8 +12,12 @@
     <ul class="list-unstyled" style="padding-left: 0.75rem;">
         <li style="">
             <div class="d-flex justify-content-between list-group-item-action">
+                @if (PineTree.Children.Count != 0)
+                {
+                    <i class="bi bi-caret-right"></i>
+                }
                 <i class="bi bi-file-earmark-text"></i>
-                @if (PineTree.Id == Id)
+                @if (PineTree.IsCurrent)
                 {
                     <div class="title px-1 flex-grow-1 border" @onclick="() => ActivePineTree(PineTree.Id)" style="font-weight: bold; background-color:aliceblue">@PineTree.Title</div>
                 }
@@ -26,7 +30,7 @@
             </div>
             @foreach (var tree in PineTree.Children)
             {
-                <PineTreeView UserId="@(UserId)" PineTree="@(tree)" id="@(Id)" />
+                <PineTreeView UserId="@(UserId)" PineTree="@(tree)" id="@(Id)" OnChildEvent="OnChildEvent" />
             }
         </li>
     </ul>
@@ -42,12 +46,14 @@
     [Parameter]
     public required PineTree PineTree { get; set; }
 
+    [Parameter]
+    public EventCallback<long> OnChildEvent { get; set; }
 
-    private void ActivePineTree(long id)
+    private async Task ActivePineTree(long id)
     {
-        var url = $"/{UserId}/Edit/{id}";
-        Navigation.NavigateTo(url);
-        StateHasChanged();
+        PineTree.IsExpanded = !PineTree.IsExpanded;
+
+        await OnChildEventCallback();
     }
 
     private async Task AddChild()
@@ -92,5 +98,13 @@
         var url = $"/{UserId}/Edit/{PineTree.ParentId}";
         Navigation.NavigateTo(url);
         StateHasChanged();
+    }
+
+    private async Task OnChildEventCallback()
+    {
+        if (OnChildEvent.HasDelegate)
+        {
+            await OnChildEvent.InvokeAsync(PineTree.Id);
+        }
     }
 }

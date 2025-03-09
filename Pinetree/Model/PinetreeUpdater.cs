@@ -2,19 +2,23 @@
 
 public static class PinetreeUpdater
 {
-
-    public static PineTree Update(this PineTree tree, long id, string title, string content)
+    public static PineTree SetCurrent(this PineTree pineTree, long id)
     {
-        if (tree.Id == id)
+        PineTree? result = null;
+        pineTree.IsCurrent = pineTree.Id == id;
+        if (pineTree.IsCurrent)
         {
-            tree.Title = title;
-            tree.Content = content;
-            return tree;
+            result = pineTree;
         }
-        foreach (var child in tree.Children)
+        foreach (var child in pineTree.Children)
         {
-            Update(child, id, title, content);
+            var childResult = child.SetCurrent(id);
+            if (childResult != null)
+            {
+                result = childResult;
+            }
         }
-        return tree;
+        // The final return value will not be null, so do not use PineTree?.
+        return result!;
     }
 }
