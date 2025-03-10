@@ -16,7 +16,7 @@ public static class PineconeConvert
 
     private static void Create(this PineTree pinetree, PineTree parent, ICollection<Pinecone> pinecones)
     {
-        foreach (var pinecone in pinecones.Where(p => p.ParentId != null))
+        foreach (var pinecone in pinecones.Where(p => p.ParentId == parent.Id))
         {
             var current = pinecone.ToPineTree(parent);
             pinetree.Children.Add(current);
