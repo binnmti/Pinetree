@@ -72,25 +72,18 @@
 
     private async Task ActivePineTree()
     {
-        await OnChildEventCallback();
+        await OnChildEvent.InvokeAsync(PineTree.Id);
+
+        StateHasChanged();
     }
 
     private async Task AddChild()
     {
-        var pinecone = new Pinecone() { Title = "Untitled", Content = "", GroupId = PineTree.GroupId, ParentId = PineTree.Id, UserId = UserId!, IsSandbox = false };
-        try
-        {
-            await DbContext.Pinecone.AddAsync(pinecone);
-            await DbContext.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error DbContext: {ex.Message}");
-        }
+        var pinecone = await DbContext.AddChildAsync(PineTree.GroupId, PineTree.Id, UserId);
+
         // If you don't save it, the ID won't be decided.
         PineTree.IsExpanded = true;
         PineTree.Children.Add(pinecone.ToPineTree(PineTree));
-
         StateHasChanged();
     }
 
@@ -105,35 +98,11 @@
             var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this item?");
             if (confirmed)
             {
-                await DeleteChild();
+                await DbContext.DeleteIncludeChildAsync(PineTree.Id);
+                var id = PineTree.DeleteIncludeChild();
+                await OnChildEvent.InvokeAsync(id);
+                StateHasChanged();
             }
         }
-    }
-
-    private async Task DeleteChild()
-    {
-        var pinecone = await DbContext.Pinecone.FindAsync(PineTree.Id);
-        if (pinecone == null) return;
-
-        await PineconeService.DeleteAsync(DbContext, pinecone);
-        DeleteChildrenRecursively(PineTree);
-        Debug.Assert(PineTree.Parent != null);
-        PineTree.Parent?.Children.Remove(PineTree);
-        await OnChildEvent.InvokeAsync(PineTree.Parent.Id);
-        StateHasChanged();
-    }
-
-    private void DeleteChildrenRecursively(PineTree tree)
-    {
-        foreach (var child in tree.Children)
-        {
-            DeleteChildrenRecursively(child);
-        }
-        tree.Children.Clear();
-    }
-
-    private async Task OnChildEventCallback()
-    {
-        await OnChildEvent.InvokeAsync(PineTree.Id);
     }
 }

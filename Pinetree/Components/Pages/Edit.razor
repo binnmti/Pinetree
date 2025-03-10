@@ -4,6 +4,7 @@
 @using Markdig
 @using Microsoft.EntityFrameworkCore
 @using Pinetree.Components.Components
+@using Pinetree.Components.Services
 @using Pinetree.Data
 @using Pinetree.Model
 @using System.Diagnostics;
@@ -95,7 +96,8 @@
         if (IsAuthenticated)
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;            var currentUserId = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
+            var user = authState.User;
+            var currentUserId = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
             if (currentUserId == null || currentUserId != UserId)
             {
                 Navigation.NavigateTo("/");
@@ -107,15 +109,13 @@
         {
             try
             {
-                var hit = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == Id);
+                var hit = await DbContext.SingleIncludeChildAsync(Id);
                 if (hit == null)
                 {
                     Navigation.NavigateTo("/");
                     return;
                 }
-                var userPinecones = DbContext.Pinecone.Where(x => x.UserId == UserId);
-                var pinecones = await userPinecones.Where(x => x.GroupId == hit.GroupId).ToListAsync();
-                PineTree = PineconeConvert.ToPineTree(pinecones);
+                PineTree = hit.ToPineTreeIncludeChild();
                 SetCurrent(Id);
             }
             catch (Exception ex)
@@ -167,10 +167,7 @@
         if (token.IsCancellationRequested) return;
         try
         {
-            var current = await DbContext.Pinecone.SingleAsync(x => x.Id == Id);
-            current.Title = Title;
-            current.Content = Context;
-            await DbContext.SaveChangesAsync();
+            await DbContext.UpdateAsync(Id, Title, Context);
         }
         catch (Exception ex)
         {
@@ -183,7 +180,7 @@
     private void SetCurrent(long id)
     {
         Id = id;
-        Current = PineTree.SetCurrent(id);
+        Current = PineTree.SetCurrentIncludeChild(id);
         Title = Current.Title;
         Context = Current.Content;
         MarkdownText = Markdown.ToHtml(Context);

@@ -1,5 +1,5 @@
 # TODO
-
+- userIdとuserNameを統一
 
 #
 - DB の無駄は消す

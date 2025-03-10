@@ -6,11 +6,8 @@ public class PineTree(long id, string title, string content, PineTree? parent, l
     public string Title { get; set; } = title;
     public string Content { get; set; } = content;
     public PineTree? Parent { get; } = parent;
-
-    public long GroupId { get; set; } = groupId;
-
+    public long GroupId { get; } = groupId;
     public bool IsCurrent { get; set; }
     public bool IsExpanded { get; set; }
-    public string Url { get; } = "";
     public List<PineTree> Children { get; } = [];
 };

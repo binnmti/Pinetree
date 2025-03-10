@@ -87,7 +87,8 @@
         var user = authState.User;
         var userName = authState.User.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
         Debug.Assert(userName != null);
-        var url = await PineconeService.CreateAsync(DbContext, userName);
+        var pinecone = await DbContext.AddTopAsync(userName);
+        var url = $"/{userName}/Edit/{pinecone.Id}";
         NavigationManager.NavigateTo(url);
     }
 
@@ -114,7 +115,8 @@
             userId = Guid.NewGuid().ToString("N");
             await ProtectedLocalStore.SetAsync("UserId", userId);
         }
-        var url = await PineconeService.CreateAsync(DbContext, userId);
+        var pinecone = await DbContext.AddTopAsync(userId);
+        var url = $"/{userId}/Edit/{pinecone.Id}";
         NavigationManager.NavigateTo(url);
     }
     

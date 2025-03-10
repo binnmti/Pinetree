@@ -95,6 +95,7 @@
     private async Task LoadPage(int pageNumber)
     {
         CurrentPage = pageNumber;
+        //TODO: PineconeService
         var query = DbContext.Pinecone.Where(x => x.UserId == UserId && x.ParentId == null);
         TotalPages = (int)Math.Ceiling(await query.CountAsync() / (double)PageSize);
         Pinecones = await query.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToListAsync();
@@ -103,7 +104,8 @@
 
     private async Task CreateFile()
     {
-        var url = await PineconeService.CreateAsync(DbContext, UserId);
+        var pinecone = await DbContext.AddTopAsync(UserId);
+        var url = $"/{UserId}/Edit/{pinecone.Id}";
         Navigation.NavigateTo(url);
     }
 
@@ -118,17 +120,9 @@
         var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this item?");
         if (confirmed)
         {
-            await DeleteAsync(id);
+            var pinecone = await DbContext.DeleteIncludeChildAsync(id);
+            Pinecones.Remove(pinecone);
+            StateHasChanged();
         }
-    }
-
-    private async Task DeleteAsync(long id)
-    {
-        var pinecone = await DbContext.Pinecone.FindAsync(id);
-        if (pinecone == null) return;
-
-        await PineconeService.DeleteAsync(DbContext, pinecone);
-        Pinecones.Remove(pinecone);
-        StateHasChanged();
     }
 }

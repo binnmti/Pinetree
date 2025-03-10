@@ -1,29 +1,24 @@
-﻿using System.Diagnostics;
-
-namespace Pinetree.Model;
+﻿namespace Pinetree.Model;
 
 public static class PineconeConvert
 {
-    public static PineTree ToPineTree(List<Pinecone> pinecones)
-    {
-        var pinecone = pinecones.SingleOrDefault(p => p.ParentId == null);
-        Debug.Assert(pinecone != null);
+    public static PineTree ToPineTree(this Pinecone pinecone, PineTree? parent)
+        => new(pinecone.Id, pinecone.Title, pinecone.Content, parent, pinecone.GroupId);
 
+    public static PineTree ToPineTreeIncludeChild(this Pinecone pinecone)
+    {
         var pinetree = pinecone.ToPineTree(null);
-        pinetree.Create(pinetree, pinecones);
+        pinetree.CreateChild(pinetree, pinecone.Children);
         return pinetree;
     }
 
-    private static void Create(this PineTree pinetree, PineTree parent, ICollection<Pinecone> pinecones)
+    private static void CreateChild(this PineTree pinetree, PineTree parent, ICollection<Pinecone> pinecones)
     {
-        foreach (var pinecone in pinecones.Where(p => p.ParentId == parent.Id))
+        foreach (var pinecone in pinecones)
         {
             var current = pinecone.ToPineTree(parent);
             pinetree.Children.Add(current);
-            current.Create(current, pinecone.Children);
+            current.CreateChild(current, pinecone.Children);
         }
     }
-
-    public static PineTree ToPineTree(this Pinecone pinecone, PineTree? parent)
-        => new(pinecone.Id, pinecone.Title, pinecone.Content, parent, pinecone.GroupId);
 }
