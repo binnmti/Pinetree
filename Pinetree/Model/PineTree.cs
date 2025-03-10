@@ -1,11 +1,12 @@
 ﻿namespace Pinetree.Model;
 
-public class PineTree(long id, string title, string content, long parentId, long groupId)
+public class PineTree(long id, string title, string content, PineTree? parent, long groupId)
 {
     public long Id { get; } = id;
     public string Title { get; set; } = title;
     public string Content { get; set; } = content;
-    public long ParentId { get; set; } = parentId;
+    public PineTree? Parent { get; } = parent;
+    //public long ParentId { get; set; } = parentId;
     public long GroupId { get; set; } = groupId;
 
     public bool IsCurrent { get; set; }

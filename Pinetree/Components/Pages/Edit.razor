@@ -68,8 +68,8 @@
     [Parameter]
     public long Id { get; set; }
 
-    private PineTree PineTree { get; set; } = new PineTree(0, "", "", 0, 0);
-    private PineTree Current { get; set; } = new PineTree(0, "", "", 0, 0);
+    private PineTree PineTree { get; set; } = new PineTree(0, "", "", null, 0);
+    private PineTree Current { get; set; } = new PineTree(0, "", "", null, 0);
     private string Context { get; set; } = "";
     private string Title { get; set; } = "";
     private string MarkdownText { get; set; } = "";

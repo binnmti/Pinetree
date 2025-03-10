@@ -2,6 +2,7 @@
 @using Pinetree.Components.Services
 @using Pinetree.Model
 @using Pinetree.Data
+@using System.Diagnostics
 
 @inject NavigationManager Navigation
 @inject ApplicationDbContext DbContext
@@ -68,14 +69,15 @@
         {
             Console.Error.WriteLine($"Error DbContext: {ex.Message}");
         }
-        var url = $"/{UserId}/Edit/{pinecone.Id}";
-        Navigation.NavigateTo(url);
+        // If you don't save it, the ID won't be decided.
+        PineTree.Children.Add(pinecone.ToPineTree(PineTree));
+
         StateHasChanged();
     }
 
     private async Task ConfirmDelete()
     {
-        if (PineTree.ParentId == -1)
+        if (PineTree.Parent == null)
         {
             await JS.InvokeVoidAsync("alert", "You can't delete the first");
         }
@@ -95,16 +97,24 @@
         if (pinecone == null) return;
 
         await PineconeService.DeleteAsync(DbContext, pinecone);
-        var url = $"/{UserId}/Edit/{PineTree.ParentId}";
-        Navigation.NavigateTo(url);
+        DeleteChildrenRecursively(PineTree);
+        Debug.Assert(PineTree.Parent != null);
+        PineTree.Parent?.Children.Remove(PineTree);
+        await OnChildEvent.InvokeAsync(PineTree.Parent.Id);
         StateHasChanged();
+    }
+
+    private void DeleteChildrenRecursively(PineTree tree)
+    {
+        foreach (var child in tree.Children)
+        {
+            DeleteChildrenRecursively(child);
+        }
+        tree.Children.Clear();
     }
 
     private async Task OnChildEventCallback()
     {
-        if (OnChildEvent.HasDelegate)
-        {
-            await OnChildEvent.InvokeAsync(PineTree.Id);
-        }
+        await OnChildEvent.InvokeAsync(PineTree.Id);
     }
 }
