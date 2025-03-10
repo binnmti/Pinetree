@@ -6,7 +6,7 @@ public class PineTree(long id, string title, string content, PineTree? parent, l
     public string Title { get; set; } = title;
     public string Content { get; set; } = content;
     public PineTree? Parent { get; } = parent;
-    //public long ParentId { get; set; } = parentId;
+
     public long GroupId { get; set; } = groupId;
 
     public bool IsCurrent { get; set; }

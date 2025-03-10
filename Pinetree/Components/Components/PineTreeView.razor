@@ -15,23 +15,37 @@
             <div class="d-flex justify-content-between list-group-item-action">
                 @if (PineTree.Children.Count != 0)
                 {
-                    <i class="bi bi-caret-right"></i>
+                    if (PineTree.IsExpanded)
+                    {
+                        <i class="bi bi-caret-down" @onclick="OnClickExpanded"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-caret-right" @onclick="OnClickExpanded"></i>
+                    }
+                }
+                else
+                {
+                    <span style="display:inline-block; width:1em;"></span>
                 }
                 <i class="bi bi-file-earmark-text"></i>
                 @if (PineTree.IsCurrent)
                 {
-                    <div class="title px-1 flex-grow-1 border" @onclick="() => ActivePineTree(PineTree.Id)" style="font-weight: bold; background-color:aliceblue">@PineTree.Title</div>
+                    <div class="title px-1 flex-grow-1 border" @onclick="ActivePineTree" style="font-weight: bold; background-color:aliceblue">@PineTree.Title</div>
                 }
                 else
                 {
-                    <div class="title px-1 flex-grow-1" @onclick="() => ActivePineTree(PineTree.Id)">@PineTree.Title</div>
+                    <div class="title px-1 flex-grow-1" @onclick="ActivePineTree">@PineTree.Title</div>
                 }
                 <i @onclick="AddChild" class="bi bi-file-earmark-plus border px-1" style="cursor:pointer"></i>
                 <i @onclick="ConfirmDelete" class="bi bi-trash2 border px-1" style="cursor:pointer"></i>
             </div>
-            @foreach (var tree in PineTree.Children)
+            @if (PineTree.IsExpanded)
             {
-                <PineTreeView UserId="@(UserId)" PineTree="@(tree)" id="@(Id)" OnChildEvent="OnChildEvent" />
+                @foreach (var tree in PineTree.Children)
+                {
+                    <PineTreeView UserId="@(UserId)" PineTree="@(tree)" id="@(Id)" OnChildEvent="OnChildEvent" />
+                }
             }
         </li>
     </ul>
@@ -50,10 +64,14 @@
     [Parameter]
     public EventCallback<long> OnChildEvent { get; set; }
 
-    private async Task ActivePineTree(long id)
+    private void OnClickExpanded()
     {
         PineTree.IsExpanded = !PineTree.IsExpanded;
+        StateHasChanged();
+    }
 
+    private async Task ActivePineTree()
+    {
         await OnChildEventCallback();
     }
 
@@ -70,6 +88,7 @@
             Console.Error.WriteLine($"Error DbContext: {ex.Message}");
         }
         // If you don't save it, the ID won't be decided.
+        PineTree.IsExpanded = true;
         PineTree.Children.Add(pinecone.ToPineTree(PineTree));
 
         StateHasChanged();
