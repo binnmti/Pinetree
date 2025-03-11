@@ -71,7 +71,7 @@ public static class ApplicationDbContextService
         Debug.Assert(pinecone != null);
         pinecone.Delete = DateTime.UtcNow;
         pinecone.IsDelete = true;
-        await dbContext.DeleteChildren(pinecone);
+        dbContext.DeleteChildren(pinecone);
         pinecone.Parent?.Children.Remove(pinecone);
         await dbContext.SaveChangesAsync();
         return pinecone;
@@ -80,31 +80,29 @@ public static class ApplicationDbContextService
     public static async Task<Pinecone> SingleIncludeChildAsync(this ApplicationDbContext dbContext, long id)
     {
         var parent = await dbContext.Pinecone.SingleAsync(x => x.Id == id);
-        return await dbContext.LoadChildrenRecursively(parent);
+        return await dbContext.LoadChildrenRecursivelyAsync(parent);
     }
 
-    public static async Task<Pinecone> GetUserTop(this ApplicationDbContext dbContext, string userId)
-    {
-        var hit = await dbContext.Pinecone.Where(x => x.UserId == userId).Where(x => x.IsDelete == false).Where(x => x.ParentId == null).SingleOrDefaultAsync();
-        hit ??= await dbContext.AddTopAsync(userId);
-        return hit;
-    }
+    public static async Task<Pinecone?> GetUserTopAsync(this ApplicationDbContext dbContext, string userId)
+        => await dbContext.Pinecone.Where(x => x.UserId == userId)
+            .Where(x => x.ParentId == null)
+            .SingleOrDefaultAsync();
 
-    private static async Task<Pinecone> LoadChildrenRecursively(this ApplicationDbContext dbContext, Pinecone parent)
+    private static async Task<Pinecone> LoadChildrenRecursivelyAsync(this ApplicationDbContext dbContext, Pinecone parent)
     {
         await dbContext.Entry(parent).Collection(p => p.Children).Query().Where(x => x.IsDelete == false).LoadAsync();
         foreach (var child in parent.Children.Where(x => x.IsDelete == false))
         {
-            await dbContext.LoadChildrenRecursively(child);
+            await dbContext.LoadChildrenRecursivelyAsync(child);
         }
         return parent;
     }
 
-    private static async Task DeleteChildren(this ApplicationDbContext dbContext, Pinecone parent)
+    private static void DeleteChildren(this ApplicationDbContext dbContext, Pinecone parent)
     {
         foreach (var child in parent.Children)
         {
-            await dbContext.DeleteChildren(child);
+            dbContext.DeleteChildren(child);
             child.Delete = DateTime.UtcNow;
             child.IsDelete = true;
         }

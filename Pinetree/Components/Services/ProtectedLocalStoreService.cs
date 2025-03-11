@@ -13,7 +13,7 @@ public static class ProtectedLocalStoreService
         if (userIdResult.Success && userIdResult.Value != null)
         {
             userId = userIdResult.Value;
-            var pinecode = await dbContext.GetUserTop(userId);
+            var pinecode = await dbContext.GetUserTopAsync(userId) ?? await dbContext.AddTopAsync(userId);
             id = pinecode.Id;
         }
         else
