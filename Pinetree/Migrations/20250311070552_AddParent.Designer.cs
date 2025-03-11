@@ -12,8 +12,8 @@ using Pinetree.Data;
 namespace Pinetree.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250205055656_AddPinecone")]
-    partial class AddPinecone
+    [Migration("20250311070552_AddParent")]
+    partial class AddParent
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

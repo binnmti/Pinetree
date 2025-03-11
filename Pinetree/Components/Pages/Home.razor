@@ -42,19 +42,7 @@
 
     private async Task TryItNow()
     {
-        string userId;
-        var userIdResult = await ProtectedLocalStore.GetAsync<string>("UserId");
-        if (userIdResult.Success && userIdResult.Value != null)
-        {
-            userId = userIdResult.Value;
-        }
-        else
-        {
-            userId = Guid.NewGuid().ToString("N");
-            await ProtectedLocalStore.SetAsync("UserId", userId);
-        }
-        var pinecone = await DbContext.AddTopAsync(userId);
-        var url = $"/{userId}/Edit/{pinecone.Id}";
+        var url = await ProtectedLocalStore.GetOrAddTopAsync(DbContext);
         Navigation.NavigateTo(url);
     }
 

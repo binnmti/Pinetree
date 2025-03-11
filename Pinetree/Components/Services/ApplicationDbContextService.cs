@@ -25,7 +25,10 @@ public static class ApplicationDbContextService
             GroupId = 0,
             ParentId = null,
             UserId = userId,
-            IsSandbox = true
+            IsDelete = false,
+            Create = DateTime.UtcNow,
+            Update = DateTime.UtcNow,
+            Delete = DateTime.UtcNow,
         };
         await dbContext.Pinecone.AddAsync(pinecone);
         await dbContext.SaveChangesAsync();
@@ -43,7 +46,10 @@ public static class ApplicationDbContextService
             GroupId = groupId,
             ParentId = parentId,
             UserId = userId,
-            IsSandbox = false
+            IsDelete = false,
+            Create = DateTime.UtcNow,
+            Update = DateTime.UtcNow,
+            Delete = DateTime.UtcNow,
         };
         await dbContext.Pinecone.AddAsync(pinecone);
         await dbContext.SaveChangesAsync();
@@ -55,6 +61,7 @@ public static class ApplicationDbContextService
         var current = await dbContext.Pinecone.SingleAsync(x => x.Id == id);
         current.Title = title;
         current.Content = content;
+        current.Update = DateTime.UtcNow;
         await dbContext.SaveChangesAsync();
     }
 
@@ -62,16 +69,35 @@ public static class ApplicationDbContextService
     {
         var pinecone = await dbContext.SingleIncludeChildAsync(id);
         Debug.Assert(pinecone != null);
+        pinecone.Delete = DateTime.UtcNow;
+        pinecone.IsDelete = true;
         await dbContext.DeleteChildren(pinecone);
-        dbContext.Pinecone.RemoveRange(pinecone);
+        pinecone.Parent?.Children.Remove(pinecone);
         await dbContext.SaveChangesAsync();
         return pinecone;
     }
 
     public static async Task<Pinecone> SingleIncludeChildAsync(this ApplicationDbContext dbContext, long id)
     {
-        // TODO:Performance check by Where is still
-        return await dbContext.Pinecone.Where(x => x.Id == id).Include(p => p.Children).SingleAsync(x => x.Id == id);
+        var parent = await dbContext.Pinecone.SingleAsync(x => x.Id == id);
+        return await dbContext.LoadChildrenRecursively(parent);
+    }
+
+    public static async Task<Pinecone> GetUserTop(this ApplicationDbContext dbContext, string userId)
+    {
+        var hit = await dbContext.Pinecone.Where(x => x.UserId == userId).Where(x => x.IsDelete == false).Where(x => x.ParentId == null).SingleOrDefaultAsync();
+        hit ??= await dbContext.AddTopAsync(userId);
+        return hit;
+    }
+
+    private static async Task<Pinecone> LoadChildrenRecursively(this ApplicationDbContext dbContext, Pinecone parent)
+    {
+        await dbContext.Entry(parent).Collection(p => p.Children).Query().Where(x => x.IsDelete == false).LoadAsync();
+        foreach (var child in parent.Children.Where(x => x.IsDelete == false))
+        {
+            await dbContext.LoadChildrenRecursively(child);
+        }
+        return parent;
     }
 
     private static async Task DeleteChildren(this ApplicationDbContext dbContext, Pinecone parent)
@@ -79,7 +105,9 @@ public static class ApplicationDbContextService
         foreach (var child in parent.Children)
         {
             await dbContext.DeleteChildren(child);
-            dbContext.Pinecone.Remove(child);
+            child.Delete = DateTime.UtcNow;
+            child.IsDelete = true;
         }
+        parent.Children.Clear();
     }
 }
