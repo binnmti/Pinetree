@@ -5,7 +5,7 @@ namespace Pinetree.Components.Services;
 
 public static class ProtectedLocalStoreService
 {
-    public static async Task<string> GetOrAddTopAsync(this ProtectedLocalStorage storage, ApplicationDbContext dbContext)
+    public static async Task<string> GetOrCreatePineconeAsync(this ProtectedLocalStorage storage, ApplicationDbContext dbContext)
     {
         string userId;
         long id;

@@ -104,7 +104,7 @@
 
     private async Task TryItNow()
     {
-        var url = await ProtectedLocalStore.GetOrAddTopAsync(DbContext);
+        var url = await ProtectedLocalStore.GetOrCreatePineconeAsync(DbContext);
         NavigationManager.NavigateTo(url);
     }
     
