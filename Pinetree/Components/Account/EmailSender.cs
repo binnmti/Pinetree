@@ -8,11 +8,19 @@ namespace Pinetree.Components.Account;
 public class EmailSender : IEmailSender<ApplicationUser>
 {
     private readonly EmailClient _emailClient;
+    private readonly ILogger<EmailSender> _logger;
+    private readonly string _senderEmail;
 
-    public EmailSender(IConfiguration configuration)
+    public EmailSender(IConfiguration configuration, ILogger<EmailSender> logger)
     {
         var connectionString = configuration["AzureCommunicationServicesConnectionString"];
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new ArgumentException("Azure Communication Services connection string is not configured.");
+        }
         _emailClient = new EmailClient(connectionString);
+        _logger = logger;
+        _senderEmail = configuration["SenderEmail"] ?? "DoNotReply@yourdomain.com";
     }
 
     public async Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
@@ -44,15 +52,15 @@ public class EmailSender : IEmailSender<ApplicationUser>
 
     public async Task SendAsync(string email, EmailContent content)
     {
-        var emailMessage = new EmailMessage("DoNotReply@be0f5132-0b8e-4f6c-945a-a88cb022fcbc.azurecomm.net", email, content);
+        var emailMessage = new EmailMessage(_senderEmail, email, content);
         try
         {
             var response = await _emailClient.SendAsync(WaitUntil.Completed, emailMessage);
-            Console.WriteLine($"Email sent successfully. MessageId: {response}");
+            _logger.LogInformation("Email sent successfully. MessageId: {MessageId}", response);
         }
         catch (RequestFailedException ex)
         {
-            Console.WriteLine($"Failed to send email: {ex.Message}");
+            _logger.LogError(ex, "Failed to send email to {EmailAddress}", email);
         }
     }
 }

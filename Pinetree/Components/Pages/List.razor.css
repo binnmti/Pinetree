@@ -5,7 +5,7 @@
 }
 
 .card-text {
-    height: 3em;
+    height: 9em;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;

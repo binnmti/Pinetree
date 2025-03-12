@@ -86,6 +86,7 @@ public static class ApplicationDbContextService
     public static async Task<Pinecone?> GetUserTopAsync(this ApplicationDbContext dbContext, string userId)
         => await dbContext.Pinecone.Where(x => x.UserId == userId)
             .Where(x => x.ParentId == null)
+            .Where(x => x.IsDelete == false)
             .SingleOrDefaultAsync();
 
     private static async Task<Pinecone> LoadChildrenRecursivelyAsync(this ApplicationDbContext dbContext, Pinecone parent)

@@ -95,7 +95,6 @@
     private async Task LoadPage(int pageNumber)
     {
         CurrentPage = pageNumber;
-        //TODO: PineconeService
         var query = DbContext.Pinecone.Where(x => x.UserId == UserId && x.ParentId == null);
         TotalPages = (int)Math.Ceiling(await query.CountAsync() / (double)PageSize);
         Pinecones = await query.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToListAsync();

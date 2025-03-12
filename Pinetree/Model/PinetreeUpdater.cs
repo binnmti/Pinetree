@@ -18,7 +18,9 @@ public static class PinetreeUpdater
                 result = childResult;
             }
         }
-        // The final return value will not be null, so do not use PineTree?.
+        // This method assumes the provided ID always exists somewhere in the tree.
+        // While recursive calls may return null, the top-level call is guaranteed 
+        // to find a match, so we use the null-forgiving operator.
         return result!;
     }
 

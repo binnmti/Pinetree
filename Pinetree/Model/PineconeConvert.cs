@@ -8,17 +8,17 @@ public static class PineconeConvert
     public static PineTree ToPineTreeIncludeChild(this Pinecone pinecone)
     {
         var pinetree = pinecone.ToPineTree(null);
-        pinetree.CreateChild(pinetree, pinecone.Children);
+        CreateChild(pinetree, pinetree, pinecone.Children);
         return pinetree;
     }
 
-    private static void CreateChild(this PineTree pinetree, PineTree parent, ICollection<Pinecone> pinecones)
+    private static void CreateChild(PineTree targetTree, PineTree parent, ICollection<Pinecone> pinecones)
     {
         foreach (var pinecone in pinecones)
         {
             var current = pinecone.ToPineTree(parent);
-            pinetree.Children.Add(current);
-            current.CreateChild(current, pinecone.Children);
+            targetTree.Children.Add(current);
+            CreateChild(current, current, pinecone.Children);
         }
     }
 }
