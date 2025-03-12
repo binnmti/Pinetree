@@ -84,10 +84,18 @@ public static class ApplicationDbContextService
     }
 
     public static async Task<Pinecone?> GetUserTopAsync(this ApplicationDbContext dbContext, string userId)
-        => await dbContext.Pinecone.Where(x => x.UserId == userId)
+        => await dbContext.GetUserTopList(userId).SingleOrDefaultAsync();
+
+    public static async Task<List<Pinecone>> GetUserTopListAsync(this ApplicationDbContext dbContext, string userId, int pageNumber, int pageSize)
+        => await dbContext.GetUserTopList(userId).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+
+    public static async Task<int> GetUserTopCountAsync(this ApplicationDbContext dbContext, string userId)
+        => await dbContext.GetUserTopList(userId).CountAsync();
+
+    private static IQueryable<Pinecone> GetUserTopList(this ApplicationDbContext dbContext, string userId)
+        => dbContext.Pinecone.Where(x => x.UserId == userId)
             .Where(x => x.ParentId == null)
-            .Where(x => x.IsDelete == false)
-            .SingleOrDefaultAsync();
+            .Where(x => x.IsDelete == false);
 
     private static async Task<Pinecone> LoadChildrenRecursivelyAsync(this ApplicationDbContext dbContext, Pinecone parent)
     {

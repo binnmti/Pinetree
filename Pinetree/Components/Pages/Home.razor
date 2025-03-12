@@ -6,7 +6,7 @@
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using System.Security.Claims
 
-@inject NavigationManager Navigation
+@inject NavigationManager NavigationManager
 @inject ApplicationDbContext DbContext
 @inject ProtectedLocalStorage ProtectedLocalStore
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -25,29 +25,43 @@
 
 @code {
 
+#if !DEBUG
+    protected override async Task OnInitializedAsync()
+    {
+        await NavigateUserListIfAuthUser();
+    }
+#else
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-            if (user.Identity != null && user.Identity.IsAuthenticated)
-            {
-                var userName = authState.User.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
-                var url = $"/{userName}/List";
-                Navigation.NavigateTo(url);
-            }
+            await NavigateUserListIfAuthUser();
+        }
+    }
+#endif
+
+    private async Task NavigateUserListIfAuthUser()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            var userName = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
+            var url = $"/{userName}/List";
+            NavigationManager.NavigateTo(url);
         }
     }
 
     private async Task TryItNow()
     {
-        var url = await ProtectedLocalStore.GetOrCreatePineconeAsync(DbContext);
-        Navigation.NavigateTo(url);
+        var userId = await ProtectedLocalStore.GetOrCreateUserId();
+        var pinecode = await DbContext.GetUserTopAsync(userId) ?? await DbContext.AddTopAsync(userId);
+        var url = $"/{userId}/Edit/{pinecode.Id}";
+        NavigationManager.NavigateTo(url);
     }
 
     private void Register()
     {
-        Navigation.NavigateTo("Account/Register");
+        NavigationManager.NavigateTo("Account/Register");
     }
 }

@@ -44,9 +44,6 @@
             </div>
         </div>
     </div>
-    <style>
-
-    </style>
     @if (TotalPages > 1)
     {
         <nav>
@@ -74,30 +71,26 @@
     private string GetContent(string content)
     {
         var c = (content.Length < 100) ? content : content[..100];
-        return Markdown.ToHtml(c);
+        return MarkdownService.ToHtml(c);
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (firstRender)
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var currentUserId = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
+        if (currentUserId == null || currentUserId != UserId)
         {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-            var currentUserId = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
-            if (currentUserId == null || currentUserId != UserId)
-            {
-                Navigation.NavigateTo("/");
-            }
-            await LoadPage(CurrentPage);
+            Navigation.NavigateTo("/");
         }
+        await LoadPage(CurrentPage);
     }
 
     private async Task LoadPage(int pageNumber)
     {
         CurrentPage = pageNumber;
-        var query = DbContext.Pinecone.Where(x => x.UserId == UserId && x.ParentId == null);
-        TotalPages = (int)Math.Ceiling(await query.CountAsync() / (double)PageSize);
-        Pinecones = await query.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToListAsync();
+        TotalPages = (int)Math.Ceiling(await DbContext.GetUserTopCountAsync(UserId) / (double)PageSize);
+        Pinecones = await DbContext.GetUserTopListAsync(UserId, CurrentPage, PageSize);
         StateHasChanged();
     }
 
