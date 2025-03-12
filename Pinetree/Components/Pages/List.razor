@@ -1,4 +1,4 @@
-﻿@page "/{userId}/List"
+﻿@page "/{UserName}/List"
 @attribute [Authorize]
 
 @using Markdig
@@ -61,7 +61,7 @@
 
 @code {
     [Parameter]
-    public string UserId { get; set; } = "";
+    public string UserName { get; set; } = "";
 
     private List<Pinecone> Pinecones { get; set; } = new List<Pinecone>();
     private int CurrentPage { get; set; } = 1;
@@ -76,10 +76,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        var currentUserId = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
-        if (currentUserId == null || currentUserId != UserId)
+        var identity = await AuthenticationStateProvider.GetIdentityAsync();
+        if (identity == null || identity.Name != UserName)
         {
             Navigation.NavigateTo("/");
         }
@@ -89,21 +87,21 @@
     private async Task LoadPage(int pageNumber)
     {
         CurrentPage = pageNumber;
-        TotalPages = (int)Math.Ceiling(await DbContext.GetUserTopCountAsync(UserId) / (double)PageSize);
-        Pinecones = await DbContext.GetUserTopListAsync(UserId, CurrentPage, PageSize);
+        TotalPages = (int)Math.Ceiling(await DbContext.GetUserTopCountAsync(UserName) / (double)PageSize);
+        Pinecones = await DbContext.GetUserTopListAsync(UserName, CurrentPage, PageSize);
         StateHasChanged();
     }
 
     private async Task CreateFile()
     {
-        var pinecone = await DbContext.AddTopAsync(UserId);
-        var url = $"/{UserId}/Edit/{pinecone.Id}";
+        var pinecone = await DbContext.AddTopAsync(UserName);
+        var url = $"/{UserName}/Edit/{pinecone.Id}";
         Navigation.NavigateTo(url);
     }
 
     private void OpenFile(long id)
     {
-        var url = $"/{UserId}/Edit/{id}";
+        var url = $"/{UserName}/Edit/{id}";
         Navigation.NavigateTo(url);
     }
 

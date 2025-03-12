@@ -83,7 +83,7 @@
 
     private async Task CreateFile()
     {
-        var userName = await GetUserNameAsync();
+        var userName = (await AuthenticationStateProvider.GetIdentityAsync())?.Name ?? "";
         var pinecone = await DbContext.AddTopAsync(userName);
         var url = $"/{userName}/Edit/{pinecone.Id}";
         NavigationManager.NavigateTo(url);
@@ -91,7 +91,7 @@
 
     private async Task FileList()
     {
-        var userName = await GetUserNameAsync();
+        var userName = (await AuthenticationStateProvider.GetIdentityAsync())?.Name ?? "";
         var url = $"/{userName}/List";
         NavigationManager.NavigateTo(url);
     }
@@ -119,13 +119,5 @@
     public void Dispose()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
-    }
-
-    private async Task<string> GetUserNameAsync()
-    {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var userName = authState.User.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
-        Debug.Assert(userName != null);
-        return userName;
     }
 }

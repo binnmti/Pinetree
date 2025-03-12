@@ -42,12 +42,10 @@
 
     private async Task NavigateUserListIfAuthUser()
     {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        if (user.Identity != null && user.Identity.IsAuthenticated)
+        var identity = await AuthenticationStateProvider.GetIdentityAsync();
+        if (identity != null && identity.IsAuthenticated)
         {
-            var userName = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
-            var url = $"/{userName}/List";
+            var url = $"/{identity.Name}/List";
             NavigationManager.NavigateTo(url);
         }
     }
