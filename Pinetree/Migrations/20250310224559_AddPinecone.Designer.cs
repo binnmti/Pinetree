@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Pinetree.Data;
 
@@ -11,9 +12,11 @@ using Pinetree.Data;
 namespace Pinetree.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250310224559_AddPinecone")]
+    partial class AddPinecone
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -232,28 +235,19 @@ namespace Pinetree.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("Create")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("Delete")
-                        .HasColumnType("datetime2");
-
                     b.Property<long>("GroupId")
                         .HasColumnType("bigint");
 
-                    b.Property<bool>("IsDelete")
-                        .HasColumnType("bit");
-
                     b.Property<long?>("ParentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("PineconeId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime>("Update")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -262,7 +256,7 @@ namespace Pinetree.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentId");
+                    b.HasIndex("PineconeId");
 
                     b.ToTable("Pinecone");
                 });
@@ -320,11 +314,9 @@ namespace Pinetree.Migrations
 
             modelBuilder.Entity("Pinetree.Model.Pinecone", b =>
                 {
-                    b.HasOne("Pinetree.Model.Pinecone", "Parent")
+                    b.HasOne("Pinetree.Model.Pinecone", null)
                         .WithMany("Children")
-                        .HasForeignKey("ParentId");
-
-                    b.Navigation("Parent");
+                        .HasForeignKey("PineconeId");
                 });
 
             modelBuilder.Entity("Pinetree.Model.Pinecone", b =>

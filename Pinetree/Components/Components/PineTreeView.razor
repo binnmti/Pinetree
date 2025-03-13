@@ -1,21 +1,51 @@
-﻿@using Pinetree.Model
+﻿@using Microsoft.EntityFrameworkCore
+@using Pinetree.Components.Services
+@using Pinetree.Model
 @using Pinetree.Data
-
+@using System.Diagnostics
 
 @inject NavigationManager Navigation
 @inject ApplicationDbContext DbContext
+@inject IJSRuntime JS
 
 @if (PineTree != null)
 {
-    <ul>
-        <li>
-            <span @onclick="() => ActivePineTree(PineTree.Id)">
-                @PineTree.Title
-            </span>
-            <button @onclick="AddChild">+</button>
-            @foreach (var tree in PineTree.Children)
+    <ul class="list-unstyled" style="padding-left: 0.75rem;">
+        <li style="">
+            <div class="d-flex justify-content-between list-group-item-action">
+                @if (PineTree.Children.Count != 0)
+                {
+                    if (PineTree.IsExpanded)
+                    {
+                        <i class="bi bi-caret-down" @onclick="OnClickExpanded"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-caret-right" @onclick="OnClickExpanded"></i>
+                    }
+                }
+                else
+                {
+                    <span style="display:inline-block; width:1em;"></span>
+                }
+                <i class="bi bi-file-earmark-text"></i>
+                @if (PineTree.IsCurrent)
+                {
+                    <div class="title px-1 flex-grow-1 border" @onclick="ActivePineTree" style="font-weight: bold; background-color:aliceblue">@PineTree.Title</div>
+                }
+                else
+                {
+                    <div class="title px-1 flex-grow-1" @onclick="ActivePineTree">@PineTree.Title</div>
+                }
+                <i @onclick="AddChild" class="bi bi-file-earmark-plus border px-1" style="cursor:pointer"></i>
+                <i @onclick="ConfirmDelete" class="bi bi-trash2 border px-1" style="cursor:pointer"></i>
+            </div>
+            @if (PineTree.IsExpanded)
             {
-                <PineTreeView UserId="@(UserId)" PineTree="@(tree)" />
+                @foreach (var tree in PineTree.Children)
+                {
+                    <PineTreeView UserId="@(UserId)" PineTree="@(tree)" id="@(Id)" OnChildEvent="OnChildEvent" />
+                }
             }
         </li>
     </ul>
@@ -26,30 +56,53 @@
     public required string UserId { get; set; }
 
     [Parameter]
+    public long Id { get; set; }
+
+    [Parameter]
     public required PineTree PineTree { get; set; }
 
+    [Parameter]
+    public EventCallback<long> OnChildEvent { get; set; }
 
-    private void ActivePineTree(long id)
+    private void OnClickExpanded()
     {
-        var url = $"/markdown-editor/{UserId}/{id}";
-        Navigation.NavigateTo(url);
+        PineTree.IsExpanded = !PineTree.IsExpanded;
+        StateHasChanged();
+    }
+
+    private async Task ActivePineTree()
+    {
+        await OnChildEvent.InvokeAsync(PineTree.Id);
+
         StateHasChanged();
     }
 
     private async Task AddChild()
     {
-        var pinecone = new Pinecone() { Title = "Untitled", Content = "", GroupId = PineTree.GroupId, ParentId = PineTree.Id, UserId = UserId!, IsSandbox = false };
-        try
-        {
-            await DbContext.Pinecone.AddAsync(pinecone);
-            await DbContext.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error DbContext: {ex.Message}");
-        }
-        var url = $"/markdown-editor/{UserId}/{pinecone.Id}";
-        Navigation.NavigateTo(url);
+        var pinecone = await DbContext.AddChildAsync(PineTree.GroupId, PineTree.Id, UserId);
+
+        // If you don't save it, the ID won't be decided.
+        PineTree.IsExpanded = true;
+        PineTree.Children.Add(pinecone.ToPineTree(PineTree));
         StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (PineTree.Parent == null)
+        {
+            await JS.InvokeVoidAsync("alert", "You can't delete the first");
+        }
+        else
+        {
+            var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this item?");
+            if (confirmed)
+            {
+                await DbContext.DeleteIncludeChildAsync(PineTree.Id);
+                var id = PineTree.DeleteIncludeChild();
+                await OnChildEvent.InvokeAsync(id);
+                StateHasChanged();
+            }
+        }
     }
 }

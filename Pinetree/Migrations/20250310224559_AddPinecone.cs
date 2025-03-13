@@ -60,14 +60,15 @@ namespace Pinetree.Migrations
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     GroupId = table.Column<long>(type: "bigint", nullable: false),
                     ParentId = table.Column<long>(type: "bigint", nullable: true),
-                    UserId = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false)
+                    UserId = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    PineconeId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Pinecone", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Pinecone_Pinecone_ParentId",
-                        column: x => x.ParentId,
+                        name: "FK_Pinecone_Pinecone_PineconeId",
+                        column: x => x.PineconeId,
                         principalTable: "Pinecone",
                         principalColumn: "Id");
                 });
@@ -218,9 +219,9 @@ namespace Pinetree.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Pinecone_ParentId",
+                name: "IX_Pinecone_PineconeId",
                 table: "Pinecone",
-                column: "ParentId");
+                column: "PineconeId");
         }
 
         /// <inheritdoc />
