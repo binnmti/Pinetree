@@ -77,13 +77,31 @@
         StateHasChanged();
     }
 
+    private const int MaxDepth = 3;
+    private const int MaxFileCount = 9;
+
     private async Task AddChild()
     {
+        var currentDepth = PineTree.GetDepth() + 1;
+        if (currentDepth > MaxDepth)
+        {
+            await JS.InvokeVoidAsync("alert", $"You cannot add more than {MaxDepth} levels in the free version.");
+            return;
+        }
+        var fileCount = PineTree.GetTotalFileCount() + 1;
+        if (fileCount >= MaxFileCount)
+        {
+            await JS.InvokeVoidAsync("alert", $"You cannot add more than {MaxFileCount} files in the free version.");
+            return;
+        }
+
         var pinecone = await DbContext.AddChildAsync(PineTree.GroupId, PineTree.Id, UserId);
+        var pinetree = pinecone.ToPineTree(PineTree);
 
         // If you don't save it, the ID won't be decided.
         PineTree.IsExpanded = true;
-        PineTree.Children.Add(pinecone.ToPineTree(PineTree));
+        PineTree.Children.Add(pinetree);
+        await OnChildEvent.InvokeAsync(pinetree.Id);
         StateHasChanged();
     }
 
