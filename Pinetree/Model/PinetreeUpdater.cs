@@ -21,7 +21,7 @@ public static class PinetreeUpdater
         return depth;
     }
 
-    public static PineTree SetCurrentIncludeChild(this PineTree pineTree, long id, ref int fileCount, int currentDepth, ref int maxDepth)
+    public static PineTree SetCurrentIncludeChild(this PineTree pineTree, long id, ref int fileCount, int currentDepth)
     {
         PineTree? result = null;
         pineTree.IsCurrent = pineTree.Id == id;
@@ -29,14 +29,10 @@ public static class PinetreeUpdater
         {
             result = pineTree;
         }
-        if (currentDepth > maxDepth)
-        {
-            maxDepth = currentDepth;
-        }
         fileCount++;
         foreach (var child in pineTree.Children)
         {
-            var childResult = child.SetCurrentIncludeChild(id, ref fileCount, currentDepth + 1, ref maxDepth);
+            var childResult = child.SetCurrentIncludeChild(id, ref fileCount, currentDepth + 1);
             if (childResult != null)
             {
                 result = childResult;

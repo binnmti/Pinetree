@@ -13,7 +13,7 @@
 
 @if (PineTree != null)
 {
-    <Markdown UserName="@(UserName)" PineTree="@(PineTree)" Id="@(Id)" IsTry="@(true)" FileCount=@FileCount MaxDepth=@MaxDepth />
+    <Markdown UserName="@(UserName)" PineTree="@(PineTree)" Id="@(Id)" IsTry="@(true)" FileCount=@FileCount />
 }
 
 @code {
@@ -25,7 +25,6 @@
 
     private PineTree PineTree { get; set; } = new PineTree(0, "", "", null, 0);
     private int FileCount { get; set; }
-    private int MaxDepth { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -41,6 +40,6 @@
             Navigation.NavigateTo("/");
             return;
         }
-        (PineTree, FileCount, MaxDepth) = hit.ToPineTreeIncludeChild();
+        (PineTree, FileCount) = hit.ToPineTreeIncludeChild();
     }
 }

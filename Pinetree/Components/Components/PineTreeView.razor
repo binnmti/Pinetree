@@ -77,21 +77,14 @@
         StateHasChanged();
     }
 
-    private const int MaxDepth = 3;
-    private const int MaxFileCount = 9;
-
     private async Task AddChild()
     {
-        var currentDepth = PineTree.GetDepth() + 1;
-        if (currentDepth > MaxDepth)
+        if (await JS.CheckDepthAsync(PineTree))
         {
-            await JS.InvokeVoidAsync("alert", $"You cannot add more than {MaxDepth} levels in the free version.");
             return;
         }
-        var fileCount = PineTree.GetTotalFileCount() + 1;
-        if (fileCount >= MaxFileCount)
+        if (await JS.CheckFileCountAsync(PineTree))
         {
-            await JS.InvokeVoidAsync("alert", $"You cannot add more than {MaxFileCount} files in the free version.");
             return;
         }
 
