@@ -52,9 +52,9 @@
 
     private async Task TryItNow()
     {
-        var userId = await ProtectedLocalStore.GetOrCreateUserId();
+        var userId = await ProtectedLocalStore.GetOrCreateUserIdAsync();
         var pinecode = await DbContext.GetUserTopAsync(userId) ?? await DbContext.AddTopAsync(userId);
-        var url = $"/{userId}/Edit/{pinecode.Id}";
+        var url = $"/{userId}/Tryit/{pinecode.Id}";
         NavigationManager.NavigateTo(url);
     }
 

@@ -1,13 +1,14 @@
-﻿@page "/{UserName}/Edit/{id:long}"
-@attribute [Authorize]
-@using Microsoft.AspNetCore.Authorization
-@using Pinetree.Components.Components
-@using Pinetree.Components.Services
+﻿@page "/{UserName}/Tryit/{id:long}"
+
 @using Pinetree.Data
 @using Pinetree.Model
-@inject ApplicationDbContext DbContext
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using Pinetree.Components.Components
+@using Pinetree.Components.Services
+
 @inject NavigationManager Navigation
-@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject ApplicationDbContext DbContext
  
 @rendermode InteractiveServer
 
@@ -23,18 +24,12 @@
     [Parameter]
     public long Id { get; set; }
 
-    private PineTree PineTree { get; set; } = new PineTree(0, "", "", null, 0);
+    private PineTree? PineTree { get; set; }
     private int FileCount { get; set; }
     private int MaxDepth { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        var identity = await AuthenticationStateProvider.GetIdentityAsync();
-        if (identity == null || identity.Name != UserName)
-        {
-            Navigation.NavigateTo("/");
-            return;
-        }
         var hit = await DbContext.SingleIncludeChildAsync(Id);
         if (hit == null)
         {

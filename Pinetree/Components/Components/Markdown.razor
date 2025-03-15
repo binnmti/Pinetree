@@ -1,0 +1,160 @@
+﻿@using Pinetree.Data
+@using Pinetree.Model
+@using Pinetree.Components.Components
+@using Pinetree.Components.Services
+@inject NavigationManager Navigation
+@inject ApplicationDbContext DbContext
+@rendermode InteractiveServer
+@implements IDisposable
+
+<div class="editor-container">
+    @if (IsTry)
+    {
+        <div class="row">
+            <div class="col">
+                <div class="alert alert-primary" role="alert">
+                    <i class="bi bi-info-circle-fill"></i>
+                    If you want to create multiple files, please <a href="Account/Register" class="alert-link">register</a>.
+                </div>
+            </div>
+        </div>
+    }
+    <div class="row">
+        <div class="col-2 border">
+            <div class="pinetree-view" style="display: flex; flex-direction: column; height: 100%;">
+                <div class="list-group" style="flex: 1 1 auto; display: flex; flex-direction: column;">
+                    @if (!IsTry)
+                    {
+                        <div>
+                            <button type="button" class="list-group-item list-group-item-action" @onclick="OnFileListClick">
+                                <i class="bi bi-card-list" aria-hidden="true"></i> File List
+                            </button>
+                        </div>
+                    }
+                    <div>
+                        <PineTreeView UserId="@UserName" PineTree="@PineTree" Id="@Id" OnChildEvent="SetCurrent" />
+                    </div>
+                </div>
+            </div>
+            <div>
+                FileCount : @FileCount MaxDepth : @MaxDepth
+            </div>
+        </div>
+        <div class="col-10">
+            <div class="markdown-title">
+                <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" style="width:100%" />
+            </div>
+            <div class="row" style="height:@(IsTry ? "80vh" : "90vh");">
+                <div class="col py-2">
+                    <textarea @bind="@(Content)" style="width:100%; height:100%; overflow:auto" @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
+                    <div class="counter">@Content.Length characters</div>
+                </div>
+                <div class="col py-2" style="height: 100%; overflow: hidden;">
+                    <div class="border" style="width:100%; height:100%; overflow:auto;">
+                        @((MarkupString)MarkdownText)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string UserName { get; set; } = "";
+
+    [Parameter]
+    public long Id { get; set; }
+
+    [Parameter]
+    public PineTree PineTree { get; set; } = new PineTree(0, "", "", null, 0);
+
+    [Parameter]
+    public bool IsTry { get; set; }
+
+    [Parameter]
+    public int FileCount { get; set; }
+
+    [Parameter]
+    public int MaxDepth { get; set; }
+
+
+    private PineTree Current { get; set; } = new PineTree(0, "", "", null, 0);
+    private string Content { get; set; } = "";
+    private string Title { get; set; } = "";
+    private string MarkdownText { get; set; } = "";
+    private CancellationTokenSource DebounceToken { get; set; } = new CancellationTokenSource();
+
+    public void Dispose()
+    {
+        DebounceToken?.Cancel();
+        DebounceToken?.Dispose();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            SetCurrent(Id);
+        }
+    }
+
+    private async Task OnInputTitleChange(ChangeEventArgs e)
+    {
+        Title = e.Value?.ToString() ?? "";
+        Current.Title = Title;
+        await DebounceSaveAsync();
+        StateHasChanged();
+    }
+
+    private async Task OnInputChange(ChangeEventArgs e)
+    {
+        Content = e.Value?.ToString() ?? "";
+        MarkdownText = MarkdownService.ToHtml(Content);
+        Current.Content = Content;
+        await DebounceSaveAsync();
+        StateHasChanged();
+    }
+
+    private void OnFileListClick()
+    {
+        Navigation.NavigateTo($"/{UserName}/List");
+    }
+
+    private async Task DebounceSaveAsync()
+    {
+        DebounceToken.Cancel();
+        DebounceToken = new CancellationTokenSource();
+        var token = DebounceToken.Token;
+        try
+        {
+            await Task.Delay(500, token);
+        }
+        catch (TaskCanceledException ex)
+        {
+            Console.Error.WriteLine($"Task was canceled: {ex.Message}");
+            return;
+        }
+        if (token.IsCancellationRequested) return;
+        try
+        {
+            await DbContext.UpdateAsync(Id, Title, Content);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"An error occurred while saving changes: {ex.Message}");
+            return;
+        }
+        StateHasChanged();
+    }
+
+    private void SetCurrent(long id)
+    {
+        Id = id;
+        Current = PineTree.SetCurrentIncludeChild(id);
+        Title = Current.Title;
+        Content = Current.Content;
+        MarkdownText = MarkdownService.ToHtml(Content);
+        StateHasChanged();
+    }
+}

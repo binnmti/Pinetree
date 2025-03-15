@@ -3,7 +3,13 @@ namespace Pinetree.Components.Services;
 
 public static class ProtectedLocalStoreService
 {
-    public static async Task<string> GetOrCreateUserId(this ProtectedLocalStorage storage)
+    public static async Task<string> GetUserIdAsync(this ProtectedLocalStorage storage)
+    {
+        var result = await storage.GetAsync<string>("UserId");
+        return result.Success ? result.Value ?? "" : "";
+    }
+
+    public static async Task<string> GetOrCreateUserIdAsync(this ProtectedLocalStorage storage)
     {
         string userId;
         var userIdResult = await storage.GetAsync<string>("UserId");
