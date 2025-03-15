@@ -9,6 +9,7 @@
 @inject IEmailSender<ApplicationUser> EmailSender
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject IConfiguration Configuration
 
 <PageTitle>Register confirmation</PageTitle>
 
@@ -16,7 +17,7 @@
 
 <StatusMessage Message="@statusMessage" />
 
-<p role="alert">Please check your email to confirm your account.</p>
+<p role="alert">Please check your email to confirm your account.<br><br>@((MarkupString)SenderEmail)</p>
 
 @code {
     private string? statusMessage;
@@ -29,6 +30,13 @@
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
+
+    private string SenderEmail { get; set; } = "";
+
+    protected override void OnInitialized()
+    {
+        SenderEmail = $"Currently, the email will be sent from the domain <strong>{Configuration["SenderEmail"]}</strong> as it is under development.<br> Please check your spam folder as the email may end up in your spam folder.";
+    }
 
     protected override async Task OnInitializedAsync()
     {

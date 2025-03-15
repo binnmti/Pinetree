@@ -10,6 +10,8 @@
 @inject ApplicationDbContext DbContext
 @inject ProtectedLocalStorage ProtectedLocalStore
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IHttpContextAccessor HttpContextAccessor
+
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -53,6 +55,8 @@
     private async Task TryItNow()
     {
         var userId = await ProtectedLocalStore.GetOrCreateUserIdAsync();
+        var ip = HttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
+        await DbContext.AddOrUpdateTryUserAsync(userId, ip);
         var pinecode = await DbContext.GetUserTopAsync(userId) ?? await DbContext.AddTopAsync(userId);
         var url = $"/{userId}/Tryit/{pinecode.Id}";
         NavigationManager.NavigateTo(url);

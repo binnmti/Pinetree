@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace Pinetree.Components.Services;
 
-public static class ApplicationDbContextService
+public static class ApplicationDbContextPineconeService
 {
     private const string Untitled = "Untitled";
 

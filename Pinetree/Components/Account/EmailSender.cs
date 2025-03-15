@@ -25,16 +25,26 @@ public class EmailSender : IEmailSender<ApplicationUser>
 
     public async Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
     {
-        var content = new EmailContent("Confirm your email")
+        var content = new EmailContent("Pinetree - Confirm your email")
         {
-            Html = $"Please confirm your account by <a href='{confirmationLink}'>clicking here</a>."
+            Html = $"Dear {user.UserName}<br>" +
+            "<br>" +
+            $"Thank you for signing up for Pinetree.<br>" +
+            "To complete your registration, please verify your email address by clicking the link below:<br>" +
+            "<br>" +
+            $"<a href='{confirmationLink}'>Verification Link</a>.<br>" +
+            "<br>" +
+            $"If you did not sign up, please disregard this email..<br>" +
+            "<br>" +
+            $"Sincerely,<br>" +
+            $"Pinetree<br>"
         };
         await SendAsync(email, content);
     }
 
     public async Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink)
     {
-        var content = new EmailContent("Reset your password")
+        var content = new EmailContent("Pinetree - Reset your password")
         {
             Html = $"Please reset your password by <a href='{resetLink}'>clicking here</a>."
         };
@@ -43,9 +53,9 @@ public class EmailSender : IEmailSender<ApplicationUser>
 
     public async Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode)
     {
-        var content = new EmailContent("Reset your password")
+        var content = new EmailContent("Pinetree - Reset your password")
         {
-            Html = $"Please reset your password using the following code: {resetCode}"
+            Html = $"Please reset your password using the following code: {resetCode}."
         };
         await SendAsync(email, content);
     }
