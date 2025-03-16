@@ -12,8 +12,8 @@ using Pinetree.Data;
 namespace Pinetree.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250311070552_AddParent")]
-    partial class AddParent
+    [Migration("20250316081018_AddPinecone")]
+    partial class AddPinecone
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -235,8 +235,17 @@ namespace Pinetree.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("Create")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("Delete")
+                        .HasColumnType("datetime2");
+
                     b.Property<long>("GroupId")
                         .HasColumnType("bigint");
+
+                    b.Property<bool>("IsDelete")
+                        .HasColumnType("bit");
 
                     b.Property<long?>("ParentId")
                         .HasColumnType("bigint");
@@ -246,7 +255,10 @@ namespace Pinetree.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("UserId")
+                    b.Property<DateTime>("Update")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserName")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
