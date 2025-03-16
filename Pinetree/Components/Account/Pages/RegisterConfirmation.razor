@@ -1,6 +1,7 @@
 ﻿@page "/Account/RegisterConfirmation"
 
 @using System.Text
+@using System.Text.Encodings.Web;
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using Pinetree.Data
@@ -35,7 +36,8 @@
 
     protected override void OnInitialized()
     {
-        SenderEmail = $"Currently, the email will be sent from the domain <strong>{Configuration["SenderEmail"]}</strong> as it is under development.<br> Please check your spam folder as the email may end up in your spam folder.";
+        var sanitizedEmail = HtmlEncoder.Default.Encode(Configuration["SenderEmail"] ?? "DoNotReply@yourdomain.com");
+        SenderEmail = $"Currently, the email will be sent from the domain <strong>{sanitizedEmail}</strong> as it is under development.<br> Please check your spam folder as the email may end up in your spam folder.";
     }
 
     protected override async Task OnInitializedAsync()
