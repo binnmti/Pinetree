@@ -4,9 +4,9 @@
 @using Pinetree.Components.Services
 @inject NavigationManager Navigation
 @inject ApplicationDbContext DbContext
+@inject IJSRuntime JS
 @rendermode InteractiveServer
 @implements IDisposable
-@inject IJSRuntime JS
 
 <div class="editor-container">
     @if (IsTry)

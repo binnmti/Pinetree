@@ -5,6 +5,11 @@ VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree", "Pinetree\Pinetree.csproj", "{5EB96147-1406-49D5-B5C8-6EA4F64ABDDC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目", "ソリューション項目", "{5140C14F-88BA-4002-AF44-B9160A9C20AB}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\Pinetree.yml = .github\workflows\Pinetree.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
