@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Pinetree.Data;
 
@@ -11,9 +12,11 @@ using Pinetree.Data;
 namespace Pinetree.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250315140602_AddTryUser")]
+    partial class AddTryUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -255,7 +258,7 @@ namespace Pinetree.Migrations
                     b.Property<DateTime>("Update")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UserName")
+                    b.Property<string>("UserId")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -265,6 +268,39 @@ namespace Pinetree.Migrations
                     b.HasIndex("ParentId");
 
                     b.ToTable("Pinecone");
+                });
+
+            modelBuilder.Entity("Pinetree.Model.TryUser", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("Create")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreateCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FileCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Ip")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<bool>("IsConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRegister")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("Update")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TryUser");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

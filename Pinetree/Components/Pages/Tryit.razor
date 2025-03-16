@@ -1,0 +1,35 @@
+﻿@page "/Tryit"
+
+@using Pinetree.Data
+@using Pinetree.Model
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using Pinetree.Components.Components
+@using Pinetree.Components.Services
+
+@inject NavigationManager Navigation
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject ApplicationDbContext DbContext
+
+@rendermode InteractiveServer
+
+@if (Pinetree != null)
+{
+    <Markdown UserName="@(UserName)" Pinetree="@(Pinetree)" Id="@(Id)" IsTry="@(true)" FileCount=@FileCount />
+}
+
+@code {
+    [Parameter]
+    public string UserName { get; set; } = "";
+
+    [Parameter]
+    public long Id { get; set; }
+
+    private Pinetree? Pinetree { get; set; }
+    private int FileCount { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Pinetree = new Pinetree(0, "Untitled", "", null, -1);
+        FileCount = 1;
+    }
+}

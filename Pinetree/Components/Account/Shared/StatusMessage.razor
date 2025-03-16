@@ -2,7 +2,7 @@
 {
     var statusMessageClass = DisplayMessage.StartsWith("Error") ? "danger" : "success";
     <div class="alert alert-@statusMessageClass" role="alert">
-        @DisplayMessage
+        @((MarkupString)DisplayMessage)
     </div>
 }
 

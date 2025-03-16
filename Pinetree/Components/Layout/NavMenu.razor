@@ -1,21 +1,16 @@
-﻿@using System.Security.Claims
-@using Microsoft.EntityFrameworkCore
-@using Pinetree.Components.Services
-@using Pinetree.Model
+﻿@using Pinetree.Components.Services
 @using Pinetree.Data
-@using System.Diagnostics
-@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 
 @inject ApplicationDbContext DbContext
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject ProtectedLocalStorage ProtectedLocalStore
+
 @implements IDisposable
 @rendermode InteractiveServer
 
 <nav class="navbar navbar-expand-lg bg-body-tertiary bg-light">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/">PineTree</a>
+        <a class="navbar-brand" href="/">Pinetree</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -50,7 +45,7 @@
                     </Authorized>
                     <NotAuthorized>
                         <li class="nav-item">
-                            <NavLink class="nav-link" @onclick="TryItNow" style="cursor:pointer">
+                            <NavLink class="nav-link" href="/Tryit">
                                 <i class="bi bi-tools"></i> Try It Now
                             </NavLink>
                         </li>
@@ -96,14 +91,6 @@
         NavigationManager.NavigateTo(url);
     }
 
-    private async Task TryItNow()
-    {
-        var userId = await ProtectedLocalStore.GetOrCreateUserId();
-        var pinecode = await DbContext.GetUserTopAsync(userId) ?? await DbContext.AddTopAsync(userId);
-        var url = $"/{userId}/Edit/{pinecode.Id}";
-        NavigationManager.NavigateTo(url);
-    }
-    
     protected override void OnInitialized()
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
