@@ -44,7 +44,7 @@
             {
                 @foreach (var tree in Pinetree.Children)
                 {
-                    <PinetreeView2 UserName="@(UserName)" Pinetree="@(tree)" id="@(Id)" IsTry=@IsTry OnChildEvent ="OnChildEvent" />
+                    <PinetreeView UserName="@(UserName)" Pinetree="@(tree)" id="@(Id)" IsTry=@IsTry OnChildEvent ="OnChildEvent" />
                 }
             }
         </li>

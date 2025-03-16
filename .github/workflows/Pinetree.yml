@@ -2,7 +2,7 @@ name: Pinetree Deploy
 on:
   push:
     branches:
-    - Deploy
+    - main
 env:
   AZURE_WEBAPP_NAME: Pinetree
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
