@@ -9,11 +9,11 @@ public static class ApplicationDbContextPineconeService
 {
     private const string Untitled = "Untitled";
 
-    public static async Task<Pinecone> AddTopAsync(this ApplicationDbContext dbContext, string userId)
+    public static async Task<Pinecone> AddTopAsync(this ApplicationDbContext dbContext, string userName)
     {
         var title = Untitled;
         var counter = 1;
-        while (await dbContext.Pinecone.AnyAsync(p => p.UserId == userId && p.Title == title && p.ParentId == null))
+        while (await dbContext.Pinecone.AnyAsync(p => p.UserName == userName && p.Title == title && p.ParentId == null))
         {
             title = $"{Untitled} {counter}";
             counter++;
@@ -24,7 +24,7 @@ public static class ApplicationDbContextPineconeService
             Content = "",
             GroupId = 0,
             ParentId = null,
-            UserId = userId,
+            UserName = userName,
             IsDelete = false,
             Create = DateTime.UtcNow,
             Update = DateTime.UtcNow,
@@ -37,7 +37,7 @@ public static class ApplicationDbContextPineconeService
         return pinecone;
     }
 
-    public static async Task<Pinecone> AddChildAsync(this ApplicationDbContext dbContext, long groupId, long parentId, string userId)
+    public static async Task<Pinecone> AddChildAsync(this ApplicationDbContext dbContext, long groupId, long parentId, string userName)
     {
         var pinecone = new Pinecone()
         {
@@ -45,7 +45,7 @@ public static class ApplicationDbContextPineconeService
             Content = "",
             GroupId = groupId,
             ParentId = parentId,
-            UserId = userId,
+            UserName = userName,
             IsDelete = false,
             Create = DateTime.UtcNow,
             Update = DateTime.UtcNow,
@@ -83,17 +83,17 @@ public static class ApplicationDbContextPineconeService
         return await dbContext.LoadChildrenRecursivelyAsync(parent);
     }
 
-    public static async Task<Pinecone?> GetUserTopAsync(this ApplicationDbContext dbContext, string userId)
-        => await dbContext.GetUserTopList(userId).SingleOrDefaultAsync();
+    public static async Task<Pinecone?> GetUserTopAsync(this ApplicationDbContext dbContext, string userName)
+        => await dbContext.GetUserTopList(userName).SingleOrDefaultAsync();
 
-    public static async Task<List<Pinecone>> GetUserTopListAsync(this ApplicationDbContext dbContext, string userId, int pageNumber, int pageSize)
-        => await dbContext.GetUserTopList(userId).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+    public static async Task<List<Pinecone>> GetUserTopListAsync(this ApplicationDbContext dbContext, string userName, int pageNumber, int pageSize)
+        => await dbContext.GetUserTopList(userName).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
 
-    public static async Task<int> GetUserTopCountAsync(this ApplicationDbContext dbContext, string userId)
-        => await dbContext.GetUserTopList(userId).CountAsync();
+    public static async Task<int> GetUserTopCountAsync(this ApplicationDbContext dbContext, string userName)
+        => await dbContext.GetUserTopList(userName).CountAsync();
 
-    private static IQueryable<Pinecone> GetUserTopList(this ApplicationDbContext dbContext, string userId)
-        => dbContext.Pinecone.Where(x => x.UserId == userId)
+    private static IQueryable<Pinecone> GetUserTopList(this ApplicationDbContext dbContext, string userName)
+        => dbContext.Pinecone.Where(x => x.UserName == userName)
             .Where(x => x.ParentId == null)
             .Where(x => x.IsDelete == false);
 

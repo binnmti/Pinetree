@@ -8,7 +8,7 @@ public static class LimitCheckService
     private const int MaxFileCount = 99;
     private const int MaxCharacter = 9999;
 
-    public static async Task<bool> CheckDepthAsync(this IJSRuntime jsRuntime, PineTree pineTree)
+    public static async Task<bool> CheckDepthAsync(this IJSRuntime jsRuntime, Model.Pinetree pineTree)
     {
         var currentDepth = pineTree.GetDepth() + 1;
         if (currentDepth > MaxDepth)
@@ -19,7 +19,7 @@ public static class LimitCheckService
         return false;
     }
 
-    public static async Task<bool> CheckFileCountAsync(this IJSRuntime jsRuntime, PineTree pineTree)
+    public static async Task<bool> CheckFileCountAsync(this IJSRuntime jsRuntime, Model.Pinetree pineTree)
     {
         var fileCount = pineTree.GetTotalFileCount() + 1;
         if (fileCount >= MaxFileCount)

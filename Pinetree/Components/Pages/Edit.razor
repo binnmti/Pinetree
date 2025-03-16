@@ -11,9 +11,9 @@
  
 @rendermode InteractiveServer
 
-@if (PineTree != null)
+@if (Pinetree != null)
 {
-    <Markdown UserName="@(UserName)" PineTree="@(PineTree)" Id="@(Id)" IsTry="@(true)" FileCount=@FileCount />
+    <Markdown UserName="@(UserName)" Pinetree="@(Pinetree)" Id="@(Id)" IsTry="@(false)" FileCount=@FileCount />
 }
 
 @code {
@@ -23,7 +23,7 @@
     [Parameter]
     public long Id { get; set; }
 
-    private PineTree PineTree { get; set; } = PineTree.Nothing;
+    private Pinetree? Pinetree { get; set; }
     private int FileCount { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -40,6 +40,7 @@
             Navigation.NavigateTo("/");
             return;
         }
-        (PineTree, FileCount) = hit.ToPineTreeIncludeChild();
+        (Pinetree, FileCount) = hit.ToPinetreeIncludeChild();
+        StateHasChanged();
     }
 }

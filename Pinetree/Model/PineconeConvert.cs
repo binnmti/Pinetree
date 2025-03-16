@@ -2,22 +2,22 @@
 
 public static class PineconeConvert
 {
-    public static PineTree ToPineTree(this Pinecone pinecone, PineTree? parent)
+    public static Pinetree ToPinetree(this Pinecone pinecone, Pinetree? parent)
         => new(pinecone.Id, pinecone.Title, pinecone.Content, parent, pinecone.GroupId);
 
-    public static (PineTree,int) ToPineTreeIncludeChild(this Pinecone pinecone)
+    public static (Pinetree,int) ToPinetreeIncludeChild(this Pinecone pinecone)
     {
-        var pinetree = pinecone.ToPineTree(null);
+        var pinetree = pinecone.ToPinetree(null);
         int fileCount = 0;
         CreateChild(pinetree, pinetree, pinecone.Children, ref fileCount, 1);
         return (pinetree, fileCount);
     }
 
-    private static void CreateChild(PineTree targetTree, PineTree parent, ICollection<Pinecone> pinecones, ref int fileCount, int currentDepth)
+    private static void CreateChild(Pinetree targetTree, Pinetree parent, ICollection<Pinecone> pinecones, ref int fileCount, int currentDepth)
     {
         foreach (var pinecone in pinecones)
         {
-            var current = pinecone.ToPineTree(parent);
+            var current = pinecone.ToPinetree(parent);
             targetTree.Children.Add(current);
             fileCount++;
             CreateChild(current, current, pinecone.Children, ref fileCount, currentDepth + 1);

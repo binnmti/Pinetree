@@ -33,7 +33,7 @@
                         </div>
                     }
                     <div>
-                        <PineTreeView UserId="@UserName" PineTree="@PineTree" Id="@Id" IsTry=@IsTry OnChildEvent ="SetCurrent" />
+                        <PinetreeView UserName="@UserName" Pinetree="@Pinetree" Id="@Id" IsTry=@IsTry OnChildEvent ="SetCurrent" />
                     </div>
                 </div>
             </div>
@@ -45,7 +45,7 @@
             <div class="markdown-title">
                 <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" style="width:100%" />
             </div>
-            <div class="row" style="height:@(IsTry ? "80vh" : "90vh");">
+            <div class="row" style="height:@(IsTry ? "80vh" : "85vh");">
                 <div class="col py-2">
                     <textarea @bind="@(Content)" class="no-resize" style=" width:100%; height:101%; overflow:auto" @oninput ="OnInputChange" placeholder="Write your markdown here..."></textarea>
                     <div class="counter">@Content.Length characters</div>
@@ -68,7 +68,7 @@
     public long Id { get; set; }
 
     [Parameter]
-    public PineTree PineTree { get; set; } = PineTree.Nothing;
+    public Pinetree Pinetree { get; set; } = Pinetree.Nothing;
 
     [Parameter]
     public bool IsTry { get; set; }
@@ -76,7 +76,7 @@
     [Parameter]
     public int FileCount { get; set; }
 
-    private PineTree Current { get; set; } = PineTree.Nothing;
+    private Pinetree Current { get; set; } = Pinetree.Nothing;
     private string Content { get; set; } = "";
     private string Title { get; set; } = "";
     private string MarkdownText { get; set; } = "";
@@ -159,7 +159,7 @@
     {
         Id = id;
         int fileCount = 0;
-        Current = PineTree.SetCurrentIncludeChild(id, ref fileCount, 1);
+        Current = Pinetree.SetCurrentIncludeChild(id, ref fileCount, 1);
         FileCount = fileCount;
         Title = Current.Title;
         Content = Current.Content;
