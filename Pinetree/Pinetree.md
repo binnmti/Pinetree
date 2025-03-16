@@ -1,5 +1,5 @@
+- Paid Membership
+
 # TODO
-- 編集のセンター線は左右に動かしたい
-- ゴミ箱。
-- 空っぽで作られた場合に終了したら消す？
+- Delete Check
  
