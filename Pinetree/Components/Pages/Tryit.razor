@@ -1,4 +1,4 @@
-﻿@page "/{UserName}/Tryit/{id:long}"
+﻿@page "/Tryit"
 
 @using Pinetree.Data
 @using Pinetree.Model
@@ -9,7 +9,7 @@
 @inject NavigationManager Navigation
 @inject ProtectedLocalStorage ProtectedLocalStore
 @inject ApplicationDbContext DbContext
- 
+
 @rendermode InteractiveServer
 
 @if (PineTree != null)
@@ -27,14 +27,9 @@
     private PineTree? PineTree { get; set; }
     private int FileCount { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        var hit = await DbContext.SingleIncludeChildAsync(Id);
-        if (hit == null)
-        {
-            Navigation.NavigateTo("/");
-            return;
-        }
-        (PineTree, FileCount) = hit.ToPineTreeIncludeChild();
+        PineTree = new PineTree(0, "Untitled", "", null, -1);
+        FileCount = 1;
     }
 }

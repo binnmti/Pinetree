@@ -10,4 +10,6 @@ public class PineTree(long id, string title, string content, PineTree? parent, l
     public bool IsCurrent { get; set; }
     public bool IsExpanded { get; set; }
     public List<PineTree> Children { get; } = [];
+
+    public static PineTree Nothing => new(0, "", "", null, 0);
 };

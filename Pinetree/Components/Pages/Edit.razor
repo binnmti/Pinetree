@@ -23,7 +23,7 @@
     [Parameter]
     public long Id { get; set; }
 
-    private PineTree PineTree { get; set; } = new PineTree(0, "", "", null, 0);
+    private PineTree PineTree { get; set; } = PineTree.Nothing;
     private int FileCount { get; set; }
 
     protected override async Task OnInitializedAsync()

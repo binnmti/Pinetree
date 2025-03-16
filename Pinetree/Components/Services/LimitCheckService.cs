@@ -5,8 +5,8 @@ namespace Pinetree.Components.Services;
 public static class LimitCheckService
 {
     private const int MaxDepth = 3;
-    private const int MaxFileCount = 9;
-    private const int MaxCharacter = 999;
+    private const int MaxFileCount = 99;
+    private const int MaxCharacter = 9999;
 
     public static async Task<bool> CheckDepthAsync(this IJSRuntime jsRuntime, PineTree pineTree)
     {

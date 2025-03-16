@@ -33,7 +33,7 @@
                         </div>
                     }
                     <div>
-                        <PineTreeView UserId="@UserName" PineTree="@PineTree" Id="@Id" OnChildEvent="SetCurrent" />
+                        <PineTreeView UserId="@UserName" PineTree="@PineTree" Id="@Id" IsTry=@IsTry OnChildEvent ="SetCurrent" />
                     </div>
                 </div>
             </div>
@@ -68,7 +68,7 @@
     public long Id { get; set; }
 
     [Parameter]
-    public PineTree PineTree { get; set; } = new PineTree(0, "", "", null, 0);
+    public PineTree PineTree { get; set; } = PineTree.Nothing;
 
     [Parameter]
     public bool IsTry { get; set; }
@@ -76,7 +76,7 @@
     [Parameter]
     public int FileCount { get; set; }
 
-    private PineTree Current { get; set; } = new PineTree(0, "", "", null, 0);
+    private PineTree Current { get; set; } = PineTree.Nothing;
     private string Content { get; set; } = "";
     private string Title { get; set; } = "";
     private string MarkdownText { get; set; } = "";
@@ -128,6 +128,8 @@
 
     private async Task DebounceSaveAsync()
     {
+        if (IsTry) return;
+
         DebounceToken.Cancel();
         DebounceToken = new CancellationTokenSource();
         var token = DebounceToken.Token;

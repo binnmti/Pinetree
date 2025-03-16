@@ -1,17 +1,8 @@
 ﻿@page "/"
 
 @using Pinetree.Components.Services
-@using Pinetree.Model
-@using Pinetree.Data
-@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
-@using System.Security.Claims
-
 @inject NavigationManager NavigationManager
-@inject ApplicationDbContext DbContext
-@inject ProtectedLocalStorage ProtectedLocalStore
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject IHttpContextAccessor HttpContextAccessor
-
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -47,23 +38,13 @@
         var identity = await AuthenticationStateProvider.GetIdentityAsync();
         if (identity != null && identity.IsAuthenticated)
         {
-            var url = $"/{identity.Name}/List";
-            NavigationManager.NavigateTo(url);
+            NavigationManager.NavigateTo($"/{identity.Name}/List");
         }
     }
 
-    private async Task TryItNow()
-    {
-        var userId = await ProtectedLocalStore.GetOrCreateUserIdAsync();
-        var ip = HttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
-        await DbContext.AddOrUpdateTryUserAsync(userId, ip);
-        var pinecode = await DbContext.GetUserTopAsync(userId) ?? await DbContext.AddTopAsync(userId);
-        var url = $"/{userId}/Tryit/{pinecode.Id}";
-        NavigationManager.NavigateTo(url);
-    }
+    private void TryItNow()
+        => NavigationManager.NavigateTo("/Tryit");
 
     private void Register()
-    {
-        NavigationManager.NavigateTo("Account/Register");
-    }
+        => NavigationManager.NavigateTo("Account/Register");
 }

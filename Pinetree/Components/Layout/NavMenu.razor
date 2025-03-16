@@ -1,16 +1,10 @@
-﻿@using System.Security.Claims
-@using Microsoft.EntityFrameworkCore
-@using Pinetree.Components.Services
-@using Pinetree.Model
+﻿@using Pinetree.Components.Services
 @using Pinetree.Data
-@using System.Diagnostics
-@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 
 @inject ApplicationDbContext DbContext
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject ProtectedLocalStorage ProtectedLocalStore
-@inject IHttpContextAccessor HttpContextAccessor
+
 @implements IDisposable
 @rendermode InteractiveServer
 
@@ -51,7 +45,7 @@
                     </Authorized>
                     <NotAuthorized>
                         <li class="nav-item">
-                            <NavLink class="nav-link" @onclick="TryItNow" style="cursor:pointer">
+                            <NavLink class="nav-link" href="/Tryit">
                                 <i class="bi bi-tools"></i> Try It Now
                             </NavLink>
                         </li>
@@ -97,16 +91,6 @@
         NavigationManager.NavigateTo(url);
     }
 
-    private async Task TryItNow()
-    {
-        var userId = await ProtectedLocalStore.GetOrCreateUserIdAsync();
-        var ip = HttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
-        await DbContext.AddOrUpdateTryUserAsync(userId, ip);
-        var pinecode = await DbContext.GetUserTopAsync(userId) ?? await DbContext.AddTopAsync(userId);
-        var url = $"/{userId}/Tryit/{pinecode.Id}";
-        NavigationManager.NavigateTo(url);
-    }
-    
     protected override void OnInitialized()
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);

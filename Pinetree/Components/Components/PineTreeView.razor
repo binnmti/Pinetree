@@ -44,7 +44,7 @@
             {
                 @foreach (var tree in PineTree.Children)
                 {
-                    <PineTreeView UserId="@(UserId)" PineTree="@(tree)" id="@(Id)" OnChildEvent="OnChildEvent" />
+                    <PineTreeView UserId="@(UserId)" PineTree="@(tree)" id="@(Id)" IsTry=@IsTry OnChildEvent ="OnChildEvent" />
                 }
             }
         </li>
@@ -60,6 +60,9 @@
 
     [Parameter]
     public required PineTree PineTree { get; set; }
+
+    [Parameter]
+    public bool IsTry { get; set; }
 
     [Parameter]
     public EventCallback<long> OnChildEvent { get; set; }
@@ -88,9 +91,17 @@
             return;
         }
 
-        var pinecone = await DbContext.AddChildAsync(PineTree.GroupId, PineTree.Id, UserId);
-        var pinetree = pinecone.ToPineTree(PineTree);
-
+        PineTree pinetree;
+        if (IsTry)
+        {
+            var id = PineTree.GetUniqueId();
+            pinetree = new PineTree(id, "Untitled", "", PineTree, -1);
+        }
+        else
+        {
+            var pinecone = await DbContext.AddChildAsync(PineTree.GroupId, PineTree.Id, UserId);
+            pinetree = pinecone.ToPineTree(PineTree);
+        }
         // If you don't save it, the ID won't be decided.
         PineTree.IsExpanded = true;
         PineTree.Children.Add(pinetree);
@@ -109,7 +120,10 @@
             var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this item?");
             if (confirmed)
             {
-                await DbContext.DeleteIncludeChildAsync(PineTree.Id);
+                if (!IsTry)
+                {
+                    await DbContext.DeleteIncludeChildAsync(PineTree.Id);
+                }
                 var id = PineTree.DeleteIncludeChild();
                 await OnChildEvent.InvokeAsync(id);
                 StateHasChanged();

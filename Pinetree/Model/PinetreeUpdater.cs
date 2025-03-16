@@ -2,6 +2,24 @@
 
 public static class PinetreeUpdater
 {
+    public static long GetUniqueId(this PineTree pinetree)
+    {
+        var root = pinetree.GetRoot();
+        var usedIds = new List<long>();
+        CollectUsedIds(root, usedIds);
+        var orderedEnumerable = usedIds.OrderBy(id => id);
+        return orderedEnumerable.Last() + 1;
+    }
+
+    private static void CollectUsedIds(PineTree node, List<long> usedIds)
+    {
+        usedIds.Add(node.Id);
+        foreach (var child in node.Children)
+        {
+            CollectUsedIds(child, usedIds);
+        }
+    }
+
     public static int GetTotalFileCount(this PineTree node)
     {
         int count = 0;
@@ -11,7 +29,7 @@ public static class PinetreeUpdater
 
     public static int GetDepth(this PineTree node)
     {
-        int depth = 1;
+        int depth = 0;
         var parent = node.Parent;
         while (parent != null)
         {
