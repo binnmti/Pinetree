@@ -1,0 +1,92 @@
+﻿@page "/Account/Manage/Plan"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Pinetree.Common
+@using Pinetree.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IEmailSender<ApplicationUser> EmailSender
+@inject IdentityUserAccessor UserAccessor
+@inject NavigationManager NavigationManager
+
+<PageTitle>Manage Plan</PageTitle>
+
+<h3>Manage Plan</h3>
+
+<StatusMessage Message="@message"/>
+<div class="row">
+    <div class="col-xl-6">
+        <form @onsubmit="OnSubmit" @formname="send-verification" id="send-verification-form" method="post">
+            <AntiforgeryToken />
+            <div class="form-floating mb-3 input-group">
+                <input type="text" value="@role" id="plan" class="form-control" placeholder="Enter your email" disabled />
+                <label for="plan" class="form-label">Plan</label>
+            </div>
+            @if (IsFree)
+            {
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Update Pro Plan</button>
+            }
+        </form>
+    </div>
+</div>
+
+@code {
+    private string? message;
+    private ApplicationUser user = default!;
+    private string? role;
+    private bool IsFree;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [Inject]
+    private IHttpClientFactory HttpClientFactory { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        var roles = await UserManager.GetRolesAsync(user);
+        role = roles.FirstOrDefault();
+        IsFree = role == null ? true : Roles.IsFree(role);
+
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("payment", out var paymentStatus))
+        {
+            if (paymentStatus == "success")
+            {
+                message = "Your payment was successful. We appreciate your business.";
+            }
+            else if (paymentStatus == "cancel")
+            {
+                message = "There was an error processing your payment. Please try again later.";
+            }
+        }
+    }
+
+    private async Task OnSubmit()
+    {
+        var httpClient = HttpClientFactory.CreateClient();
+        httpClient.BaseAddress = new Uri(NavigationManager.BaseUri);
+        var successUrl = NavigationManager.BaseUri + "Account/Manage/Plan?payment=success";
+        var cancelUrl = NavigationManager.BaseUri + "Account/Manage/Plan?payment=cancel";
+        var response = await httpClient.PostAsJsonAsync("/api/payments/create-checkout-session", new
+        {
+            SuccessUrl = successUrl,
+            CancelUrl = cancelUrl
+        });
+        if (response.IsSuccessStatusCode)
+        {
+            var url = await response.Content.ReadAsStringAsync();
+            NavigationManager.NavigateTo(url);
+        }
+        else
+        {
+            NavigationManager.NavigateTo("Account/Manage/Stripe/Error/Error");
+        }
+    }
+}

@@ -12,7 +12,7 @@ using Pinetree.Data;
 namespace Pinetree.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250316081018_AddPinecone")]
+    [Migration("20250317120908_AddPinecone")]
     partial class AddPinecone
     {
         /// <inheritdoc />
