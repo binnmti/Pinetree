@@ -63,7 +63,7 @@
     [Inject]
     public required IJSRuntime JS { get; set; }
     [Inject]
-    public HttpClient HttpClient { get; set; } = default!;
+    public required HttpClient HttpClient { get; set; }
 
     private List<Pinecone> Pinecones { get; set; } = new List<Pinecone>();
     private int CurrentPage { get; set; } = 1;
@@ -93,19 +93,26 @@
     {
         CurrentPage = pageNumber;
 
-        var topCount = await HttpClient.GetFromJsonAsync<int>($"/api/Pinecones/get-user-top-count/{UserName}");
+        var topCount = await HttpClient.GetFromJsonAsync<int>($"/api/Pinecones/get-user-top-count");
         TotalPages = (int)Math.Ceiling(topCount / (double)PageSize);
-        Pinecones = await HttpClient.GetFromJsonAsync<List<Pinecone>>($"/api/Pinecones/get-user-top-list?userName={UserName}&pageNumber={CurrentPage}&pageSize={PageSize}");
+        var list = await HttpClient.GetFromJsonAsync<List<Pinecone>>($"/api/Pinecones/get-user-top-list?pageNumber={CurrentPage}&pageSize={PageSize}");
+        if (list == null) return;
+
+        Pinecones = list;
         StateHasChanged();
     }
 
     private async Task CreateFile()
     {
-        var pinecone = await HttpClient.GetFromJsonAsync<Pinecone>($"/api/Pinecones/add-top/{UserName}");
-        if (pinecone != null)
+        var response = await HttpClient.PostAsJsonAsync("/api/Pinecones/add-top", new { });
+        if (response.IsSuccessStatusCode)
         {
-            var url = $"/{UserName}/Edit/{pinecone.Id}";
-            NavigationManager.NavigateTo(url);
+            var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
+            if (pinecone != null)
+            {
+                var url = $"/{UserName}/Edit/{pinecone.Id}";
+                NavigationManager.NavigateTo(url);
+            }
         }
     }
 
@@ -118,11 +125,18 @@
     private async Task ConfirmDelete(long id)
     {
         var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this item?");
-        if (confirmed)
-        {
-            // var pinecone = await ApplicationDbContext.DeleteIncludeChildAsync(id);
-            // Pinecones.Remove(pinecone);
-            StateHasChanged();
-        }
+        if (!confirmed) return;
+        
+        var response = await HttpClient.DeleteAsync($"/api/Pinecones/delete-include-child/{id}");
+        if (!response.IsSuccessStatusCode) return;
+
+        var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
+        if (pinecone == null) return;
+
+        var itemToRemove = Pinecones.FirstOrDefault(p => p.Id == id);
+        if (itemToRemove == null) return;
+
+        Pinecones.Remove(itemToRemove);
+        StateHasChanged();
     }
 }

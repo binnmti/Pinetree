@@ -1,4 +1,5 @@
 ﻿@using Pinetree.Data
+@using PinetreeModel
 
 @inject ApplicationDbContext DbContext
 @inject NavigationManager NavigationManager
@@ -75,19 +76,32 @@
 
 
 @code {
+    [Inject]
+    public required HttpClient HttpClient { get; set; }
+
     private string? currentUrl;
 
     private async Task CreateFile()
     {
-        // var userName = (await AuthenticationStateProvider.GetIdentityAsync())?.Name ?? "";
-        // var pinecone = await DbContext.AddTopAsync(userName);
-        // var url = $"/{userName}/Edit/{pinecone.Id}";
-        // NavigationManager.NavigateTo(url);
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userName = authState.User.Identity?.Name;
+
+        var response = await HttpClient.PostAsJsonAsync("/api/Pinecones/add-top", new { });
+        if (!response.IsSuccessStatusCode) return;
+
+        var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
+        if (pinecone == null) return;
+
+        var url = $"/{userName}/Edit/{pinecone.Id}";
+        NavigationManager.NavigateTo(url);
     }
 
     private async Task FileList()
     {
-        // var userName = (await AuthenticationStateProvider.GetIdentityAsync())?.Name ?? "";
+        NavigationManager.NavigateTo("/AAA");
+
+        // var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        // var userName = authState.User.Identity?.Name;
         // var url = $"/{userName}/List";
         // NavigationManager.NavigateTo(url);
     }

@@ -73,22 +73,22 @@
 
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
-    // [Inject]
-    // public required ApplicationDbContext ApplicationDbContext { get; set; }
     [Inject]
     public required IJSRuntime JS { get; set; }
+    [Inject]
+    public required HttpClient HttpClient { get; set; }
 
 
     private Pinetree Current { get; set; } = Pinetree.Nothing;
     private string Content { get; set; } = "";
     private string Title { get; set; } = "";
     private string MarkdownText { get; set; } = "";
-    private CancellationTokenSource DebounceToken { get; set; } = new CancellationTokenSource();
+
+    private System.Threading.Timer? _debounceTimer;
 
     public void Dispose()
     {
-        DebounceToken?.Cancel();
-        DebounceToken?.Dispose();
+        _debounceTimer?.Dispose();
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -99,11 +99,11 @@
         }
     }
 
-    private async Task OnInputTitleChange(ChangeEventArgs e)
+    private void OnInputTitleChange(ChangeEventArgs e)
     {
         Title = e.Value?.ToString() ?? "";
         Current.Title = Title;
-        await DebounceSaveAsync();
+        DebounceSave();
         StateHasChanged();
     }
 
@@ -120,7 +120,7 @@
         }
         MarkdownText = MarkdownService.ToHtml(Content);
         Current.Content = Content;
-        await DebounceSaveAsync();
+        DebounceSave();
         StateHasChanged();
     }
 
@@ -129,33 +129,32 @@
         NavigationManager.NavigateTo($"/{UserName}/List");
     }
 
-    private async Task DebounceSaveAsync()
+    private void DebounceSave()
     {
         if (IsTry) return;
 
-        DebounceToken.Cancel();
-        DebounceToken = new CancellationTokenSource();
-        var token = DebounceToken.Token;
-        try
+        _debounceTimer?.Dispose();
+        _debounceTimer = new System.Threading.Timer(async _ =>
         {
-            await Task.Delay(500, token);
-        }
-        catch (TaskCanceledException ex)
-        {
-            Console.Error.WriteLine($"Task was canceled: {ex.Message}");
-            return;
-        }
-        if (token.IsCancellationRequested) return;
-        // try
-        // {
-        //     await ApplicationDbContext.UpdateAsync(Id, Title, Content);
-        // }
-        // catch (Exception ex)
-        // {
-        //     Console.Error.WriteLine($"An error occurred while saving changes: {ex.Message}");
-        //     return;
-        // }
-        StateHasChanged();
+            await InvokeAsync(async () =>
+            {
+                try
+                {
+                    var updateData = new
+                    {
+                        Id = Id,
+                        Title = Title,
+                        Content = Content
+                    };
+                    await HttpClient.PostAsJsonAsync($"/api/Pinecones/update", updateData);
+                    await InvokeAsync(StateHasChanged);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Task was canceled: {ex.Message}");
+                }
+            });
+        }, null, 500, Timeout.Infinite);
     }
 
     private void SetCurrent(long id)
