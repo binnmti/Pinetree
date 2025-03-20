@@ -77,12 +77,6 @@ public static class ApplicationDbContextPineconeService
         return pinecone;
     }
 
-    public static async Task<Pinecone> SingleIncludeChildAsync(this ApplicationDbContext dbContext, long id)
-    {
-        var parent = await dbContext.Pinecone.SingleAsync(x => x.Id == id);
-        return await dbContext.LoadChildrenRecursivelyAsync(parent);
-    }
-
     public static async Task<Pinecone?> GetUserTopAsync(this ApplicationDbContext dbContext, string userName)
         => await dbContext.GetUserTopList(userName).SingleOrDefaultAsync();
 
@@ -96,6 +90,13 @@ public static class ApplicationDbContextPineconeService
         => dbContext.Pinecone.Where(x => x.UserName == userName)
             .Where(x => x.ParentId == null)
             .Where(x => x.IsDelete == false);
+
+    public static async Task<Pinecone> SingleIncludeChildAsync(this ApplicationDbContext dbContext, long id)
+    {
+        var parent = await dbContext.Pinecone.SingleAsync(x => x.Id == id);
+        return await dbContext.LoadChildrenRecursivelyAsync(parent);
+    }
+
 
     private static async Task<Pinecone> LoadChildrenRecursivelyAsync(this ApplicationDbContext dbContext, Pinecone parent)
     {

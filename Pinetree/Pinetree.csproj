@@ -24,10 +24,11 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\test\Pinetree\Pinetree\Pinetree.Client\Pinetree.Client.csproj" />
+    <ProjectReference Include="..\Pinetree.Client\Pinetree.Client.csproj" />
     <ProjectReference Include="..\PinetreeModel\PinetreeModel.csproj" />
   </ItemGroup>
 
