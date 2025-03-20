@@ -125,8 +125,13 @@ namespace Pinetree.Components.Controllers
 
         public async Task<Pinecone> SingleIncludeChild(long id)
         {
+            var userName = User.Identity?.Name ?? "";
             var parent = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == id)
                         ?? throw new KeyNotFoundException($"Pinecone with ID {id} not found.");
+            if (parent.UserName != userName)
+            {
+                throw new UnauthorizedAccessException("You do not own this Pinecone.");
+            }
             return await LoadChildrenRecursivel(parent);
         }
 
