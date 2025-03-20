@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Pinetree.Data;
 using PinetreeModel;
-using System.Diagnostics;
 
 namespace Pinetree.Components.Controllers
 {
@@ -72,7 +71,8 @@ namespace Pinetree.Components.Controllers
         [HttpPost("update")]
         public async Task Update([FromBody] PineconeUpdateModel model)
         {
-            var current = await DbContext.Pinecone.SingleAsync(x => x.Id == model.Id);
+            var current = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == model.Id)
+                ?? throw new KeyNotFoundException($"Pinecone with ID {model.Id} not found.");
             current.Title = model.Title;
             current.Content = model.Content;
             current.Update = DateTime.UtcNow;
@@ -83,7 +83,6 @@ namespace Pinetree.Components.Controllers
         public async Task<Pinecone> DeleteIncludeChild(long id)
         {
             var pinecone = await SingleIncludeChild(id);
-            Debug.Assert(pinecone != null);
             pinecone.Delete = DateTime.UtcNow;
             pinecone.IsDelete = true;
             DeleteChildren(pinecone);
@@ -95,7 +94,8 @@ namespace Pinetree.Components.Controllers
         [HttpGet("get-include-child/{id}")]
         public async Task<Pinecone> GetIncludeChild(long id)
         {
-            var parent = await DbContext.Pinecone.SingleAsync(x => x.Id == id);
+            var parent = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == id)
+                ?? throw new KeyNotFoundException($"Pinecone with ID {id} not found.");
             return await LoadChildrenRecursivel(parent);
         }
 
@@ -115,7 +115,8 @@ namespace Pinetree.Components.Controllers
 
         public async Task<Pinecone> SingleIncludeChild(long id)
         {
-            var parent = await DbContext.Pinecone.SingleAsync(x => x.Id == id);
+            var parent = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == id)
+                        ?? throw new KeyNotFoundException($"Pinecone with ID {id} not found.");
             return await LoadChildrenRecursivel(parent);
         }
 
