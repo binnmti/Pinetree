@@ -1,11 +1,6 @@
-﻿@using Pinetree.Data
-@using Pinetree.Model
-@using Pinetree.Components.Components
-@using Pinetree.Components.Services
-@inject NavigationManager Navigation
-@inject ApplicationDbContext DbContext
-@inject IJSRuntime JS
-@rendermode InteractiveServer
+﻿@using Pinetree.Client.Model
+@using Pinetree.Client.Services
+
 @implements IDisposable
 
 <div class="editor-container">
@@ -33,7 +28,7 @@
                         </div>
                     }
                     <div>
-                        <PinetreeView UserName="@UserName" Pinetree="@Pinetree" Id="@Id" IsTry=@IsTry OnChildEvent="SetCurrent" />
+                        <PinetreeView Pinetree="@Pinetree" Id="@Id" IsTry=@IsTry OnChildEvent="SetCurrent" />
                     </div>
                 </div>
             </div>
@@ -62,9 +57,6 @@
 
 @code {
     [Parameter]
-    public string UserName { get; set; } = "";
-
-    [Parameter]
     public long Id { get; set; }
 
     [Parameter]
@@ -76,16 +68,24 @@
     [Parameter]
     public int FileCount { get; set; }
 
+    [Inject]
+    public required NavigationManager NavigationManager { get; set; }
+    [Inject]
+    public required IJSRuntime JS { get; set; }
+    [Inject]
+    public required HttpClient HttpClient { get; set; }
+
+
     private Pinetree Current { get; set; } = Pinetree.Nothing;
     private string Content { get; set; } = "";
     private string Title { get; set; } = "";
     private string MarkdownText { get; set; } = "";
-    private CancellationTokenSource DebounceToken { get; set; } = new CancellationTokenSource();
+
+    private System.Threading.Timer? _debounceTimer;
 
     public void Dispose()
     {
-        DebounceToken?.Cancel();
-        DebounceToken?.Dispose();
+        _debounceTimer?.Dispose();
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -96,11 +96,11 @@
         }
     }
 
-    private async Task OnInputTitleChange(ChangeEventArgs e)
+    private void OnInputTitleChange(ChangeEventArgs e)
     {
         Title = e.Value?.ToString() ?? "";
         Current.Title = Title;
-        await DebounceSaveAsync();
+        DebounceSave();
         StateHasChanged();
     }
 
@@ -117,42 +117,41 @@
         }
         MarkdownText = MarkdownService.ToHtml(Content);
         Current.Content = Content;
-        await DebounceSaveAsync();
+        DebounceSave();
         StateHasChanged();
     }
 
     private void OnFileListClick()
     {
-        Navigation.NavigateTo($"/{UserName}/List");
+        NavigationManager.NavigateTo($"/List");
     }
 
-    private async Task DebounceSaveAsync()
+    private void DebounceSave()
     {
         if (IsTry) return;
 
-        DebounceToken.Cancel();
-        DebounceToken = new CancellationTokenSource();
-        var token = DebounceToken.Token;
-        try
+        _debounceTimer?.Dispose();
+        _debounceTimer = new System.Threading.Timer(async _ =>
         {
-            await Task.Delay(500, token);
-        }
-        catch (TaskCanceledException ex)
-        {
-            Console.Error.WriteLine($"Task was canceled: {ex.Message}");
-            return;
-        }
-        if (token.IsCancellationRequested) return;
-        try
-        {
-            await DbContext.UpdateAsync(Id, Title, Content);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"An error occurred while saving changes: {ex.Message}");
-            return;
-        }
-        StateHasChanged();
+            await InvokeAsync(async () =>
+            {
+                try
+                {
+                    var updateData = new
+                    {
+                        Id = Id,
+                        Title = Title,
+                        Content = Content
+                    };
+                    await HttpClient.PostAsJsonAsync($"/api/Pinecones/update", updateData);
+                    await InvokeAsync(StateHasChanged);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Task was canceled: {ex.Message}");
+                }
+            });
+        }, null, 500, Timeout.Infinite);
     }
 
     private void SetCurrent(long id)

@@ -1,7 +1,7 @@
 ﻿using Ganss.Xss;
 using Markdig;
 
-namespace Pinetree.Components.Services;
+namespace Pinetree.Client.Services;
 
 public static class MarkdownService
 {

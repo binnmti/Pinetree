@@ -1,14 +1,16 @@
-﻿namespace Pinetree.Model;
+﻿using PinetreeModel;
+
+namespace Pinetree.Client.Model;
 
 public static class PineconeConvert
 {
     public static Pinetree ToPinetree(this Pinecone pinecone, Pinetree? parent)
         => new(pinecone.Id, pinecone.Title, pinecone.Content, parent, pinecone.GroupId);
 
-    public static (Pinetree,int) ToPinetreeIncludeChild(this Pinecone pinecone)
+    public static (Pinetree, int) ToPinetreeIncludeChild(this Pinecone pinecone)
     {
         var pinetree = pinecone.ToPinetree(null);
-        int fileCount = 0;
+        var fileCount = 0;
         CreateChild(pinetree, pinetree, pinecone.Children, ref fileCount, 1);
         return (pinetree, fileCount);
     }

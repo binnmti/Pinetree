@@ -1,25 +1,19 @@
-﻿@page "/{UserName}/List"
+﻿@page "/List"
 @attribute [Authorize]
 
-@using Markdig
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.EntityFrameworkCore
-@using Pinetree.Components.Services
-@using Pinetree.Components.Components
-@using Pinetree.Data
-@using Pinetree.Model
-@using System.Security.Claims
-@inject ApplicationDbContext DbContext
-@inject NavigationManager Navigation
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@rendermode InteractiveServer
-@inject IJSRuntime JS
+@using Pinetree.Client.Model
+@using Pinetree.Client.Services
+@using PinetreeModel
+@using System.Net.Http
+
+@rendermode InteractiveWebAssembly
 
 <div class="editor-container">
     <div class="row">
         <div class="col-2">
             <div class="list-group">
-                <button type="button" class="list-group-item list-group-item-action" @onclick="CreateFile">
+                <button type="button" class="list-group-item list-group-item-action" @onclick="() => CreateFile()">
                     <i class="bi bi-file-earmark-plus"></i> Create File
                 </button>
             </div>
@@ -60,8 +54,14 @@
 </div>
 
 @code {
-    [Parameter]
-    public string UserName { get; set; } = "";
+    [Inject]
+    public required NavigationManager NavigationManager { get; set; }
+    [Inject]
+    public required AuthenticationStateProvider AuthenticationStateProvider { get; set; }
+    [Inject]
+    public required IJSRuntime JS { get; set; }
+    [Inject]
+    public required HttpClient HttpClient { get; set; }
 
     private List<Pinecone> Pinecones { get; set; } = new List<Pinecone>();
     private int CurrentPage { get; set; } = 1;
@@ -74,45 +74,67 @@
         return MarkdownService.ToHtml(c);
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var identity = await AuthenticationStateProvider.GetIdentityAsync();
-        if (identity == null || identity.Name != UserName)
+        if (firstRender)
         {
-            Navigation.NavigateTo("/");
+            var identity = await AuthenticationStateProvider.GetIdentityAsync();
+            if (identity == null || !identity.IsAuthenticated)
+            {
+                NavigationManager.NavigateTo("/");
+            }
+            await LoadPage(CurrentPage);
         }
-        await LoadPage(CurrentPage);
     }
 
     private async Task LoadPage(int pageNumber)
     {
         CurrentPage = pageNumber;
-        TotalPages = (int)Math.Ceiling(await DbContext.GetUserTopCountAsync(UserName) / (double)PageSize);
-        Pinecones = await DbContext.GetUserTopListAsync(UserName, CurrentPage, PageSize);
+
+        var topCount = await HttpClient.GetFromJsonAsync<int>($"/api/Pinecones/get-user-top-count");
+        TotalPages = (int)Math.Ceiling(topCount / (double)PageSize);
+        var list = await HttpClient.GetFromJsonAsync<List<Pinecone>>($"/api/Pinecones/get-user-top-list?pageNumber={CurrentPage}&pageSize={PageSize}");
+        if (list == null) return;
+
+        Pinecones = list;
         StateHasChanged();
     }
 
     private async Task CreateFile()
     {
-        var pinecone = await DbContext.AddTopAsync(UserName);
-        var url = $"/{UserName}/Edit/{pinecone.Id}";
-        Navigation.NavigateTo(url);
+        var response = await HttpClient.PostAsJsonAsync("/api/Pinecones/add-top", new { });
+        if (response.IsSuccessStatusCode)
+        {
+            var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
+            if (pinecone != null)
+            {
+                var url = $"/Edit/{pinecone.Id}";
+                NavigationManager.NavigateTo(url);
+            }
+        }
     }
 
     private void OpenFile(long id)
     {
-        var url = $"/{UserName}/Edit/{id}";
-        Navigation.NavigateTo(url);
+        var url = $"/Edit/{id}";
+        NavigationManager.NavigateTo(url);
     }
 
     private async Task ConfirmDelete(long id)
     {
         var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this item?");
-        if (confirmed)
-        {
-            var pinecone = await DbContext.DeleteIncludeChildAsync(id);
-            Pinecones.Remove(pinecone);
-            StateHasChanged();
-        }
+        if (!confirmed) return;
+        
+        var response = await HttpClient.DeleteAsync($"/api/Pinecones/delete-include-child/{id}");
+        if (!response.IsSuccessStatusCode) return;
+
+        var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
+        if (pinecone == null) return;
+
+        var itemToRemove = Pinecones.FirstOrDefault(p => p.Id == id);
+        if (itemToRemove == null) return;
+
+        Pinecones.Remove(itemToRemove);
+        StateHasChanged();
     }
 }

@@ -1,22 +1,32 @@
 ﻿@page "/"
+@using Pinetree.Client.Services
 
-@using Pinetree.Components.Services
-@inject NavigationManager NavigationManager
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@rendermode InteractiveServer
+@rendermode InteractiveAuto
 
 <PageTitle>Home</PageTitle>
+<HeadContent>
+    <meta property="og:title" content="Pinetree" />
+    <meta property="og:description" content="A hierarchical Markdown editor for your needs" />
+    <meta property="og:image" content="Designer.jpeg" />
+    <meta property="og:url" content="https://pinetree.azurewebsites.net/" />
+</HeadContent>
+
 <div style="display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; flex-direction: column;">
     <h1 style="font-size: 4em; margin-bottom: 0.5em;">Welcome to Pinetree</h1>
     <p style="font-size: 2em; margin-bottom: 1em;">A hierarchical Markdown editor for your needs</p>
     <img src="Pinetree.png" alt="Pinetree Image" />
     <div class="mt-4">
-        <button class="btn btn-outline-primary btn-lg m-2" @onclick="TryItNow"><i class="bi bi-tools"></i>Try it now</button>
-        <button class="btn btn-outline-success btn-lg m-2" @onclick="Register"><i class="bi bi-person"></i>Register</button>
+        <a class="btn btn-outline-primary btn-lg m-2" href="/Tryit"><i class="bi bi-tools"></i>Try it now</a>
+        <a class="btn btn-outline-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>Register</a>
     </div>
 </div>
 
 @code {
+    [Inject]
+    public required NavigationManager NavigationManager { get; set; }
+
+    [Inject]
+    public required AuthenticationStateProvider AuthenticationStateProvider { get; set; }
 
 #if !DEBUG
     protected override async Task OnInitializedAsync()
@@ -32,19 +42,12 @@
         }
     }
 #endif
-
     private async Task NavigateUserListIfAuthUser()
     {
         var identity = await AuthenticationStateProvider.GetIdentityAsync();
         if (identity != null && identity.IsAuthenticated)
         {
-            NavigationManager.NavigateTo($"/{identity.Name}/List");
+            NavigationManager.NavigateTo($"/List");
         }
     }
-
-    private void TryItNow()
-        => NavigationManager.NavigateTo("/Tryit");
-
-    private void Register()
-        => NavigationManager.NavigateTo("Account/Register");
 }

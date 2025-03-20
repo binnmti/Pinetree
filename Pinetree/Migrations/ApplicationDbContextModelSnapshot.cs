@@ -220,7 +220,7 @@ namespace Pinetree.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Pinetree.Model.Pinecone", b =>
+            modelBuilder.Entity("PinetreeModel.Pinecone", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -318,16 +318,16 @@ namespace Pinetree.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Pinetree.Model.Pinecone", b =>
+            modelBuilder.Entity("PinetreeModel.Pinecone", b =>
                 {
-                    b.HasOne("Pinetree.Model.Pinecone", "Parent")
+                    b.HasOne("PinetreeModel.Pinecone", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId");
 
                     b.Navigation("Parent");
                 });
 
-            modelBuilder.Entity("Pinetree.Model.Pinecone", b =>
+            modelBuilder.Entity("PinetreeModel.Pinecone", b =>
                 {
                     b.Navigation("Children");
                 });

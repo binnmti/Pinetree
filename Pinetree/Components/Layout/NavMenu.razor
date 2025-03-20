@@ -1,12 +1,6 @@
-﻿@using Pinetree.Components.Services
-@using Pinetree.Data
-
-@inject ApplicationDbContext DbContext
-@inject NavigationManager NavigationManager
-@inject AuthenticationStateProvider AuthenticationStateProvider
+﻿@using PinetreeModel
 
 @implements IDisposable
-@rendermode InteractiveServer
 
 <nav class="navbar navbar-expand-lg bg-body-tertiary bg-light">
     <div class="container-fluid">
@@ -21,16 +15,6 @@
             <ul class="navbar-nav ms-auto">
                 <AuthorizeView>
                     <Authorized>
-                        <li class="nav-item">
-                            <button class="nav-link" @onclick="CreateFile">
-                                <i class="bi bi-file-earmark-plus" aria-hidden="true"></i> Create File
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" @onclick="FileList">
-                                <i class="bi bi-card-list" aria-hidden="true"></i> File List
-                            </button>
-                        </li>
                         <li class="nav-item">
                             <NavLink class="nav-link" href="Account/Manage">
                                 <i class="bi bi-person-fill" aria-hidden="true"></i> @context.User.Identity?.Name
@@ -77,22 +61,10 @@
 
 
 @code {
+    [Inject]
+    public required NavigationManager NavigationManager { get; set; }
+
     private string? currentUrl;
-
-    private async Task CreateFile()
-    {
-        var userName = (await AuthenticationStateProvider.GetIdentityAsync())?.Name ?? "";
-        var pinecone = await DbContext.AddTopAsync(userName);
-        var url = $"/{userName}/Edit/{pinecone.Id}";
-        NavigationManager.NavigateTo(url);
-    }
-
-    private async Task FileList()
-    {
-        var userName = (await AuthenticationStateProvider.GetIdentityAsync())?.Name ?? "";
-        var url = $"/{userName}/List";
-        NavigationManager.NavigateTo(url);
-    }
 
     protected override void OnInitialized()
     {

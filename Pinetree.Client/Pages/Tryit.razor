@@ -1,0 +1,35 @@
+﻿@page "/Tryit"
+
+@using Pinetree.Client.Model
+
+@rendermode InteractiveAuto
+
+<PageTitle>Tryit</PageTitle>
+<HeadContent>
+    <meta property="og:title" content="Tryit" />
+    <meta property="og:description" content="Try Pinetree" />
+    <meta property="og:image" content="Designer.jpeg" />
+    <meta property="og:url" content="https://pinetree.azurewebsites.net/Tryit" />
+</HeadContent>
+
+@if (Pinetree != null)
+{
+    <Markdown Id="@(Id)" Pinetree="@(Pinetree)" IsTry="@(true)" FileCount=@FileCount />
+}
+
+@code {
+    [Parameter]
+    public string UserName { get; set; } = "";
+
+    [Parameter]
+    public long Id { get; set; }
+
+    private Pinetree? Pinetree { get; set; }
+    private int FileCount { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Pinetree = new Pinetree(0, "Untitled", "", null, -1);
+        FileCount = 1;
+    }
+}

@@ -1,4 +1,4 @@
-﻿namespace Pinetree.Model;
+﻿namespace Pinetree.Client.Model;
 
 public static class PinetreeUpdater
 {

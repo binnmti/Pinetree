@@ -1,12 +1,6 @@
-﻿@using Microsoft.EntityFrameworkCore
-@using Pinetree.Components.Services
-@using Pinetree.Model
-@using Pinetree.Data
-@using System.Diagnostics
-
-@inject NavigationManager Navigation
-@inject ApplicationDbContext DbContext
-@inject IJSRuntime JS
+﻿@using Pinetree.Client.Model
+@using Pinetree.Client.Services
+@using PinetreeModel
 
 @if (Pinetree != null)
 {
@@ -44,7 +38,7 @@
             {
                 @foreach (var tree in Pinetree.Children)
                 {
-                    <PinetreeView UserName="@(UserName)" Pinetree="@(tree)" id="@(Id)" IsTry=@IsTry OnChildEvent ="OnChildEvent" />
+                    <PinetreeView Pinetree="@(tree)" id="@(Id)" IsTry=@IsTry OnChildEvent ="OnChildEvent" />
                 }
             }
         </li>
@@ -52,9 +46,6 @@
 }
 
 @code {
-    [Parameter]
-    public required string UserName { get; set; }
-
     [Parameter]
     public long Id { get; set; }
 
@@ -66,6 +57,13 @@
 
     [Parameter]
     public EventCallback<long> OnChildEvent { get; set; }
+
+    [Inject]
+    public required NavigationManager NavigationManager { get; set; }
+    [Inject]
+    public required HttpClient HttpClient { get; set; }
+    [Inject]
+    public required IJSRuntime JS { get; set; }
 
     private void OnClickExpanded()
     {
@@ -99,7 +97,11 @@
         }
         else
         {
-            var pinecone = await DbContext.AddChildAsync(Pinetree.GroupId, Pinetree.Id, UserName);
+            var response = await HttpClient.PostAsJsonAsync($"/api/Pinecones/add-child?GroupId={Pinetree.GroupId}&parentId={Pinetree.Id}", new { });
+            if (!response.IsSuccessStatusCode) return;
+            var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
+            if (pinecone == null) return;
+
             pinetree = pinecone.ToPinetree(Pinetree);
         }
         // If you don't save it, the ID won't be decided.
@@ -122,7 +124,7 @@
             {
                 if (!IsTry)
                 {
-                    await DbContext.DeleteIncludeChildAsync(Pinetree.Id);
+                    await HttpClient.DeleteAsync($"/api/Pinecones/delete-include-child/{Pinetree.Id}");
                 }
                 var id = Pinetree.DeleteIncludeChild();
                 await OnChildEvent.InvokeAsync(id);

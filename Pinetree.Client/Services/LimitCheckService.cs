@@ -1,6 +1,7 @@
 ﻿using Microsoft.JSInterop;
-using Pinetree.Model;
-namespace Pinetree.Components.Services;
+using Pinetree.Client.Model;
+
+namespace Pinetree.Client.Services;
 
 public static class LimitCheckService
 {

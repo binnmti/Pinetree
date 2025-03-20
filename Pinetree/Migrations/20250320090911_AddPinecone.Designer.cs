@@ -12,7 +12,7 @@ using Pinetree.Data;
 namespace Pinetree.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250316081018_AddPinecone")]
+    [Migration("20250320090911_AddPinecone")]
     partial class AddPinecone
     {
         /// <inheritdoc />
@@ -223,7 +223,7 @@ namespace Pinetree.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Pinetree.Model.Pinecone", b =>
+            modelBuilder.Entity("PinetreeModel.Pinecone", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -321,16 +321,16 @@ namespace Pinetree.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Pinetree.Model.Pinecone", b =>
+            modelBuilder.Entity("PinetreeModel.Pinecone", b =>
                 {
-                    b.HasOne("Pinetree.Model.Pinecone", "Parent")
+                    b.HasOne("PinetreeModel.Pinecone", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId");
 
                     b.Navigation("Parent");
                 });
 
-            modelBuilder.Entity("Pinetree.Model.Pinecone", b =>
+            modelBuilder.Entity("PinetreeModel.Pinecone", b =>
                 {
                     b.Navigation("Children");
                 });

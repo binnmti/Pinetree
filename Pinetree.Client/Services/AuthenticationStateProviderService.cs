@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components.Authorization;
 using System.Security.Principal;
 
-namespace Pinetree.Components.Services;
+namespace Pinetree.Client.Services;
 
 public static class AuthenticationStateProviderService
 {
