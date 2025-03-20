@@ -1,4 +1,4 @@
-﻿@page "/{UserName}/Edit/{id:long}"
+﻿@page "/Edit/{id:long}"
 @attribute [Authorize]
 
 @using Microsoft.AspNetCore.Authorization
@@ -11,13 +11,10 @@
 
 @if (Pinetree != null)
 {
-    <Markdown UserName="@(UserName)" Pinetree="@(Pinetree)" Id="@(Id)" IsTry=false FileCount=@FileCount />
+    <Markdown Pinetree="@(Pinetree)" Id="@(Id)" IsTry=false FileCount=@FileCount />
 }
 
 @code {
-    [Parameter]
-    public string UserName { get; set; } = "";
-
     [Parameter]
     public long Id { get; set; }
 
@@ -36,7 +33,7 @@
         if (firstRender)
         {
             var identity = await AuthenticationStateProvider.GetIdentityAsync();
-            if (identity == null || identity.Name != UserName)
+            if (identity == null || !identity.IsAuthenticated)
             {
                 NavigationManager.NavigateTo("/");
                 return;

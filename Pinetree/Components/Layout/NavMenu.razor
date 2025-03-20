@@ -1,9 +1,4 @@
-﻿@using Pinetree.Data
-@using PinetreeModel
-
-@inject ApplicationDbContext DbContext
-@inject NavigationManager NavigationManager
-@inject AuthenticationStateProvider AuthenticationStateProvider
+﻿@using PinetreeModel
 
 @implements IDisposable
 
@@ -20,16 +15,6 @@
             <ul class="navbar-nav ms-auto">
                 <AuthorizeView>
                     <Authorized>
-                        <li class="nav-item">
-                            <button class="nav-link" @onclick="CreateFile">
-                                <i class="bi bi-file-earmark-plus" aria-hidden="true"></i> Create File
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" @onclick="FileList">
-                                <i class="bi bi-card-list" aria-hidden="true"></i> File List
-                            </button>
-                        </li>
                         <li class="nav-item">
                             <NavLink class="nav-link" href="Account/Manage">
                                 <i class="bi bi-person-fill" aria-hidden="true"></i> @context.User.Identity?.Name
@@ -77,34 +62,9 @@
 
 @code {
     [Inject]
-    public required HttpClient HttpClient { get; set; }
+    public required NavigationManager NavigationManager { get; set; }
 
     private string? currentUrl;
-
-    private async Task CreateFile()
-    {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var userName = authState.User.Identity?.Name;
-
-        var response = await HttpClient.PostAsJsonAsync("/api/Pinecones/add-top", new { });
-        if (!response.IsSuccessStatusCode) return;
-
-        var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
-        if (pinecone == null) return;
-
-        var url = $"/{userName}/Edit/{pinecone.Id}";
-        NavigationManager.NavigateTo(url);
-    }
-
-    private async Task FileList()
-    {
-        NavigationManager.NavigateTo("/AAA");
-
-        // var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        // var userName = authState.User.Identity?.Name;
-        // var url = $"/{userName}/List";
-        // NavigationManager.NavigateTo(url);
-    }
 
     protected override void OnInitialized()
     {

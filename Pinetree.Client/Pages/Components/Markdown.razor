@@ -28,7 +28,7 @@
                         </div>
                     }
                     <div>
-                        <PinetreeView UserName="@UserName" Pinetree="@Pinetree" Id="@Id" IsTry=@IsTry OnChildEvent="SetCurrent" />
+                        <PinetreeView Pinetree="@Pinetree" Id="@Id" IsTry=@IsTry OnChildEvent="SetCurrent" />
                     </div>
                 </div>
             </div>
@@ -56,9 +56,6 @@
 </div>
 
 @code {
-    [Parameter]
-    public string UserName { get; set; } = "";
-
     [Parameter]
     public long Id { get; set; }
 
@@ -126,7 +123,7 @@
 
     private void OnFileListClick()
     {
-        NavigationManager.NavigateTo($"/{UserName}/List");
+        NavigationManager.NavigateTo($"/List");
     }
 
     private void DebounceSave()

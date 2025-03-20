@@ -1,4 +1,4 @@
-﻿@page "/{UserName}/List"
+﻿@page "/List"
 @attribute [Authorize]
 
 @using Microsoft.AspNetCore.Authorization
@@ -54,8 +54,6 @@
 </div>
 
 @code {
-    [Parameter]
-    public string UserName { get; set; } = "";
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
     [Inject]
@@ -81,7 +79,7 @@
         if (firstRender)
         {
             var identity = await AuthenticationStateProvider.GetIdentityAsync();
-            if (identity == null || identity.Name != UserName)
+            if (identity == null || !identity.IsAuthenticated)
             {
                 NavigationManager.NavigateTo("/");
             }
@@ -110,7 +108,7 @@
             var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
             if (pinecone != null)
             {
-                var url = $"/{UserName}/Edit/{pinecone.Id}";
+                var url = $"/Edit/{pinecone.Id}";
                 NavigationManager.NavigateTo(url);
             }
         }
@@ -118,7 +116,7 @@
 
     private void OpenFile(long id)
     {
-        var url = $"/{UserName}/Edit/{id}";
+        var url = $"/Edit/{id}";
         NavigationManager.NavigateTo(url);
     }
 

@@ -47,7 +47,7 @@
         var identity = await AuthenticationStateProvider.GetIdentityAsync();
         if (identity != null && identity.IsAuthenticated)
         {
-            NavigationManager.NavigateTo($"/{identity.Name}/List");
+            NavigationManager.NavigateTo($"/List");
         }
     }
 }
