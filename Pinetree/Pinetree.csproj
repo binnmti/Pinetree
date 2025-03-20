@@ -7,32 +7,17 @@
     <UserSecretsId>aspnet-Pinetree-0259e929-ab8f-4e3d-b3a5-551225d37215</UserSecretsId>
     <ApplicationInsightsResourceId>/subscriptions/6ffdd37c-9b89-4f4c-889e-56017146b636/resourcegroups/Pinetree/providers/microsoft.insights/components/Pinetree</ApplicationInsightsResourceId>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Content Remove="libman.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="wwwroot\Pinetree.png" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Azure.Communication.Email" Version="1.0.1" />
-    <PackageReference Include="Azure.Identity" Version="1.13.0" />
-    <PackageReference Include="HtmlSanitizer" Version="9.0.876" />
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.3" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.3" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Pinetree.Client\Pinetree.Client.csproj" />
     <ProjectReference Include="..\PinetreeModel\PinetreeModel.csproj" />
   </ItemGroup>
-
 </Project>
