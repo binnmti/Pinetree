@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Pinetree.Model;
+namespace PinetreeModel;
 
 public class Pinecone
 {

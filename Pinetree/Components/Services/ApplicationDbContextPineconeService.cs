@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Pinetree.Data;
-using Pinetree.Model;
+using PinetreeModel;
 using System.Diagnostics;
 
 namespace Pinetree.Components.Services;
