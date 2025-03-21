@@ -15,9 +15,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.3" />
+    <PackageReference Include="Stripe.net" Version="47.4.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Pinetree.Client\Pinetree.Client.csproj" />
-    <ProjectReference Include="..\PinetreeModel\PinetreeModel.csproj" />
+    <ProjectReference Include="..\PinetreeModel\Pinetree.Shared.csproj" />
   </ItemGroup>
 </Project>

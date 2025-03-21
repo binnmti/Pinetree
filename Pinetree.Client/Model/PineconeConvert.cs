@@ -1,4 +1,4 @@
-﻿using PinetreeModel;
+﻿using Pinetree.Shared.Model;
 
 namespace Pinetree.Client.Model;
 

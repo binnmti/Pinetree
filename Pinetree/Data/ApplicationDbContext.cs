@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using PinetreeModel;
+using Pinetree.Shared.Model;
 
 namespace Pinetree.Data
 {
