@@ -50,18 +50,17 @@
         {
             if (paymentStatus == "success")
             {
-                message = "Your payment was successful. We appreciate your business.";
+                message = "Your payment was successful. We appreciate your professional.";
             }
             else if (paymentStatus == "cancel")
             {
                 message = "There was an error processing your payment. Please try again later.";
             }
         }
-
         var user = await UserAccessor.GetRequiredUserAsync(HttpContext);
         var roles = await UserManager.GetRolesAsync(user);
         Debug.Assert(roles.Count <= 1);
-        var role = roles.FirstOrDefault();
+        role = roles.FirstOrDefault();
         IsFree = role == null ? true : Roles.IsFree(role);
     }
 
