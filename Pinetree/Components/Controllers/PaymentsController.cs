@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Pinetree.Data;
 using Pinetree.Shared;
 using Stripe;
@@ -88,7 +89,7 @@ public class PaymentsController : ControllerBase
     private async Task HandleCancelledSubscription(Subscription subscription)
     {
         var customerId = subscription.CustomerId;
-        var user = await UserManager.FindByIdAsync(customerId);
+        var user = await UserManager.Users.FirstOrDefaultAsync(u => u.StripeCustomerId == customerId);
         if (user != null)
         {
             await UserManager.RemoveFromRoleAsync(user, Roles.Professional);

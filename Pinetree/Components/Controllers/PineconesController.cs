@@ -49,7 +49,6 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
     public async Task<Pinecone> AddChild([FromQuery] long groupId, [FromQuery] long parentId)
     {
         var userName = User.Identity?.Name ?? "";
-
         var pinecone = new Pinecone()
         {
             Title = Untitled,
@@ -71,8 +70,13 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
     [HttpPost("update")]
     public async Task Update([FromBody] PineconeUpdateModel model)
     {
+        var userName = User.Identity?.Name ?? "";
         var current = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == model.Id)
             ?? throw new KeyNotFoundException($"Pinecone with ID {model.Id} not found.");
+        if (current.UserName != userName)
+        {
+            throw new UnauthorizedAccessException("You do not own this Pinecone.");
+        }
         current.Title = model.Title;
         current.Content = model.Content;
         current.Update = DateTime.UtcNow;

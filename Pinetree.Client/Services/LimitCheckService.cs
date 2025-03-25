@@ -19,7 +19,7 @@ public static class LimitCheckService
         {
             if (currentDepth > ProMaxDepth)
             {
-                await jsRuntime.InvokeVoidAsync("alert", $"You cannot add more than {ProMaxDepth} levels in the free version.");
+                await jsRuntime.InvokeVoidAsync("alert", $"You cannot add more than {ProMaxDepth} levels in the professional version.");
                 return true;
             }
         }
@@ -41,7 +41,7 @@ public static class LimitCheckService
         {
             if (fileCount >= ProMaxFileCount)
             {
-                await jsRuntime.InvokeVoidAsync("alert", $"You cannot add more than {ProMaxFileCount} files in the free version.");
+                await jsRuntime.InvokeVoidAsync("alert", $"You cannot add more than {ProMaxFileCount} files in the professional version.");
                 return true;
             }
         }
@@ -62,7 +62,7 @@ public static class LimitCheckService
         {
             if (character.Length >= ProMaxCharacter)
             {
-                await jsRuntime.InvokeVoidAsync("alert", $"You cannot write more than {ProMaxCharacter} characters in the free version.");
+                await jsRuntime.InvokeVoidAsync("alert", $"You cannot write more than {ProMaxCharacter} characters in the professional version.");
                 return true;
             }
         }

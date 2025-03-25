@@ -31,18 +31,6 @@
     [Inject]
     public HttpClient HttpClient { get; set; } = default!;
 
-    private static async Task<bool> GetUserRoleAsync(AuthenticationStateProvider authStateProvider)
-    {
-        var authState = await authStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        if (user.Identity?.IsAuthenticated == true)
-        {
-            var roleClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role);
-            return roleClaim?.Value == "Professional";
-        }
-        return false;
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)

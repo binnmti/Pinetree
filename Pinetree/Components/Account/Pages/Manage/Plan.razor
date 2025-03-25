@@ -63,8 +63,8 @@
         }
         var user = await UserAccessor.GetRequiredUserAsync(HttpContext);
         var roles = await UserManager.GetRolesAsync(user);
-        Debug.Assert(roles.Count <= 1);
-        role = roles.FirstOrDefault();
+        Debug.Assert(roles.Count <= 1, "User has more than one role assigned");
+        role = roles.FirstOrDefault() ?? "Free";
         IsFree = role == null ? true : Roles.IsFree(role);
     }
 
