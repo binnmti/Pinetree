@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PinetreeModel\PinetreeModel.csproj" />
+    <ProjectReference Include="..\PinetreeModel\Pinetree.Shared.csproj" />
   </ItemGroup>
 
 </Project>

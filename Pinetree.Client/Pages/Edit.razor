@@ -4,14 +4,16 @@
 @using Microsoft.AspNetCore.Authorization
 @using Pinetree.Client.Model
 @using Pinetree.Client.Services
-@using PinetreeModel
+@using Pinetree.Shared
+@using Pinetree.Shared.Model
 @using System.Net.Http
+@using System.Security.Claims
 
 @rendermode InteractiveWebAssembly
 
 @if (Pinetree != null)
 {
-    <Markdown Pinetree="@(Pinetree)" Id="@(Id)" IsTry=false FileCount=@FileCount />
+    <Markdown Pinetree="@(Pinetree)" Id="@(Id)" IsTry=false IsProfessional=IsProfessional FileCount =@FileCount />
 }
 
 @code {
@@ -20,6 +22,7 @@
 
     private Pinetree? Pinetree { get; set; }
     private int FileCount { get; set; }
+    private bool IsProfessional { get; set; }
 
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
@@ -32,12 +35,15 @@
     {
         if (firstRender)
         {
-            var identity = await AuthenticationStateProvider.GetIdentityAsync();
-            if (identity == null || !identity.IsAuthenticated)
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (!user.Identity?.IsAuthenticated ?? false)
             {
                 NavigationManager.NavigateTo("/");
                 return;
             }
+            var roleClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role);
+            IsProfessional = Roles.IsProfessional(roleClaim?.Value ?? "");
             var hit = await HttpClient.GetFromJsonAsync<Pinecone>($"/api/Pinecones/get-include-child/{Id}");
             if (hit == null)
             {

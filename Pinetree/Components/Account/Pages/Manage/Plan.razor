@@ -1,0 +1,86 @@
+﻿@page "/Account/Manage/Plan"
+@using Microsoft.AspNetCore.Identity
+@using Pinetree.Components.Account.Services
+@using Pinetree.Data
+@using System.Diagnostics
+@using Pinetree.Shared
+
+@inject IdentityUserAccessor UserAccessor
+
+<PageTitle>Manage Plan</PageTitle>
+
+<h3>Manage Plan</h3>
+
+<StatusMessage Message="@message" />
+<div class="row">
+    <div class="col-xl-6">
+        <form @onsubmit="OnSubmit" @formname="send-verification" id="send-verification-form" method="post">
+            <AntiforgeryToken />
+            <div class="form-floating mb-3 input-group">
+                <input type="text" value="@role" id="plan" class="form-control" placeholder="Enter your email" disabled />
+                <label for="plan" class="form-label">Plan</label>
+            </div>
+            @if (IsFree)
+            {
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Update Pro Plan</button>
+            }
+            else
+            {
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Check Stripe Page</button>
+            }
+        </form>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+    [Inject]
+    public required PaymentService PaymentService { get; set; }
+    [Inject]
+    public required UserManager<ApplicationUser> UserManager { get; set; }
+    [Inject]
+    public required NavigationManager NavigationManager { get; set; }
+
+    private string message = "";
+    private string? role;
+    private bool IsFree;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("payment", out var paymentStatus))
+        {
+            if (paymentStatus == "success")
+            {
+                message = "Your payment was successful. We appreciate your professional.";
+            }
+            else if (paymentStatus == "cancel")
+            {
+                message = "There was an error processing your payment. Please try again later.";
+            }
+        }
+        var user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        var roles = await UserManager.GetRolesAsync(user);
+        Debug.Assert(roles.Count <= 1, "User has more than one role assigned");
+        role = roles.FirstOrDefault() ?? "Free";
+        IsFree = role == null ? true : Roles.IsFree(role);
+    }
+
+    private async Task OnSubmit()
+    {
+#if DEBUG
+        if (IsFree)
+        {
+            var url = await PaymentService.CreateCheckoutSessionAsync();
+            NavigationManager.NavigateTo(url);
+        }
+        else
+        {
+            var url = await PaymentService.CreatePortalSession();
+            NavigationManager.NavigateTo(url);
+        }
+#endif
+    }
+}

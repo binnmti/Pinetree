@@ -1,6 +1,6 @@
 ﻿@using Pinetree.Client.Model
 @using Pinetree.Client.Services
-@using PinetreeModel
+@using Pinetree.Shared.Model
 
 @if (Pinetree != null)
 {
@@ -38,7 +38,7 @@
             {
                 @foreach (var tree in Pinetree.Children)
                 {
-                    <PinetreeView Pinetree="@(tree)" id="@(Id)" IsTry=@IsTry OnChildEvent ="OnChildEvent" />
+                    <PinetreeView Pinetree="@(tree)" id="@(Id)" IsTry=@IsTry IsProfessional=@IsProfessional OnChildEvent ="OnChildEvent" />
                 }
             }
         </li>
@@ -57,6 +57,9 @@
 
     [Parameter]
     public EventCallback<long> OnChildEvent { get; set; }
+
+    [Parameter]
+    public bool IsProfessional { get; set; }
 
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
@@ -80,11 +83,11 @@
 
     private async Task AddChild()
     {
-        if (await JS.CheckDepthAsync(Pinetree))
+        if (await JS.CheckDepthAsync(Pinetree, IsProfessional))
         {
             return;
         }
-        if (await JS.CheckFileCountAsync(Pinetree))
+        if (await JS.CheckFileCountAsync(Pinetree, IsProfessional))
         {
             return;
         }

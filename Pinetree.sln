@@ -10,7 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目
 		.github\workflows\Pinetree.yml = .github\workflows\Pinetree.yml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PinetreeModel", "PinetreeModel\PinetreeModel.csproj", "{CA1DF661-E634-40DC-A733-5024174BE271}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Shared", "PinetreeModel\Pinetree.Shared.csproj", "{CA1DF661-E634-40DC-A733-5024174BE271}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Client", "Pinetree.Client\Pinetree.Client.csproj", "{CC166F25-F9EB-4521-972E-C5EFEE8AA07E}"
 EndProject
