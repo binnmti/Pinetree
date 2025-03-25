@@ -28,7 +28,7 @@
                         </div>
                     }
                     <div>
-                        <PinetreeView Pinetree="@Pinetree" Id="@Id" IsTry=@IsTry OnChildEvent="SetCurrent" />
+                        <PinetreeView Pinetree="@Pinetree" Id="@Id" IsTry=@IsTry IsProfessional=IsProfessional OnChildEvent ="SetCurrent" />
                     </div>
                 </div>
             </div>
@@ -67,6 +67,9 @@
 
     [Parameter]
     public int FileCount { get; set; }
+
+    [Parameter]
+    public bool IsProfessional { get; set; }
 
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
@@ -107,7 +110,7 @@
     private async Task OnInputChange(ChangeEventArgs e)
     {
         var content = e.Value?.ToString() ?? "";
-        if (await JS.CheckCharacterAsync(content))
+        if (await JS.CheckCharacterAsync(content, IsProfessional))
         {
             Content = content[0..999];
         }

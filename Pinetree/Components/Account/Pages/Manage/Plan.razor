@@ -24,6 +24,10 @@
             {
                 <button type="submit" class="w-100 btn btn-lg btn-primary">Update Pro Plan</button>
             }
+            else
+            {
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Check Stripe Page</button>
+            }
         </form>
     </div>
 </div>
@@ -66,7 +70,17 @@
 
     private async Task OnSubmit()
     {
-        var url = await PaymentService.CreateCheckoutSessionAsync();
-        NavigationManager.NavigateTo(url);
+#if DEBUG
+        if (IsFree)
+        {
+            var url = await PaymentService.CreateCheckoutSessionAsync();
+            NavigationManager.NavigateTo(url);
+        }
+        else
+        {
+            var url = await PaymentService.CreatePortalSession();
+            NavigationManager.NavigateTo(url);
+        }
+#endif
     }
 }
