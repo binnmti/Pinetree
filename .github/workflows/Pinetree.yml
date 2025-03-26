@@ -53,12 +53,31 @@ jobs:
       uses: azure/login@v2
       with:
         creds: ${{ secrets.Pinetree_SPN }}
+    - name: Add IP to Azure SQL firewall
+      run: |
+        $ip = (Invoke-WebRequest -Uri https://api.ipify.org).Content
+        Write-Host "GitHub Actions IP: $ip"
+        $resourceGroup = ${{ env.AZURE_WEBAPP_NAME }}
+        $server = ${{ env.AZURE_WEBAPP_NAME }}
+        az sql server firewall-rule create `
+          --resource-group $resourceGroup `
+          --server $server `
+          --name "GithubActions-Temporary" `
+          --start-ip-address $ip `
+          --end-ip-address $ip
     - name: Run database migrations
       run: |
         cd "${{ env.WORKING_DIRECTORY }}"
         dotnet ef database update --configuration ${{ env.CONFIGURATION }}
       env:
         ConnectionStrings__DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION }}
+    - name: Remove IP from Azure SQL firewall
+      if: always()
+      run: |
+        az sql server firewall-rule delete `
+          --resource-group "${{ env.AZURE_WEBAPP_NAME }}" `
+          --server "${{ env.AZURE_WEBAPP_NAME }}" `
+          --name "GithubActions-Temporary"
     - name: Deploy to Azure WebApp
       uses: azure/webapps-deploy@v2
       with:
