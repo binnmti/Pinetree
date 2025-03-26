@@ -19,7 +19,7 @@ internal static class MarkdownUtil
         return string.IsNullOrEmpty(firstLine) ? "Extracted content" : firstLine;
     }
 
-    internal static async Task<long> AddChildAsync(VModel.Pinetree current, string title, string content, IJSRuntime js, HttpClient httpClient, bool isTry, bool isProfessional)
+    internal static async Task<long> AddChildAsync(PinetreeView current, string title, string content, IJSRuntime js, HttpClient httpClient, bool isTry, bool isProfessional)
     {
         if (await js.CheckDepthAsync(current, isProfessional))
         {
@@ -30,11 +30,11 @@ internal static class MarkdownUtil
             return -1;
         }
 
-        VModel.Pinetree pinetree;
+        PinetreeView pinetree;
         if (isTry)
         {
             var uniqueId = current.GetUniqueId();
-            pinetree = new VModel.Pinetree(uniqueId, title, content, current, -1);
+            pinetree = new PinetreeView(uniqueId, title, content, current, -1);
         }
         else
         {

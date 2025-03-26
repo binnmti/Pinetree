@@ -64,7 +64,7 @@
     public long Id { get; set; }
 
     [Parameter]
-    public Pinetree Pinetree { get; set; } = Pinetree.Nothing;
+    public PinetreeView Pinetree { get; set; } = PinetreeView.Nothing;
 
     [Parameter]
     public int FileCount { get; set; }
@@ -89,7 +89,7 @@
     private ElementReference MarkdownContainer;
     private DotNetObjectReference<Markdown>? objRef;
     private JsInterop? _jsInterop;
-    private Pinetree Current { get; set; } = Pinetree.Nothing;
+    private PinetreeView Current { get; set; } = PinetreeView.Nothing;
     private string Content { get; set; } = "";
     private string Title { get; set; } = "";
     private string MarkdownText { get; set; } = "";
