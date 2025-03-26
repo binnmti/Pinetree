@@ -1,4 +1,4 @@
-﻿@using Pinetree.Client.Model
+﻿@using Pinetree.Client.VModel
 @using Pinetree.Client.Services
 @using Pinetree.Shared.Model
 
@@ -38,7 +38,7 @@
             {
                 @foreach (var tree in Pinetree.Children)
                 {
-                    <PinetreeView Pinetree="@(tree)" id="@(Id)" IsTry=@IsTry IsProfessional=@IsProfessional OnChildEvent ="OnChildEvent" />
+                    <TreeView Pinetree="@(tree)" id="@(Id)" IsTry=@IsTry IsProfessional=@IsProfessional OnChildEvent ="OnChildEvent" />
                 }
             }
         </li>

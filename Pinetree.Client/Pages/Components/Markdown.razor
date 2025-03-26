@@ -1,4 +1,4 @@
-﻿@using Pinetree.Client.Model
+﻿@using Pinetree.Client.VModel
 @using Pinetree.Client.Services
 @implements IAsyncDisposable
 
@@ -27,7 +27,7 @@
                         </div>
                     }
                     <div>
-                        <PinetreeView Pinetree="@Pinetree" Id="@Id" IsTry=@IsTry IsProfessional=IsProfessional OnChildEvent ="SetCurrent" />
+                        <TreeView Pinetree="@Pinetree" Id="@Id" IsTry=@IsTry IsProfessional=IsProfessional OnChildEvent="SetCurrent" />
                     </div>
                 </div>
             </div>

@@ -1,5 +1,5 @@
 ﻿using Microsoft.JSInterop;
-using Pinetree.Client.Model;
+using Pinetree.Client.VModel;
 using Pinetree.Client.Services;
 using Pinetree.Shared.Model;
 using System.Net.Http.Json;
@@ -19,7 +19,7 @@ internal static class MarkdownUtil
         return string.IsNullOrEmpty(firstLine) ? "Extracted content" : firstLine;
     }
 
-    internal static async Task<long> AddChildAsync(Model.Pinetree current, string title, string content, IJSRuntime js, HttpClient httpClient, bool isTry, bool isProfessional)
+    internal static async Task<long> AddChildAsync(VModel.Pinetree current, string title, string content, IJSRuntime js, HttpClient httpClient, bool isTry, bool isProfessional)
     {
         if (await js.CheckDepthAsync(current, isProfessional))
         {
@@ -30,11 +30,11 @@ internal static class MarkdownUtil
             return -1;
         }
 
-        Model.Pinetree pinetree;
+        VModel.Pinetree pinetree;
         if (isTry)
         {
             var uniqueId = current.GetUniqueId();
-            pinetree = new Model.Pinetree(uniqueId, title, content, current, -1);
+            pinetree = new VModel.Pinetree(uniqueId, title, content, current, -1);
         }
         else
         {

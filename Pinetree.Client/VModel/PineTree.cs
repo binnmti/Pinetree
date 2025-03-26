@@ -1,4 +1,4 @@
-﻿namespace Pinetree.Client.Model;
+﻿namespace Pinetree.Client.VModel;
 
 public class Pinetree(long id, string title, string content, Pinetree? parent, long groupId)
 {

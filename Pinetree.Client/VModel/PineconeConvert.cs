@@ -1,6 +1,6 @@
 ﻿using Pinetree.Shared.Model;
 
-namespace Pinetree.Client.Model;
+namespace Pinetree.Client.VModel;
 
 public static class PineconeConvert
 {
