@@ -20,6 +20,12 @@ public class JsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
         return await module.InvokeAsync<bool>("replaceTextAreaSelection", element, text);
     }
 
+    public async ValueTask SetCaretPositionAsync(ElementReference element, int start, int end)
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("setCaretPosition", element, start, end);
+    }
+
     public async ValueTask SetupLinkInterceptorAsync<T>(ElementReference container, DotNetObjectReference<T> dotNetRef) where T : class
     {
         var module = await _moduleTask.Value;

@@ -21,6 +21,10 @@ export function replaceTextAreaSelection(element, text) {
     }
     return false;
 }
+export function setCaretPosition(element, start, end) {
+    element.focus();
+    element.setSelectionRange(start, end);
+}
 export function setupLinkInterceptor(container, dotNetRef) {
     container.addEventListener('click', (e) => {
         const target = e.target;

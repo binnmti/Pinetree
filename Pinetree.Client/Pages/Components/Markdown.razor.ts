@@ -22,6 +22,11 @@ export function replaceTextAreaSelection(element: HTMLTextAreaElement, text: str
     return false;
 }
 
+export function setCaretPosition(element: HTMLTextAreaElement, start: number, end: number) {
+    element.focus();
+    element.setSelectionRange(start, end);
+}
+
 declare namespace DotNet {
     interface DotNetObject {
         invokeMethodAsync<T>(methodName: string, ...args: any[]): Promise<T>;
