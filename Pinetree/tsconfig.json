@@ -9,6 +9,6 @@
     "noImplicitAny": true
   },
   "include": [
-    "./wwwroot/js/*.ts"
+    "wwwroot/js/*.ts"
   ]
 }
