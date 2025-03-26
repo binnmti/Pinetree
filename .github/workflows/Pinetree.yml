@@ -68,7 +68,7 @@ jobs:
         cd "${{ env.WORKING_DIRECTORY }}"
         dotnet ef database update --project "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --verbose
       env:
-        DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION }}
+        ConnectionStrings__DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION }}
     - name: Remove IP from Azure SQL firewall
       if: always()
       run: |
