@@ -22,3 +22,24 @@ export function replaceTextAreaSelection(element: HTMLTextAreaElement, text: str
     return false;
 }
 
+declare namespace DotNet {
+    interface DotNetObject {
+        invokeMethodAsync<T>(methodName: string, ...args: any[]): Promise<T>;
+        dispose(): void;
+    }
+}
+
+export function setupLinkInterceptor(container: HTMLElement, dotNetRef: DotNet.DotNetObject): void {
+    container.addEventListener('click', (e: Event) => {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'A') {
+            const linkElement = target as HTMLAnchorElement;
+            const href = linkElement.getAttribute('href');
+            if (href && href.startsWith('/Edit/')) {
+                e.preventDefault();
+                const id = href.substring(6);
+                dotNetRef.invokeMethodAsync('HandleMarkdownLinkClick', id);
+            }
+        }
+    });
+}

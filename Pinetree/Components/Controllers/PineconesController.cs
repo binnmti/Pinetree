@@ -105,13 +105,9 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
     public async Task<Pinecone> GetIncludeChild(long id)
     {
         var userName = User.Identity?.Name ?? "";
-        var parent = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == id)
-            ?? throw new KeyNotFoundException($"Pinecone with ID {id} not found.");
-        if (parent.UserName != userName)
-        {
-            throw new UnauthorizedAccessException("You do not own this Pinecone.");
-        }
-        return await LoadChildrenRecursivel(parent);
+        var pinecone = await GetPineconeAndVerifyOwnership(id, userName);
+        var rootPinecone = await GetPineconeAndVerifyOwnership(pinecone.GroupId, userName);
+        return await LoadChildrenRecursivel(rootPinecone);
     }
 
     [HttpGet("get-user-top-list")]
@@ -164,5 +160,16 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
             await LoadChildrenRecursivel(child);
         }
         return parent;
+    }
+
+    private async Task<Pinecone> GetPineconeAndVerifyOwnership(long id, string userName)
+    {
+        var pinecone = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == id)
+            ?? throw new KeyNotFoundException($"Pinecone with ID {id} not found.");
+        if (pinecone.UserName != userName)
+        {
+            throw new UnauthorizedAccessException("You do not own this Pinecone.");
+        }
+        return pinecone;
     }
 }

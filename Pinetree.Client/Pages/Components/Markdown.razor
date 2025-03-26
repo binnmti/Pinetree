@@ -1,6 +1,6 @@
 ﻿@using Pinetree.Client.Model
 @using Pinetree.Client.Services
-@using Pinetree.Shared.Model
+@implements IAsyncDisposable
 
 <div class="editor-container">
     @if (IsTry)
@@ -50,7 +50,7 @@
                     <div class="counter">@Content.Length characters</div>
                 </div>
                 <div class="col py-2" style="height: 100%; overflow: hidden;">
-                    <div class="border" style="width:100%; height:101%; overflow:auto;">
+                    <div class="border" style="width:100%; height:101%; overflow:auto;" @ref="MarkdownContainer">
                         @((MarkupString)MarkdownText)
                     </div>
                 </div>
@@ -75,6 +75,9 @@
     [Parameter]
     public bool IsProfessional { get; set; }
 
+    [Parameter]
+    public string PageName { get; set; } = "";
+
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
     [Inject]
@@ -83,7 +86,9 @@
     public required HttpClient HttpClient { get; set; }
 
     private ElementReference TextAreaRef;
-    private TextAreaInterop? _textAreaInterop;
+    private ElementReference MarkdownContainer;
+    private DotNetObjectReference<Markdown>? objRef;
+    private JsInterop? _jsInterop;
     private Pinetree Current { get; set; } = Pinetree.Nothing;
     private string Content { get; set; } = "";
     private string Title { get; set; } = "";
@@ -91,21 +96,37 @@
 
     private System.Threading.Timer? _debounceTimer;
 
-    public async ValueTask DisposeAsync()
-    {
-        _debounceTimer?.Dispose();
-        if (_textAreaInterop != null)
-        {
-            await ((IAsyncDisposable)_textAreaInterop).DisposeAsync();
-        }
-    }
-
-    protected override void OnAfterRender(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             SetCurrent(Id);
-            _textAreaInterop = new TextAreaInterop(JS);
+            _jsInterop = new JsInterop(JS);
+            objRef = DotNetObjectReference.Create(this);
+            if (_jsInterop != null && MarkdownContainer.Id != null)
+            {
+                await _jsInterop.SetupLinkInterceptorAsync(MarkdownContainer, objRef);
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        objRef?.Dispose();
+        _debounceTimer?.Dispose();
+        if (_jsInterop != null)
+        {
+            await ((IAsyncDisposable)_jsInterop).DisposeAsync();
+        }
+    }
+
+
+    [JSInvokable]
+    public void HandleMarkdownLinkClick(string idString)
+    {
+        if (long.TryParse(idString, out long id))
+        {
+            SetCurrent(id);
         }
     }
 
@@ -141,11 +162,11 @@
 
     private async Task ExtractToChildFile()
     {
-        if (_textAreaInterop == null) return;
+        if (_jsInterop == null) return;
 
         try
         {
-            var selection = await _textAreaInterop.GetSelectionAsync(TextAreaRef);
+            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
             if (string.IsNullOrEmpty(selection.Text)) return;
             if (IsTry)
             {
@@ -155,7 +176,7 @@
             var childTitle = MarkdownUtil.GetChildTitle(selection.Text);
             var childId = await MarkdownUtil.AddChildAsync(Current, childTitle, selection.Text, JS, HttpClient, IsTry, IsProfessional);
             var linkText = $"[{childTitle}](/Edit/{childId})";
-            await _textAreaInterop.ReplaceSelectionAsync(TextAreaRef, linkText);
+            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, linkText);
             Current.Content = await JS.InvokeAsync<string>("eval", $"document.querySelector('textarea').value");
             SetCurrent(Id);
             StateHasChanged();

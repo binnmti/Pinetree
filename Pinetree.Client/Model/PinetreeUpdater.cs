@@ -46,6 +46,7 @@ public static class PinetreeUpdater
         if (pineTree.IsCurrent)
         {
             result = pineTree;
+            pineTree.IsExpanded = true;
         }
         fileCount++;
         foreach (var child in pineTree.Children)
@@ -54,6 +55,7 @@ public static class PinetreeUpdater
             if (childResult != null)
             {
                 result = childResult;
+                pineTree.IsExpanded = true;
             }
         }
         // This method assumes the provided ID always exists somewhere in the tree.

@@ -21,4 +21,18 @@ export function replaceTextAreaSelection(element, text) {
     }
     return false;
 }
+export function setupLinkInterceptor(container, dotNetRef) {
+    container.addEventListener('click', (e) => {
+        const target = e.target;
+        if (target.tagName === 'A') {
+            const linkElement = target;
+            const href = linkElement.getAttribute('href');
+            if (href && href.startsWith('/Edit/')) {
+                e.preventDefault();
+                const id = href.substring(6);
+                dotNetRef.invokeMethodAsync('HandleMarkdownLinkClick', id);
+            }
+        }
+    });
+}
 //# sourceMappingURL=Markdown.razor.js.map

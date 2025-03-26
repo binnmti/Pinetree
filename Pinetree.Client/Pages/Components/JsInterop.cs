@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
-namespace Pinetree.Client.Services;
+namespace Pinetree.Client.Pages.Components;
 
-public class TextAreaInterop(IJSRuntime jsRuntime) : IAsyncDisposable
+public class JsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
 {
     private readonly Lazy<Task<IJSObjectReference>> _moduleTask = new(() => jsRuntime.InvokeAsync<IJSObjectReference>(
                                                              "import", "../Pages/Components/Markdown.razor.js").AsTask());
@@ -18,6 +18,12 @@ public class TextAreaInterop(IJSRuntime jsRuntime) : IAsyncDisposable
     {
         var module = await _moduleTask.Value;
         return await module.InvokeAsync<bool>("replaceTextAreaSelection", element, text);
+    }
+
+    public async ValueTask SetupLinkInterceptorAsync<T>(ElementReference container, DotNetObjectReference<T> dotNetRef) where T : class
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("setupLinkInterceptor", container, dotNetRef);
     }
 
     public async ValueTask DisposeAsync()
