@@ -72,7 +72,7 @@ jobs:
     - name: Run database migrations
       run: |
         cd "${{ env.WORKING_DIRECTORY }}"
-        dotnet ef database update --configuration ${{ env.CONFIGURATION }} --verbose
+        dotnet ef database update --configuration ${{ env.CONFIGURATION }} --verbose --no-build
       env:
         ConnectionStrings__DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION }}
     - name: Remove IP from Azure SQL firewall
