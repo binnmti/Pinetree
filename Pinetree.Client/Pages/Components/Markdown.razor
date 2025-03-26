@@ -1,7 +1,6 @@
 ﻿@using Pinetree.Client.Model
 @using Pinetree.Client.Services
-
-@implements IDisposable
+@using Pinetree.Shared.Model
 
 <div class="editor-container">
     @if (IsTry)
@@ -40,9 +39,14 @@
             <div class="markdown-title">
                 <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" style="width:100%" />
             </div>
+            <div class="toolbar">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="ExtractToChildFile" title="Move selected text to child file">
+                    <i class="bi bi-file-earmark-arrow-down"></i>
+                </button>
+            </div>
             <div class="row" style="height:@(IsTry ? "80vh" : "87vh");">
                 <div class="col py-2">
-                    <textarea @bind="@(Content)" class="no-resize" style=" width:100%; height:101%; overflow:auto" @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
+                    <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize" style="width:100%; height:101%; overflow:auto" @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
                     <div class="counter">@Content.Length characters</div>
                 </div>
                 <div class="col py-2" style="height: 100%; overflow: hidden;">
@@ -63,10 +67,10 @@
     public Pinetree Pinetree { get; set; } = Pinetree.Nothing;
 
     [Parameter]
-    public bool IsTry { get; set; }
+    public int FileCount { get; set; }
 
     [Parameter]
-    public int FileCount { get; set; }
+    public bool IsTry { get; set; }
 
     [Parameter]
     public bool IsProfessional { get; set; }
@@ -78,7 +82,8 @@
     [Inject]
     public required HttpClient HttpClient { get; set; }
 
-
+    private ElementReference TextAreaRef;
+    private TextAreaInterop? _textAreaInterop;
     private Pinetree Current { get; set; } = Pinetree.Nothing;
     private string Content { get; set; } = "";
     private string Title { get; set; } = "";
@@ -86,9 +91,13 @@
 
     private System.Threading.Timer? _debounceTimer;
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         _debounceTimer?.Dispose();
+        if (_textAreaInterop != null)
+        {
+            await ((IAsyncDisposable)_textAreaInterop).DisposeAsync();
+        }
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -96,6 +105,7 @@
         if (firstRender)
         {
             SetCurrent(Id);
+            _textAreaInterop = new TextAreaInterop(JS);
         }
     }
 
@@ -129,6 +139,33 @@
         NavigationManager.NavigateTo($"/List");
     }
 
+    private async Task ExtractToChildFile()
+    {
+        if (_textAreaInterop == null) return;
+
+        try
+        {
+            var selection = await _textAreaInterop.GetSelectionAsync(TextAreaRef);
+            if (string.IsNullOrEmpty(selection.Text)) return;
+            if (IsTry)
+            {
+                await JS.InvokeVoidAsync("alert", $"If you are trying out the trial version, the link to your child will not work even if you click on the link. Please Register.");
+            }
+
+            var childTitle = MarkdownUtil.GetChildTitle(selection.Text);
+            var childId = await MarkdownUtil.AddChildAsync(Current, childTitle, selection.Text, JS, HttpClient, IsTry, IsProfessional);
+            var linkText = $"[{childTitle}](/Edit/{childId})";
+            await _textAreaInterop.ReplaceSelectionAsync(TextAreaRef, linkText);
+            Current.Content = await JS.InvokeAsync<string>("eval", $"document.querySelector('textarea').value");
+            SetCurrent(Id);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error creating child file: {ex.Message}");
+        }
+    }
+
     private void DebounceSave()
     {
         if (IsTry) return;
@@ -142,9 +179,11 @@
                 {
                     var updateData = new
                     {
-                        Id = Id,
-                        Title = Title,
-                        Content = Content
+                        Id,
+                        Title,
+                        Content,
+                        GroupId = -1,
+                        ParentId = -1,
                     };
                     await HttpClient.PostAsJsonAsync($"/api/Pinecones/update", updateData);
                     await InvokeAsync(StateHasChanged);

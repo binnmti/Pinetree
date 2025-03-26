@@ -60,23 +60,19 @@ builder.Services.Configure<Microsoft.ApplicationInsights.Extensibility.Telemetry
 config.SetAzureTokenCredential(new DefaultAzureCredential());
 });
 
-builder.Services.AddApplicationInsightsTelemetry(new Microsoft.ApplicationInsights.AspNetCore.Extensions.ApplicationInsightsServiceOptions
+if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
 {
-    ConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]
-});
-var app = builder.Build();
-{
-    using var scope = app.Services.CreateScope();
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    foreach (var roleName in Roles.RoleNames)
+    builder.Services.Configure<Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration>(config =>
     {
-        if (!await roleManager.RoleExistsAsync(roleName))
-        {
-            await roleManager.CreateAsync(new IdentityRole(roleName));
-        }
-    }
-}
+        config.SetAzureTokenCredential(new DefaultAzureCredential());
+    });
 
+    builder.Services.AddApplicationInsightsTelemetry(new Microsoft.ApplicationInsights.AspNetCore.Extensions.ApplicationInsightsServiceOptions
+    {
+        ConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]
+    });
+}
+var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
@@ -90,7 +86,17 @@ else
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }
-
+{
+    using var scope = app.Services.CreateScope();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    foreach (var roleName in Roles.RoleNames)
+    {
+        if (!await roleManager.RoleExistsAsync(roleName))
+        {
+            await roleManager.CreateAsync(new IdentityRole(roleName));
+        }
+    }
+}
 app.UseHttpsRedirection();
 
 

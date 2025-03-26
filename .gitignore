@@ -398,3 +398,7 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# TypeScript Source Maps
+*.js.map
+*.css.map

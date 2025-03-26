@@ -7,6 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree", "Pinetree\Pinetr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目", "ソリューション項目", "{5140C14F-88BA-4002-AF44-B9160A9C20AB}"
 	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
 		.github\workflows\Pinetree.yml = .github\workflows\Pinetree.yml
 	EndProjectSection
 EndProject
@@ -35,5 +36,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {50A780C0-96F6-4CB6-9282-9CA3F87CD7B8}
 	EndGlobalSection
 EndGlobal

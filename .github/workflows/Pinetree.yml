@@ -36,6 +36,13 @@ jobs:
     runs-on: windows-latest
     needs: build
     steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    - name: Install EF Core tools
+      run: dotnet tool install --global dotnet-ef --version 9.0.0
     - name: Download artifact from build job
       uses: actions/download-artifact@v4
       with:
@@ -45,6 +52,12 @@ jobs:
       uses: azure/login@v2
       with:
         creds: ${{ secrets.Pinetree_SPN }}
+    - name: Run database migrations
+      run: |
+        cd "${{ env.WORKING_DIRECTORY }}"
+        dotnet ef database update --configuration ${{ env.CONFIGURATION }}
+      env:
+        ConnectionStrings__DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION }}
     - name: Deploy to Azure WebApp
       uses: azure/webapps-deploy@v2
       with:
