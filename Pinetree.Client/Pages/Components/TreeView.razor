@@ -1,4 +1,4 @@
-﻿@using Pinetree.Client.Model
+﻿@using Pinetree.Client.VModel
 @using Pinetree.Client.Services
 @using Pinetree.Shared.Model
 
@@ -38,7 +38,7 @@
             {
                 @foreach (var tree in Pinetree.Children)
                 {
-                    <PinetreeView Pinetree="@(tree)" id="@(Id)" IsTry=@IsTry IsProfessional=@IsProfessional OnChildEvent ="OnChildEvent" />
+                    <TreeView Pinetree="@(tree)" id="@(Id)" IsTry=@IsTry IsProfessional=@IsProfessional OnChildEvent ="OnChildEvent" />
                 }
             }
         </li>
@@ -50,7 +50,7 @@
     public long Id { get; set; }
 
     [Parameter]
-    public required Pinetree Pinetree { get; set; }
+    public required PinetreeView Pinetree { get; set; }
 
     [Parameter]
     public bool IsTry { get; set; }
@@ -83,34 +83,10 @@
 
     private async Task AddChild()
     {
-        if (await JS.CheckDepthAsync(Pinetree, IsProfessional))
-        {
-            return;
-        }
-        if (await JS.CheckFileCountAsync(Pinetree, IsProfessional))
-        {
-            return;
-        }
+        var newChildId = await MarkdownUtil.AddChildAsync(Pinetree, "Untitled", "", JS, HttpClient, IsTry, IsProfessional);
 
-        Pinetree pinetree;
-        if (IsTry)
-        {
-            var id = Pinetree.GetUniqueId();
-            pinetree = new Pinetree(id, "Untitled", "", Pinetree, -1);
-        }
-        else
-        {
-            var response = await HttpClient.PostAsJsonAsync($"/api/Pinecones/add-child?GroupId={Pinetree.GroupId}&parentId={Pinetree.Id}", new { });
-            if (!response.IsSuccessStatusCode) return;
-            var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
-            if (pinecone == null) return;
 
-            pinetree = pinecone.ToPinetree(Pinetree);
-        }
-        // If you don't save it, the ID won't be decided.
-        Pinetree.IsExpanded = true;
-        Pinetree.Children.Add(pinetree);
-        await OnChildEvent.InvokeAsync(pinetree.Id);
+        await OnChildEvent.InvokeAsync(newChildId);
         StateHasChanged();
     }
 

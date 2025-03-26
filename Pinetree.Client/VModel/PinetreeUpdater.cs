@@ -1,8 +1,8 @@
-﻿namespace Pinetree.Client.Model;
+﻿namespace Pinetree.Client.VModel;
 
 public static class PinetreeUpdater
 {
-    public static long GetUniqueId(this Pinetree pinetree)
+    public static long GetUniqueId(this PinetreeView pinetree)
     {
         var root = pinetree.GetRoot();
         var usedIds = new List<long>();
@@ -11,7 +11,7 @@ public static class PinetreeUpdater
         return orderedEnumerable.Last() + 1;
     }
 
-    private static void CollectUsedIds(Pinetree node, List<long> usedIds)
+    private static void CollectUsedIds(PinetreeView node, List<long> usedIds)
     {
         usedIds.Add(node.Id);
         foreach (var child in node.Children)
@@ -20,14 +20,14 @@ public static class PinetreeUpdater
         }
     }
 
-    public static int GetTotalFileCount(this Pinetree node)
+    public static int GetTotalFileCount(this PinetreeView node)
     {
         int count = 0;
         GetTotalFileCountChild(GetRoot(node), ref count);
         return count;
     }
 
-    public static int GetDepth(this Pinetree node)
+    public static int GetDepth(this PinetreeView node)
     {
         int depth = 0;
         var parent = node.Parent;
@@ -39,13 +39,14 @@ public static class PinetreeUpdater
         return depth;
     }
 
-    public static Pinetree SetCurrentIncludeChild(this Pinetree pineTree, long id, ref int fileCount, int currentDepth)
+    public static PinetreeView SetCurrentIncludeChild(this PinetreeView pineTree, long id, ref int fileCount, int currentDepth)
     {
-        Pinetree? result = null;
+        PinetreeView? result = null;
         pineTree.IsCurrent = pineTree.Id == id;
         if (pineTree.IsCurrent)
         {
             result = pineTree;
+            pineTree.IsExpanded = true;
         }
         fileCount++;
         foreach (var child in pineTree.Children)
@@ -54,6 +55,7 @@ public static class PinetreeUpdater
             if (childResult != null)
             {
                 result = childResult;
+                pineTree.IsExpanded = true;
             }
         }
         // This method assumes the provided ID always exists somewhere in the tree.
@@ -62,14 +64,14 @@ public static class PinetreeUpdater
         return result!;
     }
 
-    public static long DeleteIncludeChild(this Pinetree tree)
+    public static long DeleteIncludeChild(this PinetreeView tree)
     {
         DeleteChildren(tree);
         tree.Parent?.Children.Remove(tree);
         return tree.Parent?.Id ?? -1;
     }
 
-    private static Pinetree GetRoot(this Pinetree pineTree)
+    private static PinetreeView GetRoot(this PinetreeView pineTree)
     {
         var node = pineTree;
         while (node.Parent != null)
@@ -79,7 +81,7 @@ public static class PinetreeUpdater
         return node;
     }
 
-    private static void GetTotalFileCountChild(this Pinetree node, ref int count)
+    private static void GetTotalFileCountChild(this PinetreeView node, ref int count)
     {
         count++;
         foreach (var child in node.Children)
@@ -89,7 +91,7 @@ public static class PinetreeUpdater
     }
 
 
-    private static void DeleteChildren(this Pinetree tree)
+    private static void DeleteChildren(this PinetreeView tree)
     {
         foreach (var child in tree.Children)
         {

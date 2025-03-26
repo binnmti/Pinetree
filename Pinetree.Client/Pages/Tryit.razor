@@ -1,6 +1,6 @@
 ﻿@page "/Tryit"
 
-@using Pinetree.Client.Model
+@using Pinetree.Client.VModel
 
 @rendermode InteractiveAuto
 
@@ -24,12 +24,12 @@
     [Parameter]
     public long Id { get; set; }
 
-    private Pinetree? Pinetree { get; set; }
+    private PinetreeView? Pinetree { get; set; }
     private int FileCount { get; set; }
 
     protected override void OnInitialized()
     {
-        Pinetree = new Pinetree(0, "Untitled", "", null, -1);
+        Pinetree = new PinetreeView(0, "Untitled", "", null, -1);
         FileCount = 1;
     }
 }

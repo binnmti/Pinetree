@@ -1,13 +1,13 @@
 ﻿using Pinetree.Shared.Model;
 
-namespace Pinetree.Client.Model;
+namespace Pinetree.Client.VModel;
 
 public static class PineconeConvert
 {
-    public static Pinetree ToPinetree(this Pinecone pinecone, Pinetree? parent)
+    public static PinetreeView ToPinetree(this Pinecone pinecone, PinetreeView? parent)
         => new(pinecone.Id, pinecone.Title, pinecone.Content, parent, pinecone.GroupId);
 
-    public static (Pinetree, int) ToPinetreeIncludeChild(this Pinecone pinecone)
+    public static (PinetreeView, int) ToPinetreeIncludeChild(this Pinecone pinecone)
     {
         var pinetree = pinecone.ToPinetree(null);
         var fileCount = 0;
@@ -15,7 +15,7 @@ public static class PineconeConvert
         return (pinetree, fileCount);
     }
 
-    private static void CreateChild(Pinetree targetTree, Pinetree parent, ICollection<Pinecone> pinecones, ref int fileCount, int currentDepth)
+    private static void CreateChild(PinetreeView targetTree, PinetreeView parent, ICollection<Pinecone> pinecones, ref int fileCount, int currentDepth)
     {
         foreach (var pinecone in pinecones)
         {

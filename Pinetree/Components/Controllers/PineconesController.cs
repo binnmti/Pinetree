@@ -45,40 +45,41 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         return pinecone;
     }
 
+    public record PineconeUpdateModel(long Id, string Title, string Content, long GroupId, long ParentId);
+
     [HttpPost("add-child")]
-    public async Task<Pinecone> AddChild([FromQuery] long groupId, [FromQuery] long parentId)
+    public async Task<Pinecone> AddChild([FromBody] PineconeUpdateModel pinecone)
     {
         var userName = User.Identity?.Name ?? "";
-        var pinecone = new Pinecone()
+        var child = new Pinecone()
         {
-            Title = Untitled,
-            Content = "",
-            GroupId = groupId,
-            ParentId = parentId,
+            Title = pinecone.Title,
+            Content = pinecone.Content,
+            GroupId = pinecone.GroupId,
+            ParentId = pinecone.ParentId,
             UserName = userName,
             IsDelete = false,
             Create = DateTime.UtcNow,
             Update = DateTime.UtcNow,
             Delete = DateTime.UtcNow,
         };
-        await DbContext.Pinecone.AddAsync(pinecone);
+        await DbContext.Pinecone.AddAsync(child);
         await DbContext.SaveChangesAsync();
-        return pinecone;
+        return child;
     }
 
-    public record PineconeUpdateModel(long Id, string Title, string Content);
     [HttpPost("update")]
-    public async Task Update([FromBody] PineconeUpdateModel model)
+    public async Task Update([FromBody] PineconeUpdateModel pinecone)
     {
         var userName = User.Identity?.Name ?? "";
-        var current = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == model.Id)
-            ?? throw new KeyNotFoundException($"Pinecone with ID {model.Id} not found.");
+        var current = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == pinecone.Id)
+            ?? throw new KeyNotFoundException($"Pinecone with ID {pinecone.Id} not found.");
         if (current.UserName != userName)
         {
             throw new UnauthorizedAccessException("You do not own this Pinecone.");
         }
-        current.Title = model.Title;
-        current.Content = model.Content;
+        current.Title = pinecone.Title;
+        current.Content = pinecone.Content;
         current.Update = DateTime.UtcNow;
         await DbContext.SaveChangesAsync();
     }
@@ -104,13 +105,9 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
     public async Task<Pinecone> GetIncludeChild(long id)
     {
         var userName = User.Identity?.Name ?? "";
-        var parent = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == id)
-            ?? throw new KeyNotFoundException($"Pinecone with ID {id} not found.");
-        if (parent.UserName != userName)
-        {
-            throw new UnauthorizedAccessException("You do not own this Pinecone.");
-        }
-        return await LoadChildrenRecursivel(parent);
+        var pinecone = await GetPineconeAndVerifyOwnership(id, userName);
+        var rootPinecone = await GetPineconeAndVerifyOwnership(pinecone.GroupId, userName);
+        return await LoadChildrenRecursivel(rootPinecone);
     }
 
     [HttpGet("get-user-top-list")]
@@ -163,5 +160,16 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
             await LoadChildrenRecursivel(child);
         }
         return parent;
+    }
+
+    private async Task<Pinecone> GetPineconeAndVerifyOwnership(long id, string userName)
+    {
+        var pinecone = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Id == id)
+            ?? throw new KeyNotFoundException($"Pinecone with ID {id} not found.");
+        if (pinecone.UserName != userName)
+        {
+            throw new UnauthorizedAccessException("You do not own this Pinecone.");
+        }
+        return pinecone;
     }
 }

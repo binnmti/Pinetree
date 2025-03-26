@@ -1,5 +1,5 @@
 ﻿using Microsoft.JSInterop;
-using Pinetree.Client.Model;
+using Pinetree.Client.VModel;
 
 namespace Pinetree.Client.Services;
 
@@ -12,7 +12,7 @@ public static class LimitCheckService
     private const int ProMaxFileCount = 99;
     private const int ProMaxCharacter = 9999;
 
-    public static async Task<bool> CheckDepthAsync(this IJSRuntime jsRuntime, Model.Pinetree pineTree, bool isProfessional)
+    public static async Task<bool> CheckDepthAsync(this IJSRuntime jsRuntime, PinetreeView pineTree, bool isProfessional)
     {
         var currentDepth = pineTree.GetDepth() + 1;
         if (isProfessional)
@@ -34,7 +34,7 @@ public static class LimitCheckService
         return false;
     }
 
-    public static async Task<bool> CheckFileCountAsync(this IJSRuntime jsRuntime, Model.Pinetree pineTree, bool isProfessional)
+    public static async Task<bool> CheckFileCountAsync(this IJSRuntime jsRuntime, PinetreeView pineTree, bool isProfessional)
     {
         var fileCount = pineTree.GetTotalFileCount() + 1;
         if (isProfessional)
