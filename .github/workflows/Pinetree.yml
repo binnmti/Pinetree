@@ -65,10 +65,10 @@ jobs:
           --end-ip-address $ip
     - name: Diagnose directory structure
       run: |
-        pwd
-        ls -la
-        ls -la "${{ env.WORKING_DIRECTORY }}"
-        cat "${{ env.WORKING_DIRECTORY }}/*.csproj"
+        Get-Location
+        Get-ChildItem -Force
+        Get-ChildItem -Force "${{ env.WORKING_DIRECTORY }}"
+        Get-Content "${{ env.WORKING_DIRECTORY }}\*.csproj"
     - name: Run database migrations
       run: |
         cd "${{ env.WORKING_DIRECTORY }}"
