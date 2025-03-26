@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-Pinetree-0259e929-ab8f-4e3d-b3a5-551225d37215</UserSecretsId>
     <ApplicationInsightsResourceId>/subscriptions/6ffdd37c-9b89-4f4c-889e-56017146b636/resourcegroups/Pinetree/providers/microsoft.insights/components/Pinetree</ApplicationInsightsResourceId>
+    <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Communication.Email" Version="1.0.1" />
@@ -15,6 +16,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.3" />
+    <PackageReference Include="Microsoft.TypeScript.MSBuild" Version="5.8.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Stripe.net" Version="47.4.0" />
   </ItemGroup>
   <ItemGroup>
