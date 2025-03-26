@@ -57,11 +57,9 @@ jobs:
       run: |
         $ip = (Invoke-WebRequest -Uri https://api.ipify.org).Content
         Write-Host "GitHub Actions IP: $ip"
-        $resourceGroup = ${{ env.AZURE_WEBAPP_NAME }}
-        $server = ${{ env.AZURE_WEBAPP_NAME }}
         az sql server firewall-rule create `
-          --resource-group $resourceGroup `
-          --server $server `
+          --resource-group "${{ env.AZURE_WEBAPP_NAME }}" ` `
+          --server "${{ env.AZURE_WEBAPP_NAME }}" `
           --name "GithubActions-Temporary" `
           --start-ip-address $ip `
           --end-ip-address $ip
