@@ -63,10 +63,16 @@ jobs:
           --name "GithubActions-Temporary" `
           --start-ip-address $ip `
           --end-ip-address $ip
+    - name: Diagnose directory structure
+      run: |
+        pwd
+        ls -la
+        ls -la "${{ env.WORKING_DIRECTORY }}"
+        cat "${{ env.WORKING_DIRECTORY }}/*.csproj"
     - name: Run database migrations
       run: |
         cd "${{ env.WORKING_DIRECTORY }}"
-        dotnet ef database update --project "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --verbose
+        dotnet ef database update --configuration ${{ env.CONFIGURATION }} --verbose
       env:
         ConnectionStrings__DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION }}
     - name: Remove IP from Azure SQL firewall
