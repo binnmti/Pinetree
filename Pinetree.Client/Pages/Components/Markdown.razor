@@ -259,7 +259,9 @@
             var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
             if (string.IsNullOrEmpty(selection.Text)) return;
 
-            var childTitle = MarkdownUtil.GetChildTitle(selection.Text);
+            var defaultChildTitle = MarkdownUtil.GetChildTitle(selection.Text);
+            var childTitle = await JS.InvokeAsync<string>("prompt", "Enter your title", defaultChildTitle);
+            if (string.IsNullOrWhiteSpace(childTitle)) return;
             var childId = await MarkdownUtil.AddChildAsync(Current, childTitle, selection.Text, JS, HttpClient, IsTry, IsProfessional);
             var linkText = $"[{childTitle}](/Edit/{childId})";
             await _jsInterop.ReplaceSelectionAsync(TextAreaRef, linkText);
