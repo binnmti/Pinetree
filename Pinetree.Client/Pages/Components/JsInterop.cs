@@ -32,6 +32,12 @@ public class JsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
         await module.InvokeVoidAsync("setupLinkInterceptor", container, dotNetRef);
     }
 
+    public async ValueTask InitializeTooltipsAsync()
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("initializeTooltips");
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_moduleTask.IsValueCreated)

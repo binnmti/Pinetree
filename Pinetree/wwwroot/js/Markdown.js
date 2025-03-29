@@ -25,15 +25,21 @@ export function setCaretPosition(element, start, end) {
     element.focus();
     element.setSelectionRange(start, end);
 }
+export function initializeTooltips() {
+    const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(tooltipTriggerEl => {
+        new window.bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
 export function setupLinkInterceptor(container, dotNetRef) {
     container.addEventListener('click', (e) => {
         const target = e.target;
         if (target.tagName === 'A') {
             const linkElement = target;
             const href = linkElement.getAttribute('href');
-            if (href && href.startsWith('/Edit/')) {
+            if (href && href.startsWith('//')) {
                 e.preventDefault();
-                const id = href.substring(6);
+                const id = href.substring(2);
                 dotNetRef.invokeMethodAsync('HandleMarkdownLinkClick', id);
             }
         }
