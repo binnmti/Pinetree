@@ -2,7 +2,7 @@ name: Pinetree Deploy
 on:
   push:
     branches:
-    - main
+    - ChildTitle
 
 env:
   AZURE_WEBAPP_NAME: Pinetree
