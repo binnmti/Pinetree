@@ -71,6 +71,7 @@ jobs:
         dotnet ef database update --configuration ${{ env.CONFIGURATION }} --verbose
       env:
         ConnectionStrings__DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION }}
+        TypeScriptCompileBlocked: true
     - name: Remove IP from Azure SQL firewall
       if: always()
       run: |
