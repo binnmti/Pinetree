@@ -5,37 +5,37 @@ namespace Pinetree.Client.Pages.Components;
 
 public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
 {
-    private readonly Lazy<Task<IJSObjectReference>> _moduleTask = new(() => jsRuntime.InvokeAsync<IJSObjectReference>(
-                                                             "import", "./js/Markdown.js").AsTask());
+    private readonly Lazy<Task<IJSObjectReference>> _moduleTask = new(() =>
+        jsRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Markdown.js").AsTask());
 
     public async ValueTask<TextSelection> GetSelectionAsync(ElementReference element)
     {
-        var module = await _moduleTask.Value;
-        return await module.InvokeAsync<TextSelection>("getTextAreaSelection", element);
+        await _moduleTask.Value;
+        return await jsRuntime.InvokeAsync<TextSelection>("window.MarkdownJS.getTextAreaSelection", element);
     }
 
     public async ValueTask<bool> ReplaceSelectionAsync(ElementReference element, string text)
     {
-        var module = await _moduleTask.Value;
-        return await module.InvokeAsync<bool>("replaceTextAreaSelection", element, text);
+        await _moduleTask.Value;
+        return await jsRuntime.InvokeAsync<bool>("window.MarkdownJS.replaceTextAreaSelection", element, text);
     }
 
     public async ValueTask SetCaretPositionAsync(ElementReference element, int start, int end)
     {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("setCaretPosition", element, start, end);
+        await _moduleTask.Value;
+        await jsRuntime.InvokeVoidAsync("window.MarkdownJS.setCaretPosition", element, start, end);
     }
 
     public async ValueTask SetupLinkInterceptorAsync<T>(ElementReference container, DotNetObjectReference<T> dotNetRef) where T : class
     {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("setupLinkInterceptor", container, dotNetRef);
+        await _moduleTask.Value;
+        await jsRuntime.InvokeVoidAsync("window.MarkdownJS.setupLinkInterceptor", container, dotNetRef);
     }
 
     public async ValueTask InitializeTooltipsAsync()
     {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("initializeTooltips");
+        await _moduleTask.Value;
+        await jsRuntime.InvokeVoidAsync("window.MarkdownJS.initializeTooltips");
     }
 
     public async ValueTask DisposeAsync()
