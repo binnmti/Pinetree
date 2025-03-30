@@ -45,4 +45,4 @@ export function setupLinkInterceptor(container, dotNetRef) {
         }
     });
 }
-//# sourceMappingURL=Markdown.js.map
+//# sourceMappingURL=Markdown.razor.js.map
