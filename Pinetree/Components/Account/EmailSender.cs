@@ -13,14 +13,14 @@ public class EmailSender : IEmailSender<ApplicationUser>
 
     public EmailSender(IConfiguration configuration, ILogger<EmailSender> logger)
     {
-        var connectionString = configuration["AzureCommunicationServicesConnectionString"];
+        var connectionString = configuration.GetConnectionString("AzureCommunicationServicesConnectionString");
         if (string.IsNullOrEmpty(connectionString))
         {
             throw new ArgumentException("Azure Communication Services connection string is not configured.");
         }
         _emailClient = new EmailClient(connectionString);
         _logger = logger;
-        _senderEmail = configuration["SenderEmail"] ?? "DoNotReply@yourdomain.com";
+        _senderEmail = configuration.GetConnectionString("SenderEmail") ?? "DoNotReply@yourdomain.com";
     }
 
     public async Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)

@@ -16,7 +16,7 @@ public class PaymentsController : ControllerBase
 
     public PaymentsController(IConfiguration configuration, UserManager<ApplicationUser> userManager)
     {
-        StripeConfiguration.ApiKey = configuration.GetValue<string>("StripeSecretKey");
+        StripeConfiguration.ApiKey = configuration.GetConnectionString("StripeSecretKey");
         UserManager = userManager;
     }
 
@@ -30,13 +30,13 @@ public class PaymentsController : ControllerBase
             var stripeEvent = EventUtility.ConstructEvent(
                 json,
                 Request.Headers["Stripe-Signature"],
-                Request.HttpContext.RequestServices.GetRequiredService<IConfiguration>()["StripeWebhookSecretDebug"]
+                Request.HttpContext.RequestServices.GetRequiredService<IConfiguration>().GetConnectionString("StripeWebhookSecretDebug")
             );
 #else
             var stripeEvent = EventUtility.ConstructEvent(
                 json,
                 Request.Headers["Stripe-Signature"],
-                Request.HttpContext.RequestServices.GetRequiredService<IConfiguration>()["StripeWebhookSecret"]
+                Request.HttpContext.RequestServices.GetRequiredService<IConfiguration>().GetConnectionString("StripeWebhookSecret")
             );
 #endif
             if (stripeEvent.Type == EventTypes.CheckoutSessionCompleted)

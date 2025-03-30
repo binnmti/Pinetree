@@ -91,7 +91,7 @@
 
     private void NavigateToEmail()
     {
-        var email = Configuration.GetValue<string>("SupportEmail");
+        var email = Configuration.GetConnectionString("SupportEmail");
         var mailto = $"mailto:{email}";
         NavigationManager.NavigateTo(mailto, forceLoad: true);
     }

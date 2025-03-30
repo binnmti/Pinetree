@@ -36,7 +36,7 @@
 
     protected override void OnInitialized()
     {
-        var sanitizedEmail = HtmlEncoder.Default.Encode(Configuration["SenderEmail"] ?? "DoNotReply@yourdomain.com");
+        var sanitizedEmail = HtmlEncoder.Default.Encode(Configuration.GetConnectionString("SenderEmail") ?? "DoNotReply@yourdomain.com");
         SenderEmail = $"Currently, the email will be sent from the domain <strong>{sanitizedEmail}</strong> as it is under development.<br> Please check your spam folder as the email may end up in your spam folder.";
     }
 

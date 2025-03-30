@@ -14,8 +14,8 @@ public class PaymentService
 
     public PaymentService(IConfiguration configuration, IHttpContextAccessor httpContextAccessor, UserManager<ApplicationUser> userManager)
     {
-        StripeConfiguration.ApiKey = configuration["StripeSecretKey"];
-        StripeProductID = configuration["StripeProductID"] ?? "";
+        StripeConfiguration.ApiKey = configuration.GetConnectionString("StripeSecretKey");
+        StripeProductID = configuration.GetConnectionString("StripeProductID") ?? "";
         HttpContextAccessor = httpContextAccessor;
         UserManager = userManager;
     }
