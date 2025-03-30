@@ -6,7 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-Pinetree-0259e929-ab8f-4e3d-b3a5-551225d37215</UserSecretsId>
     <ApplicationInsightsResourceId>/subscriptions/6ffdd37c-9b89-4f4c-889e-56017146b636/resourcegroups/Pinetree/providers/microsoft.insights/components/Pinetree</ApplicationInsightsResourceId>
-    <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Communication.Email" Version="1.0.1" />

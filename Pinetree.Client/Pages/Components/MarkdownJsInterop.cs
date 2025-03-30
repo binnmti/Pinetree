@@ -3,7 +3,7 @@ using Microsoft.JSInterop;
 
 namespace Pinetree.Client.Pages.Components;
 
-public class JsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
+public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
 {
     private readonly Lazy<Task<IJSObjectReference>> _moduleTask = new(() => jsRuntime.InvokeAsync<IJSObjectReference>(
                                                              "import", "./js/Markdown.js").AsTask());
@@ -30,6 +30,12 @@ public class JsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
     {
         var module = await _moduleTask.Value;
         await module.InvokeVoidAsync("setupLinkInterceptor", container, dotNetRef);
+    }
+
+    public async ValueTask InitializeTooltipsAsync()
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("initializeTooltips");
     }
 
     public async ValueTask DisposeAsync()

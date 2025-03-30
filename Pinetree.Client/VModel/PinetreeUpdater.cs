@@ -39,7 +39,7 @@ public static class PinetreeUpdater
         return depth;
     }
 
-    public static PinetreeView SetCurrentIncludeChild(this PinetreeView pineTree, long id, ref int fileCount, int currentDepth)
+    public static PinetreeView? SetCurrentIncludeChild(this PinetreeView pineTree, long id, ref int fileCount, int currentDepth)
     {
         PinetreeView? result = null;
         pineTree.IsCurrent = pineTree.Id == id;
@@ -58,10 +58,7 @@ public static class PinetreeUpdater
                 pineTree.IsExpanded = true;
             }
         }
-        // This method assumes the provided ID always exists somewhere in the tree.
-        // While recursive calls may return null, the top-level call is guaranteed 
-        // to find a match, so we use the null-forgiving operator.
-        return result!;
+        return result;
     }
 
     public static long DeleteIncludeChild(this PinetreeView tree)

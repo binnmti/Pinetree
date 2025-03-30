@@ -11,12 +11,16 @@ internal static class MarkdownUtil
     internal static string GetChildTitle(string text)
     {
         var firstLine = text.Split('\n').FirstOrDefault()?.Trim() ?? "";
-        firstLine = firstLine.TrimStart('#', ' ');
+        firstLine = firstLine.TrimStart('#', '-', '*', '>', '`', '+', '~', '[', ']', '(', ')', '!', ':', '|', ' ');
+        if (firstLine.StartsWith("[ ]") || firstLine.StartsWith("[x]"))
+        {
+            firstLine = firstLine[3..].TrimStart();
+        }
         if (firstLine.Length > 40)
         {
             return string.Concat(firstLine.AsSpan(0, 37), "...");
         }
-        return string.IsNullOrEmpty(firstLine) ? "Extracted content" : firstLine;
+        return string.IsNullOrEmpty(firstLine) ? "Untitled" : firstLine;
     }
 
     internal static async Task<long> AddChildAsync(PinetreeView current, string title, string content, IJSRuntime js, HttpClient httpClient, bool isTry, bool isProfessional)

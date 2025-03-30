@@ -33,6 +33,12 @@ declare namespace DotNet {
         dispose(): void;
     }
 }
+export function initializeTooltips(): void {
+    const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(tooltipTriggerEl => {
+        new (window as any).bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
 
 export function setupLinkInterceptor(container: HTMLElement, dotNetRef: DotNet.DotNetObject): void {
     container.addEventListener('click', (e: Event) => {
@@ -40,9 +46,9 @@ export function setupLinkInterceptor(container: HTMLElement, dotNetRef: DotNet.D
         if (target.tagName === 'A') {
             const linkElement = target as HTMLAnchorElement;
             const href = linkElement.getAttribute('href');
-            if (href && href.startsWith('/Edit/')) {
+            if (href && href.startsWith('//')) {
                 e.preventDefault();
-                const id = href.substring(6);
+                const id = href.substring(2);
                 dotNetRef.invokeMethodAsync('HandleMarkdownLinkClick', id);
             }
         }
