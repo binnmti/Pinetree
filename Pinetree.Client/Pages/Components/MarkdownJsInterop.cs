@@ -3,7 +3,7 @@ using Microsoft.JSInterop;
 
 namespace Pinetree.Client.Pages.Components;
 
-public class JsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
+public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
 {
     private readonly Lazy<Task<IJSObjectReference>> _moduleTask = new(() => jsRuntime.InvokeAsync<IJSObjectReference>(
                                                              "import", "./Pages/Components/Markdown.razor.js").AsTask());

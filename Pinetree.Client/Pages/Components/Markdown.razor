@@ -93,12 +93,6 @@
                         </button>
                     </div> *@
                 </div>
-                <div class="ms-auto d-flex align-items-center">
-                    <div class="form-check form-switch ms-2">
-                        <input class="form-check-input" type="checkbox" id="autoPreviewSwitch" checked disabled>
-                        <label class="form-check-label small text-muted" for="autoPreviewSwitch">Auto Preview</label>
-                    </div>
-                </div>
             </div>
             <div class="row" style="height:@(IsTry ? "80vh" : "87vh");">
                 <div class="col py-2">
@@ -144,7 +138,7 @@
     private ElementReference TextAreaRef;
     private ElementReference MarkdownContainer;
     private DotNetObjectReference<Markdown>? objRef;
-    private JsInterop? _jsInterop;
+    private MarkdownJsInterop? _jsInterop;
     private PinetreeView Current { get; set; } = PinetreeView.Nothing;
     private string Content { get; set; } = "";
     private string Title { get; set; } = "";
@@ -157,7 +151,7 @@
         if (firstRender)
         {
             SetCurrent(Id);
-            _jsInterop = new JsInterop(JS);
+            _jsInterop = new MarkdownJsInterop(JS);
             objRef = DotNetObjectReference.Create(this);
             if (_jsInterop != null && MarkdownContainer.Id != null)
             {
