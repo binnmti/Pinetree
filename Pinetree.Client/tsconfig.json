@@ -6,9 +6,10 @@
     "skipLibCheck": true,
     "strict": true,
     "sourceMap": true,
-    "noImplicitAny": true
+    "noImplicitAny": true,
+    "outDir": "./wwwroot/js/"
   },
   "include": [
-    "./wwwroot/js/*.ts"
+    "./**/*.ts"
   ]
 }
