@@ -10,6 +10,7 @@ env:
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 9.0.x
   WORKING_DIRECTORY: Pinetree
+
 jobs:
   build:
     runs-on: windows-latest
@@ -33,7 +34,7 @@ jobs:
         name: webapp
         path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
-  deploy:
+  migrate:
     runs-on: windows-latest
     needs: build
     steps:
@@ -46,15 +47,6 @@ jobs:
       run: dotnet tool install --global dotnet-ef
     - name: Restore dependencies
       run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
-    - name: Download artifact from build job
-      uses: actions/download-artifact@v4
-      with:
-        name: webapp
-        path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.Pinetree_SPN }}
     - name: Add IP to Azure SQL firewall
       run: |
         $ip = (Invoke-WebRequest -Uri https://api.ipify.org).Content
@@ -79,6 +71,25 @@ jobs:
           --resource-group "${{ env.AZURE_WEBAPP_NAME }}" `
           --server "${{ env.AZURE_WEBAPP_NAME }}" `
           --name "GithubActions-Temporary"
+
+  deploy:
+    runs-on: windows-latest
+    needs: [build, migrate]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    - name: Download artifact from build job
+      uses: actions/download-artifact@v4
+      with:
+        name: webapp
+        path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.Pinetree_SPN }}
     - name: Deploy to Azure WebApp
       uses: azure/webapps-deploy@v2
       with:
