@@ -38,15 +38,13 @@ jobs:
     runs-on: windows-latest
     needs: build
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    # - uses: actions/checkout@v4
+    # - name: Setup .NET SDK
+    #   uses: actions/setup-dotnet@v4
+    #   with:
+    #     dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
     - name: Install EF Core tools
       run: dotnet tool install --global dotnet-ef
-    # - name: Restore dependencies
-    #   run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
     - name: Azure Login
       uses: azure/login@v2
       with:
@@ -80,11 +78,11 @@ jobs:
     runs-on: windows-latest
     needs: [build, migrate]
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    # - uses: actions/checkout@v4
+    # - name: Setup .NET SDK
+    #   uses: actions/setup-dotnet@v4
+    #   with:
+    #     dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
     - name: Download artifact from build job
       uses: actions/download-artifact@v4
       with:

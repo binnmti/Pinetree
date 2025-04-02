@@ -45,11 +45,12 @@ public class PaymentsController : ControllerBase
                 {
                     var userId = session.Metadata["UserId"];
                     var user = await UserManager.FindByIdAsync(userId);
-                    if (user != null)
+                    if (user == null)
                     {
-                        await UserManager.RemoveFromRoleAsync(user, Roles.Free);
-                        await UserManager.AddToRoleAsync(user, Roles.Professional);
+                        return BadRequest();
                     }
+                    await UserManager.RemoveFromRoleAsync(user, Roles.Free);
+                    await UserManager.AddToRoleAsync(user, Roles.Professional);
                     if (string.IsNullOrEmpty(user.StripeCustomerId) && !string.IsNullOrEmpty(session.CustomerId))
                     {
                         user.StripeCustomerId = session.CustomerId;
@@ -65,16 +66,20 @@ public class PaymentsController : ControllerBase
             switch (stripeEvent.Type)
             {
                 case EventTypes.CustomerSubscriptionDeleted:
-                    var deletedSubscription = stripeEvent.Data.Object as Subscription;
-                    await HandleCancelledSubscription(deletedSubscription);
+                    if (stripeEvent.Data.Object is Subscription deletedSubscription)
+                    {
+                        await HandleCancelledSubscription(deletedSubscription);
+                    }
                     break;
 
                 case EventTypes.CustomerSubscriptionUpdated:
-                    var updatedSubscription = stripeEvent.Data.Object as Subscription;
-                    if (updatedSubscription.CanceledAt.HasValue ||
-                        updatedSubscription.Status == "canceled")
+                    if (stripeEvent.Data.Object is Subscription updatedSubscription)
                     {
-                        await HandleCancelledSubscription(updatedSubscription);
+                        if (updatedSubscription.CanceledAt.HasValue ||
+                            updatedSubscription.Status == "canceled")
+                        {
+                            await HandleCancelledSubscription(updatedSubscription);
+                        }
                     }
                     break;
             }

@@ -68,9 +68,9 @@
         IsFree = role == null ? true : Roles.IsFree(role);
     }
 
+#if DEBUG
     private async Task OnSubmit()
     {
-#if DEBUG
         if (IsFree)
         {
             var url = await PaymentService.CreateCheckoutSessionAsync();
@@ -81,6 +81,10 @@
             var url = await PaymentService.CreatePortalSession();
             NavigationManager.NavigateTo(url);
         }
-#endif
     }
+#else
+    private void OnSubmit()
+    {
+    }
+#endif
 }
