@@ -45,8 +45,8 @@ jobs:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
     - name: Install EF Core tools
       run: dotnet tool install --global dotnet-ef
-    - name: Restore dependencies
-      run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
+    # - name: Restore dependencies
+    #   run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
     - name: Azure Login
       uses: azure/login@v2
       with:
