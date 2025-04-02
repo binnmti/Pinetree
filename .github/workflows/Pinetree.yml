@@ -47,6 +47,10 @@ jobs:
       run: dotnet tool install --global dotnet-ef
     - name: Restore dependencies
       run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.Pinetree_SPN }}
     - name: Add IP to Azure SQL firewall
       run: |
         $ip = (Invoke-WebRequest -Uri https://api.ipify.org).Content

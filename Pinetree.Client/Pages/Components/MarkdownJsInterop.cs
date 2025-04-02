@@ -6,7 +6,7 @@ namespace Pinetree.Client.Pages.Components;
 public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
 {
     private readonly Lazy<Task<IJSObjectReference>> _moduleTask = new(() => jsRuntime.InvokeAsync<IJSObjectReference>(
-                                                             "import", "./js/Markdown.js").AsTask());
+                                                             "import", "./Pages/Components/Markdown.razor.js").AsTask());
 
     public async ValueTask<TextSelection> GetSelectionAsync(ElementReference element)
     {
