@@ -2,7 +2,7 @@ name: Pinetree Deploy
 on:
   push:
     branches:
-    - ts2
+    - main
 
 env:
   AZURE_WEBAPP_NAME: Pinetree
@@ -39,10 +39,6 @@ jobs:
     needs: build
     steps:
     - uses: actions/checkout@v4
-    # - name: Setup .NET SDK
-    #   uses: actions/setup-dotnet@v4
-    #   with:
-    #     dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
     - name: Install EF Core tools
       run: dotnet tool install --global dotnet-ef
     - name: Azure Login
@@ -79,10 +75,6 @@ jobs:
     needs: [build, migrate]
     steps:
     - uses: actions/checkout@v4
-    # - name: Setup .NET SDK
-    #   uses: actions/setup-dotnet@v4
-    #   with:
-    #     dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
     - name: Download artifact from build job
       uses: actions/download-artifact@v4
       with:
