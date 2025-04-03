@@ -23,6 +23,36 @@ internal static class MarkdownUtil
         return string.IsNullOrEmpty(firstLine) ? "Untitled" : firstLine;
     }
 
+    public static async Task AllUpdateAsync(this PinetreeView pinetree, HttpClient httpClient)
+    {
+        await UpdateAsync(pinetree, httpClient);
+    }
+
+    private static async Task UpdateAsync(PinetreeView pinetreeView, HttpClient httpClient)
+    {
+        try
+        {
+            var updateData = new
+            {
+                pinetreeView.Id,
+                pinetreeView.Title,
+                pinetreeView.Content,
+                GroupId = -1,
+                ParentId = -1,
+            };
+            await httpClient.PostAsJsonAsync($"/api/Pinecones/update", updateData);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error saving changes: {ex.Message}");
+        }
+        foreach (var child in pinetreeView.Children)
+        {
+            await UpdateAsync(child, httpClient);
+        }
+    }
+
+
     internal static async Task<long> AddChildAsync(PinetreeView current, string title, string content, IJSRuntime js, HttpClient httpClient, bool isTry, bool isProfessional)
     {
         if (await js.CheckDepthAsync(current, isProfessional))

@@ -32,6 +32,12 @@ public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
         await module.InvokeVoidAsync("setupLinkInterceptor", container, dotNetRef);
     }
 
+    public async ValueTask SetupBeforeUnloadWarning<T>(DotNetObjectReference<T> dotNetRef) where T : class
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("setupBeforeUnloadWarning", dotNetRef);
+    }
+
     public async ValueTask InitializeTooltipsAsync()
     {
         var module = await _moduleTask.Value;

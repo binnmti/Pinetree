@@ -2,6 +2,13 @@
 
 public static class PinetreeUpdater
 {
+    public static bool IsEqual(this PinetreeView src, PinetreeView dst)
+    {
+        var root = src.GetRoot();
+        var dstRoot = dst.GetRoot();
+        return IsEqual(root, dstRoot);
+    }
+
     public static long GetUniqueId(this PinetreeView pinetree)
     {
         var root = pinetree.GetRoot();

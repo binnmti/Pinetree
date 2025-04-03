@@ -31,8 +31,8 @@ export function initializeTooltips() {
         new window.bootstrap.Tooltip(tooltipTriggerEl);
     });
 }
-export function setupLinkInterceptor(container, dotNetRef) {
-    container.addEventListener('click', (e) => {
+export function setupLinkInterceptor(markdownContainer, dotNetHelper) {
+    markdownContainer.addEventListener('click', async (e) => {
         const target = e.target;
         if (target.tagName === 'A') {
             const linkElement = target;
@@ -40,9 +40,61 @@ export function setupLinkInterceptor(container, dotNetRef) {
             if (href && href.startsWith('//')) {
                 e.preventDefault();
                 const id = href.substring(2);
-                dotNetRef.invokeMethodAsync('HandleMarkdownLinkClick', id);
+                await dotNetHelper.invokeMethodAsync('HandleMarkdownLinkClick', id);
             }
         }
     });
+}
+export function setupBeforeUnloadWarning(dotNetHelper) {
+    window.addEventListener('beforeunload', async function (e) {
+        try {
+            const hasPendingChanges = await dotNetHelper.invokeMethodAsync('HasPendingChanges');
+            if (hasPendingChanges) {
+                e.preventDefault();
+                e.returnValue = "";
+                return "";
+            }
+        }
+        catch (error) {
+            console.error('Error checking for pending changes:', error);
+        }
+    });
+    document.addEventListener('click', async (e) => {
+        const target = e.target;
+        const anchor = target.closest('a');
+        if (anchor && !anchor.getAttribute('data-no-guard')) {
+            const href = anchor.getAttribute('href');
+            if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                try {
+                    const hasPendingChanges = await dotNetHelper.invokeMethodAsync('HasPendingChanges');
+                    if (hasPendingChanges) {
+                        if (!confirm('Your changes have not been saved. Are you sure you want to leave this page?')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return false;
+                        }
+                    }
+                }
+                catch (error) {
+                    console.error('Navigation guard error:', error);
+                }
+            }
+        }
+    }, true);
+    //window.addEventListener('popstate', async function (e) {
+    //    try {
+    //        const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
+    //        if (hasPendingChanges) {
+    //            if (!confirm('Your changes have not been saved. Are you sure you want to leave this page?')) {
+    //                window.history.back();
+    //                //history.pushState(null, "", location.href);
+    //                //history.go(2);
+    //                e.preventDefault();
+    //            }
+    //        }
+    //    } catch (error) {
+    //        console.error('Error checking for pending changes on navigation:', error);
+    //    }
+    //});
 }
 //# sourceMappingURL=Markdown.razor.js.map
