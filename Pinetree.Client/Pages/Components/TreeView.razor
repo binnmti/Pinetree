@@ -94,11 +94,11 @@
     {
         if (Pinetree.Parent == null)
         {
-            await JS.InvokeVoidAsync("alert", "You can't delete the first");
+            await JS.AlertAsync("You can't delete the first");
         }
         else
         {
-            var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this item?");
+            var confirmed = await JS.ConfirmAsync("Are you sure you want to delete this item?");
             if (confirmed)
             {
                 if (!IsTry)

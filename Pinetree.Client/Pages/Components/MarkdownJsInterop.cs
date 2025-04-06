@@ -3,54 +3,88 @@ using Microsoft.JSInterop;
 
 namespace Pinetree.Client.Pages.Components;
 
-public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
+public static class MarkdownJsInterop
 {
-    private readonly Lazy<Task<IJSObjectReference>> _moduleTask = new(() => jsRuntime.InvokeAsync<IJSObjectReference>(
-                                                             "import", "./Pages/Components/Markdown.razor.js").AsTask());
-
-    public async ValueTask<TextSelection> GetSelectionAsync(ElementReference element)
+    private static async ValueTask<IJSObjectReference> GetModuleAsync(this IJSRuntime jsRuntime)
     {
-        var module = await _moduleTask.Value;
-        return await module.InvokeAsync<TextSelection>("getTextAreaSelection", element);
+        return await jsRuntime.InvokeAsync<IJSObjectReference>("import", "./Pages/Components/Markdown.razor.js");
     }
 
-    public async ValueTask<bool> ReplaceSelectionAsync(ElementReference element, string text)
+    public static async ValueTask<TextSelection> GetSelectionAsync(this IJSRuntime jsRuntime, ElementReference element)
     {
-        var module = await _moduleTask.Value;
-        return await module.InvokeAsync<bool>("replaceTextAreaSelection", element, text);
-    }
-
-    public async ValueTask SetCaretPositionAsync(ElementReference element, int start, int end)
-    {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("setCaretPosition", element, start, end);
-    }
-
-    public async ValueTask SetupLinkInterceptorAsync<T>(ElementReference container, DotNetObjectReference<T> dotNetRef) where T : class
-    {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("setupLinkInterceptor", container, dotNetRef);
-    }
-
-    public async ValueTask SetupBeforeUnloadWarning<T>(DotNetObjectReference<T> dotNetRef) where T : class
-    {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("setupBeforeUnloadWarning", dotNetRef);
-    }
-
-    public async ValueTask InitializeTooltipsAsync()
-    {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("initializeTooltips");
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_moduleTask.IsValueCreated)
+        var module = await jsRuntime.GetModuleAsync();
+        try
         {
-            var module = await _moduleTask.Value;
+            return await module.InvokeAsync<TextSelection>("getTextAreaSelection", element);
+        }
+        finally
+        {
             await module.DisposeAsync();
-            GC.SuppressFinalize(this);
+        }
+    }
+
+    public static async ValueTask<bool> ReplaceSelectionAsync(this IJSRuntime jsRuntime, ElementReference element, string text)
+    {
+        var module = await jsRuntime.GetModuleAsync();
+        try
+        {
+            return await module.InvokeAsync<bool>("replaceTextAreaSelection", element, text);
+        }
+        finally
+        {
+            await module.DisposeAsync();
+        }
+    }
+
+    public static async ValueTask SetCaretPositionAsync(this IJSRuntime jsRuntime, ElementReference element, int start, int end)
+    {
+        var module = await jsRuntime.GetModuleAsync();
+        try
+        {
+            await module.InvokeVoidAsync("setCaretPosition", element, start, end);
+        }
+        finally
+        {
+            await module.DisposeAsync();
+        }
+    }
+
+    public static async ValueTask SetupLinkInterceptorAsync<T>(this IJSRuntime jsRuntime, ElementReference container, DotNetObjectReference<T> dotNetRef) where T : class
+    {
+        var module = await jsRuntime.GetModuleAsync();
+        try
+        {
+            await module.InvokeVoidAsync("setupLinkInterceptor", container, dotNetRef);
+        }
+        finally
+        {
+            await module.DisposeAsync();
+        }
+    }
+
+    public static async ValueTask SetupBeforeUnloadWarningAsync<T>(this IJSRuntime jsRuntime, DotNetObjectReference<T> dotNetRef) where T : class
+    {
+        var module = await jsRuntime.GetModuleAsync();
+        try
+        {
+            await module.InvokeVoidAsync("setupBeforeUnloadWarning", dotNetRef);
+        }
+        finally
+        {
+            await module.DisposeAsync();
+        }
+    }
+
+    public static async ValueTask InitializeTooltipsAsync(this IJSRuntime jsRuntime)
+    {
+        var module = await jsRuntime.GetModuleAsync();
+        try
+        {
+            await module.InvokeVoidAsync("initializeTooltips");
+        }
+        finally
+        {
+            await module.DisposeAsync();
         }
     }
 

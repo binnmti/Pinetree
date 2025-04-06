@@ -19,7 +19,7 @@ public static class LimitCheckService
         {
             if (currentDepth > ProMaxDepth)
             {
-                await jsRuntime.InvokeVoidAsync("alert", $"You cannot add more than {ProMaxDepth} levels in the professional version.");
+                await jsRuntime.AlertAsync($"You cannot add more than {ProMaxDepth} levels in the professional version.");
                 return true;
             }
         }
@@ -27,7 +27,7 @@ public static class LimitCheckService
         {
             if (currentDepth > FreeMaxDepth)
             {
-                await jsRuntime.InvokeVoidAsync("alert", $"You cannot add more than {FreeMaxDepth} levels in the free version.");
+                await jsRuntime.AlertAsync($"You cannot add more than {FreeMaxDepth} levels in the free version.");
                 return true;
             }
         }
@@ -41,7 +41,7 @@ public static class LimitCheckService
         {
             if (fileCount >= ProMaxFileCount)
             {
-                await jsRuntime.InvokeVoidAsync("alert", $"You cannot add more than {ProMaxFileCount} files in the professional version.");
+                await jsRuntime.AlertAsync($"You cannot add more than {ProMaxFileCount} files in the professional version.");
                 return true;
             }
         }
@@ -49,7 +49,7 @@ public static class LimitCheckService
         {
             if (fileCount > FreeMaxFileCount)
             {
-                await jsRuntime.InvokeVoidAsync("alert", $"You cannot add more than {FreeMaxFileCount} files in the free version.");
+                await jsRuntime.AlertAsync($"You cannot add more than {FreeMaxFileCount} files in the free version.");
                 return true;
             }
         }
@@ -62,7 +62,7 @@ public static class LimitCheckService
         {
             if (character.Length >= ProMaxCharacter)
             {
-                await jsRuntime.InvokeVoidAsync("alert", $"You cannot write more than {ProMaxCharacter} characters in the professional version.");
+                await jsRuntime.AlertAsync($"You cannot write more than {ProMaxCharacter} characters in the professional version.");
                 return true;
             }
         }
@@ -70,7 +70,7 @@ public static class LimitCheckService
         {
             if (character.Length >= FreeMaxCharacter)
             {
-                await jsRuntime.InvokeVoidAsync("alert", $"You cannot write more than {FreeMaxCharacter} characters in the free version.");
+                await jsRuntime.AlertAsync($"You cannot write more than {FreeMaxCharacter} characters in the free version.");
                 return true;
             }
         }
