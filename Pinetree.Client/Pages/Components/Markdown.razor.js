@@ -81,20 +81,22 @@ export function setupBeforeUnloadWarning(dotNetHelper) {
             }
         }
     }, true);
-    //window.addEventListener('popstate', async function (e) {
-    //    try {
-    //        const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
-    //        if (hasPendingChanges) {
-    //            if (!confirm('Your changes have not been saved. Are you sure you want to leave this page?')) {
-    //                window.history.back();
-    //                //history.pushState(null, "", location.href);
-    //                //history.go(2);
-    //                e.preventDefault();
-    //            }
-    //        }
-    //    } catch (error) {
-    //        console.error('Error checking for pending changes on navigation:', error);
-    //    }
-    //});
+    const pageUrl = window.location.href;
+    window.history.pushState({ page: 1 }, '', pageUrl);
+    window.addEventListener('popstate', async function (e) {
+        window.history.pushState({ page: 1 }, '', pageUrl);
+        try {
+            const hasPendingChanges = await dotNetHelper.invokeMethodAsync('HasPendingChanges');
+            if (hasPendingChanges) {
+                const confirmed = confirm('Your changes have not been saved. Are you sure you want to leave this page?');
+                if (confirmed) {
+                    window.location.href = document.referrer || '/';
+                }
+            }
+        }
+        catch (error) {
+            console.error('Error checking for pending changes:', error);
+        }
+    });
 }
 //# sourceMappingURL=Markdown.razor.js.map

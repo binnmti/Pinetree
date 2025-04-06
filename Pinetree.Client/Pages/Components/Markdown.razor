@@ -39,14 +39,10 @@
             <div class="markdown-title d-flex align-items-center">
                 <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" class="flex-grow-1" />
                 <div class="d-flex align-items-center ms-2">
-                    <button @onclick="SaveChanges" class="btn btn-sm btn-primary me-2" title="Save changes">
+                    <button @onclick="SaveChanges" disabled="@(!HasPendingChanges() || IsTry)"
+                        class="btn btn-sm btn-primary me-2" title="Save changes">
                         <i class="bi bi-save"></i>
                     </button>
-                    <button @onclick="CopyDocumentId" class="btn btn-sm btn-outline-secondary" title="Click to copy document ID">
-                        <small>ID: @Current.Id</small>
-                    </button>
-                    <i class="bi bi-question-circle ms-1 p-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" data-bs-custom-class="custom-tooltip"
-                    title="<strong>Document ID</strong><br>This unique identifier can be used to reference this document in markdown links.<br>Format: [link text](//ID)"></i>
                 </div>
             </div>
             <div class="toolbar p-2 bg-light border-bottom d-flex align-items-center mb-2">
@@ -96,6 +92,13 @@
                         </button>
                     </div> *@
                 </div>
+                <div class="btn-group ms-auto" role="group" aria-label="Id actions">
+                    <button @onclick="CopyDocumentId" class="btn btn-sm btn-outline-secondary" title="Click to copy document ID">
+                        <small>ID: @Current.Id</small>
+                    </button>
+                    <i class="bi bi-question-circle ms-1 p-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" data-bs-custom-class="custom-tooltip"
+                       title="<strong>Document ID</strong><br>This unique identifier can be used to reference this document in markdown links.<br>Format: [link text](//ID)"></i>
+                </div>
             </div>
             <div class="row" style="height:@(IsTry ? "80vh" : "87vh");">
                 <div class="col py-2">
@@ -111,9 +114,6 @@
         </div>
     </div>
 </div>
-<button @onclick="@(() => NavigationManager.NavigateTo("/counter"))">
-    Counter (Prevented)
-</button>
 @code {
     [Parameter]
     public long Id { get; set; }
