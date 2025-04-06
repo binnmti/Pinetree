@@ -229,8 +229,7 @@
     {
         try
         {
-            await JS.CopyToClipboardAsync(Current.Id.ToString());
-            await JS.ConfirmAsync($"ID {Current.Id} copied to clipboard");
+            await JS.CopyToClipboardAsync($"[link Text](//{Current.Id.ToString()})");
         }
         catch (Exception ex)
         {
