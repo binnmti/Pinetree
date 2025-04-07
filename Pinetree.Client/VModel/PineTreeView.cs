@@ -17,7 +17,10 @@ public class PinetreeView(long id, string title, string content, PinetreeView? p
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
-        if (Title != other.Title || Content != other.Content) return false;
+        if (Title != other.Title || Content != other.Content || Id != other.Id || GroupId != other.GroupId)
+        {
+            return false;
+        }
         bool parentEqual = (Parent is null && other.Parent is null) ||
                            (Parent is not null && other.Parent is not null && Parent.Id == other.Parent.Id);
         if (!parentEqual) return false;
@@ -40,6 +43,8 @@ public class PinetreeView(long id, string title, string content, PinetreeView? p
         hash.Add(Title);
         hash.Add(Content);
         hash.Add(Parent?.Id ?? 0);
+        hash.Add(GroupId);
+        hash.Add(Id);
         foreach (var child in Children)
         {
             hash.Add(child.Id);

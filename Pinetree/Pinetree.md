@@ -17,8 +17,8 @@ dev tunnel
 
 # IaC
 - bicep arms
-- Teraform
-- PLumli
+- Terraform
+- Pulumi
 
 tag Release branch.
 

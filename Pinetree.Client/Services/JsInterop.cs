@@ -13,6 +13,7 @@ public static class JsInterop
     public static ValueTask<string> PromptAsync(this IJSRuntime jsRuntime, string message, string defaultValue = "")
         => jsRuntime.InvokeAsync<string>("prompt", message, defaultValue);
 
+    // TODO: eval is not good
     public static ValueTask<string> GetTextAreaValueAsync(this IJSRuntime jsRuntime)
         => jsRuntime.InvokeAsync<string>("eval", $"document.querySelector('textarea').value");
 
