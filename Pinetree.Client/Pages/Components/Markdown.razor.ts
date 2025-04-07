@@ -56,7 +56,12 @@ export function setupLinkInterceptor(markdownContainer: HTMLElement, dotNetHelpe
 }
 
 export function setupBeforeUnloadWarning(dotNetHelper: DotNetObject): void {
+    let bypassBeforeUnload = false;
     window.addEventListener('beforeunload', async function (e: BeforeUnloadEvent) {
+        if (bypassBeforeUnload) {
+            bypassBeforeUnload = false;
+            return;
+        }
         try {
             const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
             if (hasPendingChanges) {
@@ -74,14 +79,18 @@ export function setupBeforeUnloadWarning(dotNetHelper: DotNetObject): void {
         const anchor = target.closest('a') as HTMLAnchorElement;
         if (anchor && !anchor.getAttribute('data-no-guard')) {
             const href = anchor.getAttribute('href');
+            if (href && href.startsWith('//')) {
+                return;
+            }
             if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
                 try {
                     const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
                     if (hasPendingChanges) {
-                        if (!confirm('Your changes have not been saved. Are you sure you want to leave this page?')) {
+                        if (confirm('Your changes have not been saved. Are you sure you want to leave this page?')) {
+                            bypassBeforeUnload = true;
+                        } else {
                             e.preventDefault();
                             e.stopPropagation();
-                            return false;
                         }
                     }
                 } catch (error) {

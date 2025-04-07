@@ -46,7 +46,12 @@ export function setupLinkInterceptor(markdownContainer, dotNetHelper) {
     });
 }
 export function setupBeforeUnloadWarning(dotNetHelper) {
+    let bypassBeforeUnload = false;
     window.addEventListener('beforeunload', async function (e) {
+        if (bypassBeforeUnload) {
+            bypassBeforeUnload = false;
+            return;
+        }
         try {
             const hasPendingChanges = await dotNetHelper.invokeMethodAsync('HasPendingChanges');
             if (hasPendingChanges) {
@@ -64,14 +69,19 @@ export function setupBeforeUnloadWarning(dotNetHelper) {
         const anchor = target.closest('a');
         if (anchor && !anchor.getAttribute('data-no-guard')) {
             const href = anchor.getAttribute('href');
+            if (href && href.startsWith('//')) {
+                return;
+            }
             if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
                 try {
                     const hasPendingChanges = await dotNetHelper.invokeMethodAsync('HasPendingChanges');
                     if (hasPendingChanges) {
-                        if (!confirm('Your changes have not been saved. Are you sure you want to leave this page?')) {
+                        if (confirm('Your changes have not been saved. Are you sure you want to leave this page?')) {
+                            bypassBeforeUnload = true;
+                        }
+                        else {
                             e.preventDefault();
                             e.stopPropagation();
-                            return false;
                         }
                     }
                 }
