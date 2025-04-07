@@ -209,7 +209,8 @@
         var content = e.Value?.ToString() ?? "";
         if (await JS.CheckCharacterAsync(content, IsProfessional))
         {
-            Content = content[0..999];
+            var maxCharacter = LimitCheckService.GetMaxCharacter(IsProfessional);
+            Content = content[0..maxCharacter];
         }
         else
         {

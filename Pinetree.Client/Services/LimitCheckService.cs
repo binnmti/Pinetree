@@ -7,10 +7,22 @@ public static class LimitCheckService
 {
     private const int FreeMaxDepth = 3;
     private const int FreeMaxFileCount = 33;
-    private const int FreeMaxCharacter = 3333;
+    private const int FreeMaxCharacter = 33333;
     private const int ProMaxDepth = 9;
     private const int ProMaxFileCount = 99;
-    private const int ProMaxCharacter = 9999;
+    private const int ProMaxCharacter = 99999;
+
+    public static  int GetMaxCharacter(bool isProfessional)
+    {
+        if (isProfessional)
+        {
+            return ProMaxCharacter;
+        }
+        else
+        {
+            return FreeMaxCharacter;
+        }
+    }
 
     public static async Task<bool> CheckDepthAsync(this IJSRuntime jsRuntime, PinetreeView pineTree, bool isProfessional)
     {
