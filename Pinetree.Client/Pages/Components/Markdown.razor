@@ -93,8 +93,11 @@
                     </div> *@
                 </div>
                 <div class="btn-group ms-auto" role="group" aria-label="Id actions">
-                    <button @onclick="CopyDocumentId" class="btn btn-sm btn-outline-secondary" title="Click to copy document ID">
-                        <small>ID: @Current.Id</small>
+                    <button @onclick="CopyDocumentId" class="btn btn-sm btn-outline-secondary" title="@(_copyIconState ? "Copied!" : "Click to copy document ID")">
+                        <span class="d-flex align-items-center">
+                            <i class="@(_copyIconState ? "bi bi-check-lg" : "bi bi-clipboard")" style="transition: all 0.3s"></i>
+                            <small class="ms-1">ID: @Current.Id</small>
+                        </span>
                     </button>
                     <i class="bi bi-question-circle ms-1 p-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" data-bs-custom-class="custom-tooltip"
                     title="<strong>Document ID</strong><br>This unique identifier can be used to reference this document in markdown links.<br>Format: [link text](//ID)"></i>
@@ -149,6 +152,8 @@
     private string Title { get; set; } = "";
     private string MarkdownText { get; set; } = "";
     private IDisposable? registration;
+    private bool _copyIconState = false;
+    private System.Threading.Timer? _resetIconTimer;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -168,6 +173,7 @@
     {
         objRef?.Dispose();
         registration?.Dispose();
+        _resetIconTimer?.Dispose();
     }
 
     [JSInvokable]
@@ -230,7 +236,16 @@
     {
         try
         {
-            await JS.CopyToClipboardAsync($"[link Text](//{Current.Id.ToString()})");
+            await JS.CopyToClipboardAsync($"[{Current.Title}](//{Current.Id})");
+            _copyIconState = true;
+            StateHasChanged();
+
+            _resetIconTimer?.Dispose();
+            _resetIconTimer = new System.Threading.Timer(_ =>
+            {
+                _copyIconState = false;
+                InvokeAsync(StateHasChanged);
+            }, null, 2000, Timeout.Infinite);
         }
         catch (Exception ex)
         {
