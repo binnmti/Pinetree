@@ -52,6 +52,14 @@
                             <i class="bi bi-file-earmark-arrow-down"></i> Extract to Child
                         </button>
                     </div>
+                    <div class="btn-group me-2" role="group" aria-label="Undo/Redo">
+                        <button type="button" class="btn btn-sm btn-outline-dark" title="Undo (Ctrl+Z)" @onclick="UndoAsync">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-dark" title="Redo (Ctrl+Y)" @onclick="RedoAsync">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
                     <div class="btn-group me-2" role="group" aria-label="Text formatting">
                         <button type="button" class="btn btn-sm btn-outline-dark" title="Bold" @onclick='() => FormatText("**", "**")'>
                             <i class="bi bi-type-bold"></i>
@@ -180,6 +188,7 @@
             await _jsInterop.SetupLinkInterceptorAsync(MarkdownContainer, objRef);
             await _jsInterop.InitializeTooltipsAsync();
             await _jsInterop.SetupBeforeUnloadWarningAsync(objRef);
+            await _jsInterop.SetupKeyboardShortcutsAsync(TextAreaRef);
         }
     }
 
@@ -417,6 +426,24 @@
         UpdateContent(content);
     }
     
+    private async Task UndoAsync()
+    {
+        await _jsInterop.PerformUndoAsync(TextAreaRef);
+        Content = await JS.GetTextAreaValueAsync();
+        MarkdownText = MarkdownService.ToHtml(Content);
+        Current.Content = Content;
+        StateHasChanged();
+    }
+
+    private async Task RedoAsync()
+    {
+        await _jsInterop.PerformRedoAsync(TextAreaRef);
+        Content = await JS.GetTextAreaValueAsync();
+        MarkdownText = MarkdownService.ToHtml(Content);
+        Current.Content = Content;
+        StateHasChanged();
+    }
+
     private void UpdateContent(string content)
     {
         Content = content;

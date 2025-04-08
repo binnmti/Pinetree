@@ -13,14 +13,66 @@ export function replaceTextAreaSelection(element: HTMLTextAreaElement, text: str
     if (element) {
         const start = element.selectionStart;
         const end = element.selectionEnd;
-        const beforeSelection = element.value.substring(0, start);
-        const afterSelection = element.value.substring(end);
-        element.value = beforeSelection + text + afterSelection;
+        element.focus();
+        if (document.execCommand && document.queryCommandSupported('insertText')) {
+            element.setSelectionRange(start, end);
+            document.execCommand('insertText', false, text);
+        } else {
+            const beforeSelection = element.value.substring(0, start);
+            const afterSelection = element.value.substring(end);
+            element.value = beforeSelection + text + afterSelection;
+            const inputEvent = new InputEvent('input', {
+                bubbles: true,
+                cancelable: true,
+                inputType: 'insertText',
+                data: text
+            });
+            element.dispatchEvent(inputEvent);
+        }
         element.selectionStart = start;
         element.selectionEnd = start + text.length;
-        return true;
-    }
+        return true;    }
     return false;
+}
+
+export function setTextAreaValue(element: HTMLTextAreaElement, text: string, dispatchEvent = true) {
+    if (element) {
+        const oldValue = element.value;
+        element.value = text;
+
+        if (dispatchEvent) {
+            const inputEvent = new InputEvent('input', {
+                bubbles: true,
+                cancelable: true,
+                inputType: 'insertFromPaste',
+                data: text
+            });
+            element.dispatchEvent(inputEvent);
+        }
+        return oldValue;
+    }
+    return null;
+}
+
+export function performUndo(element: HTMLTextAreaElement): void {
+    if (element) {
+        element.focus();
+        document.execCommand('undo');
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+}
+
+export function performRedo(element: HTMLTextAreaElement): void {
+    if (element) {
+        element.focus();
+        document.execCommand('redo');
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+}
+
+export function setupKeyboardShortcuts(element: HTMLTextAreaElement) {
+    element.addEventListener('keydown', async (e) => {
+    });
 }
 
 export function setCaretPosition(element: HTMLTextAreaElement, start: number, end: number) {

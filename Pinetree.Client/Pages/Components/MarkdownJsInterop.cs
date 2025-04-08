@@ -38,6 +38,30 @@ public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
         await module.InvokeVoidAsync("setupBeforeUnloadWarning", dotNetRef);
     }
 
+    public async ValueTask SetTextAreaValueAsync(ElementReference element, string text, bool dispatchEvent = true)
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeAsync<string>("setTextAreaValue", element, text, dispatchEvent);
+    }
+
+    public async ValueTask PerformUndoAsync(ElementReference element)
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("performUndo", element);
+    }
+
+    public async ValueTask PerformRedoAsync(ElementReference element)
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("performRedo", element);
+    }
+
+    public async ValueTask SetupKeyboardShortcutsAsync(ElementReference element)
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("setupKeyboardShortcuts", element);
+    }
+
     public async ValueTask InitializeTooltipsAsync()
     {
         var module = await _moduleTask.Value;
