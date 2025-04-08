@@ -163,3 +163,57 @@ export function setupKeyboardShortcuts(element: HTMLTextAreaElement, dotNetHelpe
         }
     });
 }
+
+export function enableContinuousList(element: HTMLTextAreaElement): void {
+    if (!element) return;
+
+    const handleMatch = (
+        match: RegExpMatchArray,
+        currentLine: string,
+        lineStart: number,
+        selStart: number,
+        markerGenerator: (match: RegExpMatchArray) => string
+    ) => {
+        const before = currentLine.trim() === match[0].trim() ? element.value.substring(0, lineStart) : element.value.substring(0, selStart);
+        const after = element.value.substring(selStart);
+        const marker = markerGenerator(match);
+        const position = currentLine.trim() === match[0].trim() ? lineStart + 1 : selStart + 1 + marker.length;
+        element.value = before + '\n' + marker + after;
+        element.selectionStart = element.selectionEnd = position;
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+
+    element.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+
+        const text = element.value;
+        const selStart = element.selectionStart;
+        let lineStart = selStart;
+        while (lineStart > 0 && text[lineStart - 1] !== '\n') lineStart--;
+
+        const currentLine = text.substring(lineStart, selStart);
+        const checkboxPattern = /^(\s*)(-\s+\[[ x]?\])\s+/;
+        const bulletPattern = /^(\s*)([-+*]|(\d+)\.|\>)\s+/;
+        const checkboxMatch = currentLine.match(checkboxPattern);
+        if (checkboxMatch) {
+            e.preventDefault();
+            handleMatch(checkboxMatch, currentLine, lineStart, selStart, (match) => {
+                const indentation = match[1] || '';
+                return currentLine.trim() === match[0].trim() ? '' : indentation + '- [ ] ';
+            });
+            return;
+        }
+        const bulletMatch = currentLine.match(bulletPattern);
+        if (bulletMatch) {
+            e.preventDefault();
+            handleMatch(bulletMatch, currentLine, lineStart, selStart, (match) => {
+                let marker = match[0];
+                if (match[3]) {
+                    const num = parseInt(match[3]);
+                    marker = marker.replace(/\d+/, (num + 1).toString());
+                }
+                return currentLine.trim() === match[0].trim() ? '' : marker;
+            });
+        }
+    });
+}

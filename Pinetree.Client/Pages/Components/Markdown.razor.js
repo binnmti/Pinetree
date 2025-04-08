@@ -154,4 +154,114 @@ export function setupKeyboardShortcuts(element, dotNetHelper) {
         }
     });
 }
+export function enableContinuousList(element) {
+    if (!element)
+        return;
+    //const updateTextArea = (before: string, after: string, marker: string, position: number) => {
+    //    element.value = before + '\n' + marker + after;
+    //    element.selectionStart = element.selectionEnd = position;
+    //    element.dispatchEvent(new Event('input', { bubbles: true }));
+    //};
+    const handleMatch = (match, currentLine, lineStart, selStart, markerGenerator) => {
+        const before = currentLine.trim() === match[0].trim() ? element.value.substring(0, lineStart) : element.value.substring(0, selStart);
+        const after = element.value.substring(selStart);
+        const marker = markerGenerator(match);
+        const position = currentLine.trim() === match[0].trim() ? lineStart + 1 : selStart + 1 + marker.length;
+        //updateTextArea(before, after, marker, position);
+        element.value = before + '\n' + marker + after;
+        element.selectionStart = element.selectionEnd = position;
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    element.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter')
+            return;
+        const text = element.value;
+        const selStart = element.selectionStart;
+        let lineStart = selStart;
+        while (lineStart > 0 && text[lineStart - 1] !== '\n')
+            lineStart--;
+        const currentLine = text.substring(lineStart, selStart);
+        const checkboxPattern = /^(\s*)(-\s+\[[ x]?\])\s+/;
+        const bulletPattern = /^(\s*)([-+*]|(\d+)\.|\>)\s+/;
+        const checkboxMatch = currentLine.match(checkboxPattern);
+        if (checkboxMatch) {
+            e.preventDefault();
+            handleMatch(checkboxMatch, currentLine, lineStart, selStart, (match) => {
+                const indentation = match[1] || '';
+                return currentLine.trim() === match[0].trim() ? '' : indentation + '- [ ] ';
+            });
+            return;
+        }
+        const bulletMatch = currentLine.match(bulletPattern);
+        if (bulletMatch) {
+            e.preventDefault();
+            handleMatch(bulletMatch, currentLine, lineStart, selStart, (match) => {
+                let marker = match[0];
+                if (match[3]) {
+                    const num = parseInt(match[3]);
+                    marker = marker.replace(/\d+/, (num + 1).toString());
+                }
+                return currentLine.trim() === match[0].trim() ? '' : marker;
+            });
+        }
+    });
+}
+//export function enableContinuousList(element: HTMLTextAreaElement): void {
+//    if (!element) return;
+//    element.addEventListener('keydown', (e) => {
+//        if (e.key === 'Enter') {
+//            const text = element.value;
+//            const selStart = element.selectionStart;
+//            let lineStart = selStart;
+//            while (lineStart > 0 && text[lineStart - 1] !== '\n') {
+//                lineStart--;
+//            }
+//            const currentLine = text.substring(lineStart, selStart);
+//            const checkboxPattern = /^(\s*)(-\s+\[[ x]?\])\s+/;
+//            const checkboxMatch = currentLine.match(checkboxPattern);
+//            if (checkboxMatch) {
+//                e.preventDefault();
+//                const updateTextArea = (before: string, after: string, marker: string, position: number) => {
+//                    element.value = before + '\n' + marker + after;
+//                    element.selectionStart = element.selectionEnd = position;
+//                    element.dispatchEvent(new Event('input', { bubbles: true }));
+//                };
+//                const before = text.substring(0, currentLine.trim() === checkboxMatch[0].trim() ? lineStart : selStart);
+//                const after = text.substring(selStart);
+//                if (currentLine.trim() === checkboxMatch[0].trim()) {
+//                    updateTextArea(before, after, '', lineStart + 1);
+//                } else {
+//                    const indentation = checkboxMatch[1];
+//                    const marker = indentation + '- [ ] ';
+//                    const position = selStart + 1 + marker.length;
+//                    updateTextArea(before, after, marker, position);
+//                }
+//                return;
+//            }
+//            const bulletPattern = /^(\s*)([-+*]|(\d+)\.|\>)\s+/;
+//            const match = currentLine.match(bulletPattern);
+//            if (match) {
+//                e.preventDefault();
+//                const updateTextArea = (before: string, after: string, marker: string, position: number) => {
+//                    element.value = before + '\n' + marker + after;
+//                    element.selectionStart = element.selectionEnd = position;
+//                    element.dispatchEvent(new Event('input', { bubbles: true }));
+//                };
+//                const before = text.substring(0, currentLine.trim() === match[0].trim() ? lineStart : selStart);
+//                const after = text.substring(selStart);
+//                if (currentLine.trim() === match[0].trim()) {
+//                    updateTextArea(before, after, '', lineStart + 1);
+//                } else {
+//                    let marker = match[0];
+//                    if (match[3]) { // Numbered list
+//                        const num = parseInt(match[3]);
+//                        marker = marker.replace(/\d+/, (num + 1).toString());
+//                    }
+//                    const position = selStart + 1 + marker.length;
+//                    updateTextArea(before, after, marker, position);
+//                }
+//            }
+//        }
+//    });
+//}
 //# sourceMappingURL=Markdown.razor.js.map

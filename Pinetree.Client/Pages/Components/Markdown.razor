@@ -189,6 +189,7 @@
             await _jsInterop.InitializeTooltipsAsync();
             await _jsInterop.SetupBeforeUnloadWarningAsync(objRef);
             await _jsInterop.SetupKeyboardShortcutsAsync(TextAreaRef, objRef);
+            await _jsInterop.EnableContinuousListAsync(TextAreaRef);
         }
     }
 

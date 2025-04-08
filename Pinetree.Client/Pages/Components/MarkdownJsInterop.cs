@@ -49,10 +49,17 @@ public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
         var module = await _moduleTask.Value;
         await module.InvokeAsync<string>("setTextAreaValue", element, text, dispatchEvent);
     }
+
     public async ValueTask InitializeTooltipsAsync()
     {
         var module = await _moduleTask.Value;
         await module.InvokeVoidAsync("initializeTooltips");
+    }
+
+    public async ValueTask EnableContinuousListAsync(ElementReference element)
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("enableContinuousList", element);
     }
 
     public async ValueTask DisposeAsync()
