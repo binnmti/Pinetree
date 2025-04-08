@@ -1,6 +1,6 @@
 ﻿@using Pinetree.Client.VModel
 @using Pinetree.Client.Services
-@implements IDisposable
+@implements IAsyncDisposable
 
 <div class="editor-container">
     @if (IsTry)
@@ -143,6 +143,7 @@
     [Inject]
     public required HttpClient HttpClient { get; set; }
 
+    private MarkdownJsInterop _jsInterop = null!;
     private ElementReference TextAreaRef;
     private ElementReference MarkdownContainer;
     private DotNetObjectReference<Markdown>? objRef;
@@ -155,6 +156,12 @@
     private bool _copyIconState = false;
     private System.Threading.Timer? _resetIconTimer;
 
+    protected override void OnInitialized()
+    {
+        _jsInterop = new MarkdownJsInterop(JS);
+        base.OnInitialized();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -162,18 +169,23 @@
             SetCurrent(Id);
             registration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
             LastSavedState = Pinetree.DeepClone();
+
             objRef = DotNetObjectReference.Create(this);
-            await JS.SetupLinkInterceptorAsync(MarkdownContainer, objRef);
-            await JS.InitializeTooltipsAsync();
-            await JS.SetupBeforeUnloadWarningAsync(objRef);
+            await _jsInterop.SetupLinkInterceptorAsync(MarkdownContainer, objRef);
+            await _jsInterop.InitializeTooltipsAsync();
+            await _jsInterop.SetupBeforeUnloadWarningAsync(objRef);
         }
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         objRef?.Dispose();
         registration?.Dispose();
         _resetIconTimer?.Dispose();
+        if (_jsInterop != null)
+        {
+            await _jsInterop.DisposeAsync();
+        }
     }
 
     [JSInvokable]
@@ -288,7 +300,7 @@
     {
         try
         {
-            var selection = await JS.GetSelectionAsync(TextAreaRef);
+            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
             if (string.IsNullOrEmpty(selection.Text)) return;
 
             var defaultChildTitle = MarkdownUtil.GetChildTitle(selection.Text);
@@ -296,7 +308,7 @@
             if (string.IsNullOrWhiteSpace(childTitle)) return;
             var childId = await MarkdownUtil.AddChildAsync(Current, childTitle, selection.Text, JS, HttpClient, IsTry, IsProfessional);
             var linkText = $"[{childTitle}](//{childId})";
-            await JS.ReplaceSelectionAsync(TextAreaRef, linkText);
+            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, linkText);
             Current.Content = await JS.GetTextAreaValueAsync();
             SetCurrent(Id);
             StateHasChanged();
@@ -309,24 +321,24 @@
 
     private async Task FormatText(string prefix, string suffix)
     {
-        var selection = await JS.GetSelectionAsync(TextAreaRef);
+        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
         if (selection.Text.Length > 0)
         {
-            await JS.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{selection.Text}{suffix}");
+            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{selection.Text}{suffix}");
         }
         else
         {
-            await JS.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{suffix}");
+            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{suffix}");
         }
         int start = selection.Start;
-        await JS.SetCaretPositionAsync(TextAreaRef, start + prefix.Length, start + prefix.Length);
+        await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + prefix.Length, start + prefix.Length);
         var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
     }
 
     private async Task InsertList(string prefix)
     {
-        var selection = await JS.GetSelectionAsync(TextAreaRef);
+        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
         string result;
         var lines = selection.Text.Split('\n');
         if (selection.Text.Length > 0)
@@ -337,9 +349,9 @@
         {
             result = $"{prefix}";
         }
-        await JS.ReplaceSelectionAsync(TextAreaRef, result);
+        await _jsInterop.ReplaceSelectionAsync(TextAreaRef, result);
         var newCaretPosition = selection.End + prefix.Length * lines.Length;
-        await JS.SetCaretPositionAsync(TextAreaRef, newCaretPosition, newCaretPosition);
+        await _jsInterop.SetCaretPositionAsync(TextAreaRef, newCaretPosition, newCaretPosition);
 
         var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
@@ -347,14 +359,14 @@
 
     private async Task InsertLink()
     {
-        var selection = await JS.GetSelectionAsync(TextAreaRef);
+        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
         if (selection.Text.Length > 0)
         {
-            await JS.ReplaceSelectionAsync(TextAreaRef, $"[{selection.Text}](https://example.com)");
+            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"[{selection.Text}](https://example.com)");
         }
         else
         {
-            await JS.ReplaceSelectionAsync(TextAreaRef, "[Link text](https://example.com)");
+            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, "[Link text](https://example.com)");
         }
         var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
@@ -362,7 +374,7 @@
 
     private async Task InsertImage()
     {
-        await JS.ReplaceSelectionAsync(TextAreaRef, "![Image description](https://example.com/image.jpg)");
+        await _jsInterop.ReplaceSelectionAsync(TextAreaRef, "![Image description](https://example.com/image.jpg)");
 
         var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
