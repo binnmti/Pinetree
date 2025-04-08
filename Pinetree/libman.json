@@ -13,6 +13,10 @@
         "font/fonts/bootstrap-icons.woff",
         "font/fonts/bootstrap-icons.woff2"
       ]
+    },
+    {
+      "library": "github-markdown-css@5.8.1",
+      "destination": "wwwroot/lib/github-markdown-css/"
     }
   ]
 }
