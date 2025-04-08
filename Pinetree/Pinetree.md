@@ -1,6 +1,10 @@
 - Paid Membership
-- more than 3000 characters will make it difficult to write to the database
+- Toolbar
+- Move two spaces with tab key
+- Automatically when you start a new line
+- Link scrollbar
 - Undo, Redo
+- Move center line. Clear layout
 - Multilingualization, or rather Japaneseization
 - 
 # TODO
