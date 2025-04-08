@@ -1,6 +1,6 @@
 ﻿namespace Pinetree.Client.VModel;
 
-public class PinetreeView(long id, string title, string content, PinetreeView? parent, long groupId)
+public class PinetreeView(long id, string title, string content, PinetreeView? parent, long groupId) : IEquatable<PinetreeView>
 {
     public long Id { get; } = id;
     public string Title { get; set; } = title;
@@ -12,4 +12,67 @@ public class PinetreeView(long id, string title, string content, PinetreeView? p
     public List<PinetreeView> Children { get; } = [];
 
     public static PinetreeView Nothing => new(0, "", "", null, 0);
+
+    public bool Equals(PinetreeView? other)
+    {
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        if (Title != other.Title || Content != other.Content || Id != other.Id || GroupId != other.GroupId)
+        {
+            return false;
+        }
+        bool parentEqual = (Parent is null && other.Parent is null) ||
+                           (Parent is not null && other.Parent is not null && Parent.Id == other.Parent.Id);
+        if (!parentEqual) return false;
+        if (Children.Count != other.Children.Count) return false;
+        for (int i = 0; i < Children.Count; i++)
+        {
+            if (!Children[i].Equals(other.Children[i]))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as PinetreeView);
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Title);
+        hash.Add(Content);
+        hash.Add(Parent?.Id ?? 0);
+        hash.Add(GroupId);
+        hash.Add(Id);
+        foreach (var child in Children)
+        {
+            hash.Add(child.Id);
+        }
+        return hash.ToHashCode();
+    }
+
+    public static bool operator ==(PinetreeView? left, PinetreeView? right)
+    {
+        if (left is null) return right is null;
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(PinetreeView? left, PinetreeView? right)
+        => !(left == right);
+
+    public PinetreeView DeepClone()
+    {
+        var clone = new PinetreeView(Id, Title, Content, Parent, GroupId)
+        {
+            IsCurrent = IsCurrent,
+            IsExpanded = IsExpanded
+        };
+        foreach (var child in Children)
+        {
+            var childClone = child.DeepClone();
+            clone.Children.Add(childClone);
+        }
+        return clone;
+    }
 };

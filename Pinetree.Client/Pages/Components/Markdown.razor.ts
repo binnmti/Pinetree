@@ -8,6 +8,7 @@ export function getTextAreaSelection(element: HTMLTextAreaElement): { text: stri
     }
     return { text: '', start: 0, end: 0 };
 }
+
 export function replaceTextAreaSelection(element: HTMLTextAreaElement, text: string): boolean {
     if (element) {
         const start = element.selectionStart;
@@ -27,12 +28,6 @@ export function setCaretPosition(element: HTMLTextAreaElement, start: number, en
     element.setSelectionRange(start, end);
 }
 
-declare namespace DotNet {
-    interface DotNetObject {
-        invokeMethodAsync<T>(methodName: string, ...args: any[]): Promise<T>;
-        dispose(): void;
-    }
-}
 export function initializeTooltips(): void {
     const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.forEach(tooltipTriggerEl => {
@@ -40,8 +35,13 @@ export function initializeTooltips(): void {
     });
 }
 
-export function setupLinkInterceptor(container: HTMLElement, dotNetRef: DotNet.DotNetObject): void {
-    container.addEventListener('click', (e: Event) => {
+interface DotNetObject {
+    invokeMethodAsync<T>(methodName: string, ...args: any[]): Promise<T>;
+    dispose(): void;
+}
+
+export function setupLinkInterceptor(markdownContainer: HTMLElement, dotNetHelper: DotNetObject): void {
+    markdownContainer.addEventListener('click', async (e: Event) => {
         const target = e.target as HTMLElement;
         if (target.tagName === 'A') {
             const linkElement = target as HTMLAnchorElement;
@@ -49,8 +49,71 @@ export function setupLinkInterceptor(container: HTMLElement, dotNetRef: DotNet.D
             if (href && href.startsWith('//')) {
                 e.preventDefault();
                 const id = href.substring(2);
-                dotNetRef.invokeMethodAsync('HandleMarkdownLinkClick', id);
+                await dotNetHelper.invokeMethodAsync('HandleMarkdownLinkClick', id);
             }
+        }
+    });
+}
+
+export function setupBeforeUnloadWarning(dotNetHelper: DotNetObject): void {
+    let bypassBeforeUnload = false;
+    window.addEventListener('beforeunload', async function (e: BeforeUnloadEvent) {
+        if (bypassBeforeUnload) {
+            bypassBeforeUnload = false;
+            return;
+        }
+        try {
+            const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
+            if (hasPendingChanges) {
+                e.preventDefault();
+                e.returnValue = "";
+                return "";
+            }
+        } catch (error) {
+            console.error('Error checking for pending changes:', error);
+        }
+    });
+
+    document.addEventListener('click', async (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        const anchor = target.closest('a') as HTMLAnchorElement;
+        if (anchor && !anchor.getAttribute('data-no-guard')) {
+            const href = anchor.getAttribute('href');
+            if (href && href.startsWith('//')) {
+                return;
+            }
+            if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                try {
+                    const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
+                    if (hasPendingChanges) {
+                        if (confirm('Your changes have not been saved. Are you sure you want to leave this page?')) {
+                            bypassBeforeUnload = true;
+                        } else {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Navigation guard error:', error);
+                }
+            }
+        }
+    }, true);
+
+    const pageUrl = window.location.href;
+    window.history.pushState({ page: 1 }, '', pageUrl);
+    window.addEventListener('popstate', async function (e) {
+        window.history.pushState({ page: 1 }, '', pageUrl);
+        try {
+            const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
+            if (hasPendingChanges) {
+                const confirmed = confirm('Your changes have not been saved. Are you sure you want to leave this page?');
+                if (confirmed) {
+                    window.location.href = document.referrer || '/';
+                }
+            }
+        } catch (error) {
+            console.error('Error checking for pending changes:', error);
         }
     });
 }

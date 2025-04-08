@@ -39,11 +39,10 @@
             <div class="markdown-title d-flex align-items-center">
                 <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" class="flex-grow-1" />
                 <div class="d-flex align-items-center ms-2">
-                    <button @onclick="CopyDocumentId" class="btn btn-sm btn-outline-secondary" title="Click to copy document ID">
-                        <small>ID: @Current.Id</small>
+                    <button @onclick="SaveChanges" disabled="@(!HasPendingChanges() || IsTry)"
+                    class="btn btn-sm btn-primary me-2" title="Save changes">
+                        <i class="bi bi-save"></i>
                     </button>
-                    <i class="bi bi-question-circle ms-1 p-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" data-bs-custom-class="custom-tooltip"
-                       title="<strong>Document ID</strong><br>This unique identifier can be used to reference this document in markdown links.<br>Format: [link text](//ID)"></i>
                 </div>
             </div>
             <div class="toolbar p-2 bg-light border-bottom d-flex align-items-center mb-2">
@@ -93,6 +92,16 @@
                         </button>
                     </div> *@
                 </div>
+                <div class="btn-group ms-auto" role="group" aria-label="Id actions">
+                    <button @onclick="CopyDocumentId" class="btn btn-sm btn-outline-secondary" title="@(_copyIconState ? "Copied!" : "Click to copy document ID")">
+                        <span class="d-flex align-items-center">
+                            <i class="@(_copyIconState ? "bi bi-check-lg" : "bi bi-clipboard")" style="transition: all 0.3s"></i>
+                            <small class="ms-1">ID: @Current.Id</small>
+                        </span>
+                    </button>
+                    <i class="bi bi-question-circle ms-1 p-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" data-bs-custom-class="custom-tooltip"
+                    title="<strong>Document ID</strong><br>This unique identifier can be used to reference this document in markdown links.<br>Format: [link text](//ID)"></i>
+                </div>
             </div>
             <div class="row" style="height:@(IsTry ? "80vh" : "87vh");">
                 <div class="col py-2">
@@ -108,7 +117,6 @@
         </div>
     </div>
 </div>
-
 @code {
     [Parameter]
     public long Id { get; set; }
@@ -135,39 +143,48 @@
     [Inject]
     public required HttpClient HttpClient { get; set; }
 
+    private MarkdownJsInterop _jsInterop = null!;
     private ElementReference TextAreaRef;
     private ElementReference MarkdownContainer;
     private DotNetObjectReference<Markdown>? objRef;
-    private MarkdownJsInterop? _jsInterop;
     private PinetreeView Current { get; set; } = PinetreeView.Nothing;
+    private PinetreeView LastSavedState { get; set; } = PinetreeView.Nothing;
     private string Content { get; set; } = "";
     private string Title { get; set; } = "";
     private string MarkdownText { get; set; } = "";
+    private IDisposable? registration;
+    private bool _copyIconState = false;
+    private System.Threading.Timer? _resetIconTimer;
 
-    private System.Threading.Timer? _debounceTimer;
+    protected override void OnInitialized()
+    {
+        _jsInterop = new MarkdownJsInterop(JS);
+        base.OnInitialized();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             SetCurrent(Id);
-            _jsInterop = new MarkdownJsInterop(JS);
+            registration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
+            LastSavedState = Pinetree.DeepClone();
+
             objRef = DotNetObjectReference.Create(this);
-            if (_jsInterop != null && MarkdownContainer.Id != null)
-            {
-                await _jsInterop.SetupLinkInterceptorAsync(MarkdownContainer, objRef);
-                await _jsInterop.InitializeTooltipsAsync();
-            }
+            await _jsInterop.SetupLinkInterceptorAsync(MarkdownContainer, objRef);
+            await _jsInterop.InitializeTooltipsAsync();
+            await _jsInterop.SetupBeforeUnloadWarningAsync(objRef);
         }
     }
 
     public async ValueTask DisposeAsync()
     {
         objRef?.Dispose();
-        _debounceTimer?.Dispose();
+        registration?.Dispose();
+        _resetIconTimer?.Dispose();
         if (_jsInterop != null)
         {
-            await ((IAsyncDisposable)_jsInterop).DisposeAsync();
+            await _jsInterop.DisposeAsync();
         }
     }
 
@@ -180,11 +197,28 @@
         }
     }
 
+    [JSInvokable]
+    public bool HasPendingChanges()
+    {
+        return LastSavedState != Pinetree;
+    }
+
+    private async ValueTask OnLocationChanging(LocationChangingContext context)
+    {
+        if (HasPendingChanges())
+        {
+            var confirmed = await JS.ConfirmAsync("Your changes have not been saved. Are you sure you want to leave this page?");
+            if (!confirmed)
+            {
+                context.PreventNavigation();
+            }
+        }
+    }
+
     private void OnInputTitleChange(ChangeEventArgs e)
     {
         Title = e.Value?.ToString() ?? "";
         Current.Title = Title;
-        DebounceSave();
         StateHasChanged();
     }
 
@@ -193,7 +227,8 @@
         var content = e.Value?.ToString() ?? "";
         if (await JS.CheckCharacterAsync(content, IsProfessional))
         {
-            Content = content[0..999];
+            var maxCharacter = LimitCheckService.GetMaxCharacter(IsProfessional);
+            Content = content[0..maxCharacter];
         }
         else
         {
@@ -201,7 +236,6 @@
         }
         MarkdownText = MarkdownService.ToHtml(Content);
         Current.Content = Content;
-        DebounceSave();
         StateHasChanged();
     }
 
@@ -212,12 +246,18 @@
 
     private async Task CopyDocumentId()
     {
-        if (_jsInterop == null) return;
-
         try
         {
-            await JS.InvokeVoidAsync("navigator.clipboard.writeText", Current.Id.ToString());
-            await JS.InvokeVoidAsync("alert", $"ID {Current.Id} copied to clipboard");
+            await JS.CopyToClipboardAsync($"[{Current.Title}](//{Current.Id})");
+            _copyIconState = true;
+            StateHasChanged();
+
+            _resetIconTimer?.Dispose();
+            _resetIconTimer = new System.Threading.Timer(_ =>
+            {
+                _copyIconState = false;
+                InvokeAsync(StateHasChanged);
+            }, null, 2000, Timeout.Infinite);
         }
         catch (Exception ex)
         {
@@ -225,34 +265,20 @@
         }
     }
 
-    private void DebounceSave()
+    private async Task SaveChanges()
     {
         if (IsTry) return;
 
-        _debounceTimer?.Dispose();
-        _debounceTimer = new System.Threading.Timer(async _ =>
+        try
         {
-            await InvokeAsync(async () =>
-            {
-                try
-                {
-                    var updateData = new
-                    {
-                        Id,
-                        Title,
-                        Content,
-                        GroupId = -1,
-                        ParentId = -1,
-                    };
-                    await HttpClient.PostAsJsonAsync($"/api/Pinecones/update", updateData);
-                    await InvokeAsync(StateHasChanged);
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine($"Task was canceled: {ex.Message}");
-                }
-            });
-        }, null, 500, Timeout.Infinite);
+            await MarkdownUtil.AllUpdateAsync(Pinetree, HttpClient);
+            LastSavedState = Pinetree.DeepClone();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error saving changes: {ex.Message}");
+        }
     }
 
     private void SetCurrent(long id)
@@ -272,22 +298,19 @@
 
     private async Task ExtractToChildFile()
     {
-        if (_jsInterop == null) return;
-
         try
         {
             var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
             if (string.IsNullOrEmpty(selection.Text)) return;
 
             var defaultChildTitle = MarkdownUtil.GetChildTitle(selection.Text);
-            var childTitle = await JS.InvokeAsync<string>("prompt", "Enter your title", defaultChildTitle);
+            var childTitle = await JS.PromptAsync("Enter your title", defaultChildTitle);
             if (string.IsNullOrWhiteSpace(childTitle)) return;
             var childId = await MarkdownUtil.AddChildAsync(Current, childTitle, selection.Text, JS, HttpClient, IsTry, IsProfessional);
             var linkText = $"[{childTitle}](//{childId})";
             await _jsInterop.ReplaceSelectionAsync(TextAreaRef, linkText);
-            Current.Content = await JS.InvokeAsync<string>("eval", $"document.querySelector('textarea').value");
+            Current.Content = await JS.GetTextAreaValueAsync();
             SetCurrent(Id);
-            DebounceSave();
             StateHasChanged();
         }
         catch (Exception ex)
@@ -298,8 +321,6 @@
 
     private async Task FormatText(string prefix, string suffix)
     {
-        if (_jsInterop == null) return;
-
         var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
         if (selection.Text.Length > 0)
         {
@@ -311,14 +332,12 @@
         }
         int start = selection.Start;
         await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + prefix.Length, start + prefix.Length);
-        var content = await JS.InvokeAsync<string>("eval", "document.querySelector('textarea').value");
+        var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
     }
 
     private async Task InsertList(string prefix)
     {
-        if (_jsInterop == null) return;
-
         var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
         string result;
         var lines = selection.Text.Split('\n');
@@ -334,14 +353,12 @@
         var newCaretPosition = selection.End + prefix.Length * lines.Length;
         await _jsInterop.SetCaretPositionAsync(TextAreaRef, newCaretPosition, newCaretPosition);
 
-        var content = await JS.InvokeAsync<string>("eval", "document.querySelector('textarea').value");
+        var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
     }
 
     private async Task InsertLink()
     {
-        if (_jsInterop == null) return;
-
         var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
         if (selection.Text.Length > 0)
         {
@@ -351,18 +368,15 @@
         {
             await _jsInterop.ReplaceSelectionAsync(TextAreaRef, "[Link text](https://example.com)");
         }
-
-        var content = await JS.InvokeAsync<string>("eval", "document.querySelector('textarea').value");
+        var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
     }
 
     private async Task InsertImage()
     {
-        if (_jsInterop == null) return;
-
         await _jsInterop.ReplaceSelectionAsync(TextAreaRef, "![Image description](https://example.com/image.jpg)");
 
-        var content = await JS.InvokeAsync<string>("eval", "document.querySelector('textarea').value");
+        var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
     }
 
@@ -371,7 +385,6 @@
         Content = content;
         MarkdownText = MarkdownService.ToHtml(Content);
         Current.Content = Content;
-        DebounceSave();
         StateHasChanged();
     }
 }
