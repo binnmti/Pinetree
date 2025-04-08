@@ -54,27 +54,6 @@ export function setTextAreaValue(element: HTMLTextAreaElement, text: string, dis
     return null;
 }
 
-export function performUndo(element: HTMLTextAreaElement): void {
-    if (element) {
-        element.focus();
-        document.execCommand('undo');
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-}
-
-export function performRedo(element: HTMLTextAreaElement): void {
-    if (element) {
-        element.focus();
-        document.execCommand('redo');
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-}
-
-export function setupKeyboardShortcuts(element: HTMLTextAreaElement) {
-    element.addEventListener('keydown', async (e) => {
-    });
-}
-
 export function setCaretPosition(element: HTMLTextAreaElement, start: number, end: number) {
     element.focus();
     element.setSelectionRange(start, end);
@@ -166,6 +145,21 @@ export function setupBeforeUnloadWarning(dotNetHelper: DotNetObject): void {
             }
         } catch (error) {
             console.error('Error checking for pending changes:', error);
+        }
+    });
+}
+
+export function setupKeyboardShortcuts(element: HTMLTextAreaElement, dotNetHelper: DotNetObject) {
+    element.addEventListener('keydown', async (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+            e.preventDefault();
+            await dotNetHelper.invokeMethodAsync('HandleUndoShortcut');
+            return false;
+        }
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+            e.preventDefault();
+            await dotNetHelper.invokeMethodAsync('HandleRedoShortcut');
+            return false;
         }
     });
 }

@@ -26,6 +26,12 @@ public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
         await module.InvokeVoidAsync("setCaretPosition", element, start, end);
     }
 
+    public async ValueTask SetupKeyboardShortcutsAsync<T>(ElementReference container, DotNetObjectReference<T> dotNetRef) where T : class
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("setupKeyboardShortcuts", container, dotNetRef);
+    }
+    
     public async ValueTask SetupLinkInterceptorAsync<T>(ElementReference container, DotNetObjectReference<T> dotNetRef) where T : class
     {
         var module = await _moduleTask.Value;
@@ -43,25 +49,6 @@ public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
         var module = await _moduleTask.Value;
         await module.InvokeAsync<string>("setTextAreaValue", element, text, dispatchEvent);
     }
-
-    public async ValueTask PerformUndoAsync(ElementReference element)
-    {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("performUndo", element);
-    }
-
-    public async ValueTask PerformRedoAsync(ElementReference element)
-    {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("performRedo", element);
-    }
-
-    public async ValueTask SetupKeyboardShortcutsAsync(ElementReference element)
-    {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("setupKeyboardShortcuts", element);
-    }
-
     public async ValueTask InitializeTooltipsAsync()
     {
         var module = await _moduleTask.Value;

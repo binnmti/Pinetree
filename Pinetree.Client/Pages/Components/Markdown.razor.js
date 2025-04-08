@@ -52,24 +52,6 @@ export function setTextAreaValue(element, text, dispatchEvent = true) {
     }
     return null;
 }
-export function performUndo(element) {
-    if (element) {
-        element.focus();
-        document.execCommand('undo');
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-}
-export function performRedo(element) {
-    if (element) {
-        element.focus();
-        document.execCommand('redo');
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-}
-export function setupKeyboardShortcuts(element) {
-    element.addEventListener('keydown', async (e) => {
-    });
-}
 export function setCaretPosition(element, start, end) {
     element.focus();
     element.setSelectionRange(start, end);
@@ -155,6 +137,20 @@ export function setupBeforeUnloadWarning(dotNetHelper) {
         }
         catch (error) {
             console.error('Error checking for pending changes:', error);
+        }
+    });
+}
+export function setupKeyboardShortcuts(element, dotNetHelper) {
+    element.addEventListener('keydown', async (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+            e.preventDefault();
+            await dotNetHelper.invokeMethodAsync('HandleUndoShortcut');
+            return false;
+        }
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+            e.preventDefault();
+            await dotNetHelper.invokeMethodAsync('HandleRedoShortcut');
+            return false;
         }
     });
 }
