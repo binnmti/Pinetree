@@ -12,6 +12,8 @@ public class PinetreeView(long id, string title, string content, PinetreeView? p
     public List<PinetreeView> Children { get; } = [];
     public Stack<string> UndoStack { get; } = new();
     public Stack<string> RedoStack { get; } = new();
+    public bool CanUndo => UndoStack.Count != 0;
+    public bool CanRedo => RedoStack.Count != 0;
 
     public static PinetreeView Nothing => new(0, "", "", null, 0);
 
