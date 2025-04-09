@@ -1,9 +1,5 @@
 - Paid Membership
-- Toolbar
-- Move two spaces with tab key
-- Automatically when you start a new line
 - Link scrollbar
-- Undo, Redo
 - Move center line. Clear layout
 - Multilingualization, or rather Japaneseization
 - 

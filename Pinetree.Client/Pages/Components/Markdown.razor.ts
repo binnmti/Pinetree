@@ -169,6 +169,43 @@ export function setupKeyboardShortcuts(element: HTMLTextAreaElement, dotNetHelpe
             await dotNetHelper.invokeMethodAsync('HandleRedoShortcut');
             return false;
         }
+        if (e.key === 'Tab') {
+            e.preventDefault();
+
+            const start = element.selectionStart;
+            const end = element.selectionEnd;
+
+            if (start === end) {
+                const before = element.value.substring(0, start);
+                const after = element.value.substring(end);
+                element.value = before + '  ' + after;
+                element.selectionStart = element.selectionEnd = start + 2;
+            } else {
+                const selectedText = element.value.substring(start, end);
+                const lines = selectedText.split('\n');
+
+                if (e.shiftKey) {
+                    const indentedLines = lines.map(line =>
+                        line.startsWith('  ') ? line.substring(2) : line
+                    );
+                    const newText = indentedLines.join('\n');
+
+                    element.value = element.value.substring(0, start) + newText + element.value.substring(end);
+                    element.selectionStart = start;
+                    element.selectionEnd = start + newText.length;
+                } else {
+                    const indentedLines = lines.map(line => '  ' + line);
+                    const newText = indentedLines.join('\n');
+
+                    element.value = element.value.substring(0, start) + newText + element.value.substring(end);
+                    element.selectionStart = start;
+                    element.selectionEnd = start + newText.length;
+                }
+            }
+
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            return false;
+        }
     });
 }
 
