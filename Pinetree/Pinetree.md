@@ -1,7 +1,8 @@
 - Paid Membership
-- Move center line. Clear layout
 - Multilingualization, or rather Japaneseization
-- 
+- Image update
+- Page Publish
+ 
 # TODO
 - localhost
 https://ngrok.com/
