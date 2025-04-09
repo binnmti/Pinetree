@@ -15,27 +15,42 @@
         </div>
     }
     <div class="row">
-        <div class="col-2 border">
-            <div class="pinetree-view" style="display: flex; flex-direction: column; height: 100%;">
-                <div class="list-group" style="flex: 1 1 auto; display: flex; flex-direction: column;">
-                    @if (!IsTry)
-                    {
+        @if (IsSidebarOpen)
+        {
+            <div class="col-2 border">
+                <div class="pinetree-view" style="display: flex; flex-direction: column; height: 100%;">
+                    <div class="list-group" style="flex: 1 1 auto; display: flex; flex-direction: column;">
+                        @if (!IsTry)
+                        {
+                            <div>
+                                <button type="button" class="list-group-item list-group-item-action" @onclick="OnFileListClick">
+                                    <i class="bi bi-card-list" aria-hidden="true"></i> File List
+                                </button>
+                            </div>
+                        }
                         <div>
-                            <button type="button" class="list-group-item list-group-item-action" @onclick="OnFileListClick">
-                                <i class="bi bi-card-list" aria-hidden="true"></i> File List
-                            </button>
+                            <TreeView Pinetree="@Pinetree" Id="@Id" IsTry=@IsTry IsProfessional=IsProfessional OnChildEvent="SetCurrent" />
                         </div>
-                    }
-                    <div>
-                        <TreeView Pinetree="@Pinetree" Id="@Id" IsTry=@IsTry IsProfessional=IsProfessional OnChildEvent="SetCurrent" />
                     </div>
                 </div>
+                <div class="py-2">
+                    FileCount : @FileCount
+                </div>
             </div>
-            <div class="py-2">
-                FileCount : @FileCount
-            </div>
-        </div>
-        <div class="col-10">
+        }
+        <div class="@(IsSidebarOpen ? "col-10" : "col-12")" style="transition: margin-left 0.3s ease-in-out;">
+            @if (IsSidebarOpen)
+            {
+                <button class="btn btn-sm btn-secondary tree-toggle" @onclick="ToggleSidebar">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-sm btn-outline-secondary tree-toggle" @onclick="ToggleSidebar">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            }
             <div class="markdown-title d-flex align-items-center">
                 <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" class="flex-grow-1" />
                 <div class="d-flex align-items-center ms-2">
