@@ -13,22 +13,16 @@ export function replaceTextAreaSelection(element, text) {
         const start = element.selectionStart;
         const end = element.selectionEnd;
         element.focus();
-        if (document.execCommand && document.queryCommandSupported('insertText')) {
-            element.setSelectionRange(start, end);
-            document.execCommand('insertText', false, text);
-        }
-        else {
-            const beforeSelection = element.value.substring(0, start);
-            const afterSelection = element.value.substring(end);
-            element.value = beforeSelection + text + afterSelection;
-            const inputEvent = new InputEvent('input', {
-                bubbles: true,
-                cancelable: true,
-                inputType: 'insertText',
-                data: text
-            });
-            element.dispatchEvent(inputEvent);
-        }
+        const beforeSelection = element.value.substring(0, start);
+        const afterSelection = element.value.substring(end);
+        element.value = beforeSelection + text + afterSelection;
+        const inputEvent = new InputEvent('input', {
+            bubbles: true,
+            cancelable: true,
+            inputType: 'insertText',
+            data: text
+        });
+        element.dispatchEvent(inputEvent);
         element.selectionStart = start;
         element.selectionEnd = start + text.length;
         return true;
@@ -56,13 +50,20 @@ export function setCaretPosition(element, start, end) {
     element.focus();
     element.setSelectionRange(start, end);
 }
-export function initializeTooltips() {
+export function setupAllEventListeners(container, textArea, dotNetHelper) {
+    setupLinkInterceptor(container, dotNetHelper);
+    setupBeforeUnloadWarning(dotNetHelper);
+    setupKeyboardShortcuts(textArea, dotNetHelper);
+    enableContinuousList(textArea);
+    initializeTooltips();
+}
+function initializeTooltips() {
     const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.forEach(tooltipTriggerEl => {
         new window.bootstrap.Tooltip(tooltipTriggerEl);
     });
 }
-export function setupLinkInterceptor(markdownContainer, dotNetHelper) {
+function setupLinkInterceptor(markdownContainer, dotNetHelper) {
     markdownContainer.addEventListener('click', async (e) => {
         const target = e.target;
         if (target.tagName === 'A') {
@@ -76,7 +77,7 @@ export function setupLinkInterceptor(markdownContainer, dotNetHelper) {
         }
     });
 }
-export function setupBeforeUnloadWarning(dotNetHelper) {
+function setupBeforeUnloadWarning(dotNetHelper) {
     let bypassBeforeUnload = false;
     window.addEventListener('beforeunload', async function (e) {
         if (bypassBeforeUnload) {
@@ -87,8 +88,7 @@ export function setupBeforeUnloadWarning(dotNetHelper) {
             const hasPendingChanges = await dotNetHelper.invokeMethodAsync('HasPendingChanges');
             if (hasPendingChanges) {
                 e.preventDefault();
-                e.returnValue = "";
-                return "";
+                return undefined;
             }
         }
         catch (error) {
@@ -157,17 +157,11 @@ export function setupKeyboardShortcuts(element, dotNetHelper) {
 export function enableContinuousList(element) {
     if (!element)
         return;
-    //const updateTextArea = (before: string, after: string, marker: string, position: number) => {
-    //    element.value = before + '\n' + marker + after;
-    //    element.selectionStart = element.selectionEnd = position;
-    //    element.dispatchEvent(new Event('input', { bubbles: true }));
-    //};
     const handleMatch = (match, currentLine, lineStart, selStart, markerGenerator) => {
         const before = currentLine.trim() === match[0].trim() ? element.value.substring(0, lineStart) : element.value.substring(0, selStart);
         const after = element.value.substring(selStart);
         const marker = markerGenerator(match);
         const position = currentLine.trim() === match[0].trim() ? lineStart + 1 : selStart + 1 + marker.length;
-        //updateTextArea(before, after, marker, position);
         element.value = before + '\n' + marker + after;
         element.selectionStart = element.selectionEnd = position;
         element.dispatchEvent(new Event('input', { bubbles: true }));
@@ -206,62 +200,4 @@ export function enableContinuousList(element) {
         }
     });
 }
-//export function enableContinuousList(element: HTMLTextAreaElement): void {
-//    if (!element) return;
-//    element.addEventListener('keydown', (e) => {
-//        if (e.key === 'Enter') {
-//            const text = element.value;
-//            const selStart = element.selectionStart;
-//            let lineStart = selStart;
-//            while (lineStart > 0 && text[lineStart - 1] !== '\n') {
-//                lineStart--;
-//            }
-//            const currentLine = text.substring(lineStart, selStart);
-//            const checkboxPattern = /^(\s*)(-\s+\[[ x]?\])\s+/;
-//            const checkboxMatch = currentLine.match(checkboxPattern);
-//            if (checkboxMatch) {
-//                e.preventDefault();
-//                const updateTextArea = (before: string, after: string, marker: string, position: number) => {
-//                    element.value = before + '\n' + marker + after;
-//                    element.selectionStart = element.selectionEnd = position;
-//                    element.dispatchEvent(new Event('input', { bubbles: true }));
-//                };
-//                const before = text.substring(0, currentLine.trim() === checkboxMatch[0].trim() ? lineStart : selStart);
-//                const after = text.substring(selStart);
-//                if (currentLine.trim() === checkboxMatch[0].trim()) {
-//                    updateTextArea(before, after, '', lineStart + 1);
-//                } else {
-//                    const indentation = checkboxMatch[1];
-//                    const marker = indentation + '- [ ] ';
-//                    const position = selStart + 1 + marker.length;
-//                    updateTextArea(before, after, marker, position);
-//                }
-//                return;
-//            }
-//            const bulletPattern = /^(\s*)([-+*]|(\d+)\.|\>)\s+/;
-//            const match = currentLine.match(bulletPattern);
-//            if (match) {
-//                e.preventDefault();
-//                const updateTextArea = (before: string, after: string, marker: string, position: number) => {
-//                    element.value = before + '\n' + marker + after;
-//                    element.selectionStart = element.selectionEnd = position;
-//                    element.dispatchEvent(new Event('input', { bubbles: true }));
-//                };
-//                const before = text.substring(0, currentLine.trim() === match[0].trim() ? lineStart : selStart);
-//                const after = text.substring(selStart);
-//                if (currentLine.trim() === match[0].trim()) {
-//                    updateTextArea(before, after, '', lineStart + 1);
-//                } else {
-//                    let marker = match[0];
-//                    if (match[3]) { // Numbered list
-//                        const num = parseInt(match[3]);
-//                        marker = marker.replace(/\d+/, (num + 1).toString());
-//                    }
-//                    const position = selStart + 1 + marker.length;
-//                    updateTextArea(before, after, marker, position);
-//                }
-//            }
-//        }
-//    });
-//}
 //# sourceMappingURL=Markdown.razor.js.map

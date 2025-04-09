@@ -14,24 +14,21 @@ export function replaceTextAreaSelection(element: HTMLTextAreaElement, text: str
         const start = element.selectionStart;
         const end = element.selectionEnd;
         element.focus();
-        if (document.execCommand && document.queryCommandSupported('insertText')) {
-            element.setSelectionRange(start, end);
-            document.execCommand('insertText', false, text);
-        } else {
-            const beforeSelection = element.value.substring(0, start);
-            const afterSelection = element.value.substring(end);
-            element.value = beforeSelection + text + afterSelection;
-            const inputEvent = new InputEvent('input', {
-                bubbles: true,
-                cancelable: true,
-                inputType: 'insertText',
-                data: text
-            });
-            element.dispatchEvent(inputEvent);
-        }
+
+        const beforeSelection = element.value.substring(0, start);
+        const afterSelection = element.value.substring(end);
+        element.value = beforeSelection + text + afterSelection;
+        const inputEvent = new InputEvent('input', {
+            bubbles: true,
+            cancelable: true,
+            inputType: 'insertText',
+            data: text
+        });
+        element.dispatchEvent(inputEvent);
         element.selectionStart = start;
         element.selectionEnd = start + text.length;
-        return true;    }
+        return true;
+    }
     return false;
 }
 
@@ -59,11 +56,16 @@ export function setCaretPosition(element: HTMLTextAreaElement, start: number, en
     element.setSelectionRange(start, end);
 }
 
-export function initializeTooltips(): void {
-    const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.forEach(tooltipTriggerEl => {
-        new (window as any).bootstrap.Tooltip(tooltipTriggerEl);
-    });
+export function setupAllEventListeners(
+    container: HTMLElement,
+    textArea: HTMLTextAreaElement,
+    dotNetHelper: DotNetObject
+): void {
+    setupLinkInterceptor(container, dotNetHelper);
+    setupBeforeUnloadWarning(dotNetHelper);
+    setupKeyboardShortcuts(textArea, dotNetHelper);
+    enableContinuousList(textArea);
+    initializeTooltips();
 }
 
 interface DotNetObject {
@@ -71,7 +73,14 @@ interface DotNetObject {
     dispose(): void;
 }
 
-export function setupLinkInterceptor(markdownContainer: HTMLElement, dotNetHelper: DotNetObject): void {
+function initializeTooltips(): void {
+    const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(tooltipTriggerEl => {
+        new (window as any).bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+
+function setupLinkInterceptor(markdownContainer: HTMLElement, dotNetHelper: DotNetObject): void {
     markdownContainer.addEventListener('click', async (e: Event) => {
         const target = e.target as HTMLElement;
         if (target.tagName === 'A') {
@@ -86,7 +95,7 @@ export function setupLinkInterceptor(markdownContainer: HTMLElement, dotNetHelpe
     });
 }
 
-export function setupBeforeUnloadWarning(dotNetHelper: DotNetObject): void {
+function setupBeforeUnloadWarning(dotNetHelper: DotNetObject): void {
     let bypassBeforeUnload = false;
     window.addEventListener('beforeunload', async function (e: BeforeUnloadEvent) {
         if (bypassBeforeUnload) {
@@ -97,8 +106,7 @@ export function setupBeforeUnloadWarning(dotNetHelper: DotNetObject): void {
             const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
             if (hasPendingChanges) {
                 e.preventDefault();
-                e.returnValue = "";
-                return "";
+                return undefined;
             }
         } catch (error) {
             console.error('Error checking for pending changes:', error);

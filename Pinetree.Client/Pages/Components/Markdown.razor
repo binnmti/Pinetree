@@ -183,13 +183,8 @@
             SetCurrent(Id);
             registration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
             LastSavedState = Pinetree.DeepClone();
-
             objRef = DotNetObjectReference.Create(this);
-            await _jsInterop.SetupLinkInterceptorAsync(MarkdownContainer, objRef);
-            await _jsInterop.InitializeTooltipsAsync();
-            await _jsInterop.SetupBeforeUnloadWarningAsync(objRef);
-            await _jsInterop.SetupKeyboardShortcutsAsync(TextAreaRef, objRef);
-            await _jsInterop.EnableContinuousListAsync(TextAreaRef);
+            await _jsInterop.SetupAllEventListenersAsync(MarkdownContainer, TextAreaRef, objRef);
         }
     }
 

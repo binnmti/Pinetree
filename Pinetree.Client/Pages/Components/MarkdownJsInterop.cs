@@ -8,6 +8,13 @@ public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
     private readonly Lazy<Task<IJSObjectReference>> _moduleTask = new(() => jsRuntime.InvokeAsync<IJSObjectReference>(
                                                              "import", "./Pages/Components/Markdown.razor.js").AsTask());
 
+    public class TextSelection
+    {
+        public string Text { get; set; } = "";
+        public int Start { get; set; }
+        public int End { get; set; }
+    }
+
     public async ValueTask<TextSelection> GetSelectionAsync(ElementReference element)
     {
         var module = await _moduleTask.Value;
@@ -26,40 +33,16 @@ public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
         await module.InvokeVoidAsync("setCaretPosition", element, start, end);
     }
 
-    public async ValueTask SetupKeyboardShortcutsAsync<T>(ElementReference container, DotNetObjectReference<T> dotNetRef) where T : class
-    {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("setupKeyboardShortcuts", container, dotNetRef);
-    }
-    
-    public async ValueTask SetupLinkInterceptorAsync<T>(ElementReference container, DotNetObjectReference<T> dotNetRef) where T : class
-    {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("setupLinkInterceptor", container, dotNetRef);
-    }
-
-    public async ValueTask SetupBeforeUnloadWarningAsync<T>(DotNetObjectReference<T> dotNetRef) where T : class
-    {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("setupBeforeUnloadWarning", dotNetRef);
-    }
-
     public async ValueTask SetTextAreaValueAsync(ElementReference element, string text, bool dispatchEvent = true)
     {
         var module = await _moduleTask.Value;
         await module.InvokeAsync<string>("setTextAreaValue", element, text, dispatchEvent);
     }
 
-    public async ValueTask InitializeTooltipsAsync()
+    public async ValueTask SetupAllEventListenersAsync<T>(ElementReference container, ElementReference textArea, DotNetObjectReference<T> dotNetRef) where T : class
     {
         var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("initializeTooltips");
-    }
-
-    public async ValueTask EnableContinuousListAsync(ElementReference element)
-    {
-        var module = await _moduleTask.Value;
-        await module.InvokeVoidAsync("enableContinuousList", element);
+        await module.InvokeVoidAsync("setupAllEventListeners", container, textArea, dotNetRef);
     }
 
     public async ValueTask DisposeAsync()
@@ -70,12 +53,5 @@ public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
             await module.DisposeAsync();
             GC.SuppressFinalize(this);
         }
-    }
-
-    public class TextSelection
-    {
-        public string Text { get; set; } = "";
-        public int Start { get; set; }
-        public int End { get; set; }
     }
 }
