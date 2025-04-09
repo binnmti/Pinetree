@@ -1,5 +1,4 @@
 - Paid Membership
-- Link scrollbar
 - Move center line. Clear layout
 - Multilingualization, or rather Japaneseization
 - 

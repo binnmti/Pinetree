@@ -56,6 +56,7 @@ export function setupAllEventListeners(container, textArea, dotNetHelper) {
     setupKeyboardShortcuts(textArea, dotNetHelper);
     enableContinuousList(textArea);
     initializeTooltips();
+    setupScrollSync(textArea, container);
 }
 function initializeTooltips() {
     const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -229,6 +230,52 @@ export function enableContinuousList(element) {
                 return currentLine.trim() === match[0].trim() ? '' : marker;
             });
         }
+    });
+}
+export function setupScrollSync(textArea, previewContainer) {
+    if (!textArea || !previewContainer)
+        return;
+    let isScrolling = false;
+    let scrollTimeout = null;
+    textArea.addEventListener('scroll', () => {
+        if (isScrolling)
+            return;
+        isScrolling = true;
+        const scrollPercentage = textArea.scrollTop / (textArea.scrollHeight - textArea.clientHeight);
+        const previewTargetPosition = scrollPercentage * (previewContainer.scrollHeight - previewContainer.clientHeight);
+        previewContainer.scrollTop = previewTargetPosition;
+        if (scrollTimeout)
+            clearTimeout(scrollTimeout);
+        scrollTimeout = window.setTimeout(() => {
+            isScrolling = false;
+            scrollTimeout = null;
+        }, 50);
+    });
+    previewContainer.addEventListener('scroll', () => {
+        if (isScrolling)
+            return;
+        isScrolling = true;
+        const scrollPercentage = previewContainer.scrollTop / (previewContainer.scrollHeight - previewContainer.clientHeight);
+        const textAreaTargetPosition = scrollPercentage * (textArea.scrollHeight - textArea.clientHeight);
+        textArea.scrollTop = textAreaTargetPosition;
+        if (scrollTimeout)
+            clearTimeout(scrollTimeout);
+        scrollTimeout = window.setTimeout(() => {
+            isScrolling = false;
+            scrollTimeout = null;
+        }, 50);
+    });
+    const observer = new MutationObserver(() => {
+        if (textArea.scrollHeight > 0 && previewContainer.scrollHeight > 0) {
+            const scrollPercentage = textArea.scrollTop / (textArea.scrollHeight - textArea.clientHeight);
+            const previewTargetPosition = scrollPercentage * (previewContainer.scrollHeight - previewContainer.clientHeight);
+            previewContainer.scrollTop = previewTargetPosition;
+        }
+    });
+    observer.observe(previewContainer, {
+        childList: true,
+        subtree: true,
+        characterData: true
     });
 }
 //# sourceMappingURL=Markdown.razor.js.map
