@@ -10,8 +10,34 @@ public class PinetreeView(long id, string title, string content, PinetreeView? p
     public bool IsCurrent { get; set; }
     public bool IsExpanded { get; set; }
     public List<PinetreeView> Children { get; } = [];
+    public Stack<string> UndoStack { get; } = new();
+    public Stack<string> RedoStack { get; } = new();
 
     public static PinetreeView Nothing => new(0, "", "", null, 0);
+
+    public void SaveContentToHistory(string previousContent)
+    {
+        UndoStack.Push(previousContent);
+        RedoStack.Clear();
+    }
+
+    public string? Undo()
+    {
+        if (UndoStack.Count == 0) return null;
+
+        RedoStack.Push(Content);
+        Content = UndoStack.Pop();
+        return Content;
+    }
+
+    public string? Redo()
+    {
+        if (RedoStack.Count == 0) return null;
+
+        UndoStack.Push(Content);
+        Content = RedoStack.Pop();
+        return Content;
+    }
 
     public bool Equals(PinetreeView? other)
     {

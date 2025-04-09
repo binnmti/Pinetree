@@ -1,3 +1,18 @@
 ﻿.no-resize {
     resize: none !important;
 }
+
+.tree-toggle {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 100;
+    border-radius: 0 2px 2px 0;
+    padding: 0.2rem 0.1rem;
+    transition: left 0.3s ease-in-out;
+}
+
+.tree-sidebar.visible + .main-content .tree-toggle {
+    left: 250px;
+}
