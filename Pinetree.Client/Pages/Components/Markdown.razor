@@ -124,15 +124,15 @@
                     </div>
                     <div class="btn-group ms-2" role="group" aria-label="View mode">
                         <button type="button" class="btn btn-sm @(ViewMode == "split" ? "btn-primary" : "btn-outline-secondary")"
-                                @onclick='() => SetViewMode("split")' title="Split view">
+                        @onclick='() => SetViewMode("split")' title="Split view">
                             <i class="bi bi-layout-split"></i>
                         </button>
                         <button type="button" class="btn btn-sm @(ViewMode == "edit" ? "btn-primary" : "btn-outline-secondary")"
-                                @onclick='() => SetViewMode("edit")' title="Edit only">
+                        @onclick='() => SetViewMode("edit")' title="Edit only">
                             <i class="bi bi-pencil-square"></i>
                         </button>
                         <button type="button" class="btn btn-sm @(ViewMode == "preview" ? "btn-primary" : "btn-outline-secondary")"
-                                @onclick='() => SetViewMode("preview")' title="Preview only">
+                        @onclick='() => SetViewMode("preview")' title="Preview only">
                             <i class="bi bi-eye"></i>
                         </button>
                     </div>
@@ -232,6 +232,7 @@
             LastSavedState = Pinetree.DeepClone();
             objRef = DotNetObjectReference.Create(this);
             await _jsInterop.SetupAllEventListenersAsync(MarkdownContainer, TextAreaRef, objRef);
+            await _jsInterop.ClearAllImagesFromIndexedDB();
         }
     }
 
@@ -242,6 +243,7 @@
         _resetIconTimer?.Dispose();
         if (_jsInterop != null)
         {
+            await _jsInterop.ClearAllImagesFromIndexedDB();
             await _jsInterop.DisposeAsync();
         }
     }
@@ -457,19 +459,38 @@
 
     private async Task InsertImage()
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
-        if (selection.Text.Length > 0)
+        try
         {
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![{selection.Text}](https://)");
+            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+            var result = await _jsInterop.OpenFileDialogAndGetBlobUrlAsync();
+            if (!string.IsNullOrEmpty(result.BlobUrl))
+            {
+                await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![{result.FileName}]({result.BlobUrl})");
+
+                int start = selection.Start;
+                await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + 2, start + 2 + result.FileName.Length);
+            }
+            else
+            {
+                if (selection.Text.Length > 0)
+                {
+                    await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![{selection.Text}](https://)");
+                }
+                else
+                {
+                    await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![](https://)");
+                }
+
+                int start = selection.Start;
+                await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + 2, start + 2);
+            }
+            var content = await JS.GetTextAreaValueAsync();
+            UpdateContent(content);
         }
-        else
+        catch (Exception ex)
         {
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![](https://)");
+            Console.Error.WriteLine(ex.Message);
         }
-        int start = selection.Start;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + 2, start + 2);
-        var content = await JS.GetTextAreaValueAsync();
-        UpdateContent(content);
     }
 
     private async Task InsertGrid()

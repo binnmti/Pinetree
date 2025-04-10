@@ -39,6 +39,24 @@ public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
         await module.InvokeAsync<string>("setTextAreaValue", element, text, dispatchEvent);
     }
 
+    public class ImageUploadResult
+    {
+        public string BlobUrl { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
+    }
+
+    public async ValueTask<ImageUploadResult> OpenFileDialogAndGetBlobUrlAsync()
+    {
+        var module = await _moduleTask.Value;
+        return await module.InvokeAsync<ImageUploadResult>("openFileDialogAndGetBlobUrl");
+    }
+
+    public async ValueTask<string> ClearAllImagesFromIndexedDB()
+    {
+        var module = await _moduleTask.Value;
+        return await module.InvokeAsync<string>("clearAllImagesFromIndexedDB");
+    }
+
     public async ValueTask SetupAllEventListenersAsync<T>(ElementReference container, ElementReference textArea, DotNetObjectReference<T> dotNetRef) where T : class
     {
         var module = await _moduleTask.Value;

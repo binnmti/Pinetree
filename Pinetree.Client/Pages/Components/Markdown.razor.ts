@@ -56,6 +56,56 @@ export function setCaretPosition(element: HTMLTextAreaElement, start: number, en
     element.setSelectionRange(start, end);
 }
 
+export async function openFileDialogAndGetBlobUrl(): Promise<{ blobUrl: string, fileName: string }> {
+    try {
+        const maxSizeMB = 5;
+        const file = await openFileDialog(maxSizeMB);
+        if (!file) {
+            return { blobUrl: '', fileName: '' };
+        }
+
+        const imageId = await saveFileToIndexedDB(file);
+        const blobUrl = await getImageBlobUrl(imageId);
+
+        return {
+            blobUrl: blobUrl,
+            fileName: file.name
+        };
+    } catch (error) {
+        console.error("Error handling file:", error);
+        return { blobUrl: '', fileName: '' };
+    }
+}
+
+export async function clearAllImagesFromIndexedDB(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const dbName = 'PinetreeImageDB';
+        const storeName = 'images';
+        const request = indexedDB.open(dbName, 1);
+
+        request.onerror = () => {
+            reject('IndexedDB error: ' + request.error);
+        };
+
+        request.onsuccess = () => {
+            const db = request.result;
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+
+            const clearRequest = store.clear();
+
+            clearRequest.onsuccess = () => {
+                console.log('All images cleared from IndexedDB');
+                resolve();
+            };
+
+            clearRequest.onerror = () => {
+                reject('Error clearing images: ' + clearRequest.error);
+            };
+        };
+    });
+}
+
 export function setupAllEventListeners(
     container: HTMLElement,
     textArea: HTMLTextAreaElement,
@@ -312,5 +362,124 @@ export function setupScrollSync(textArea: HTMLTextAreaElement, previewContainer:
         childList: true,
         subtree: true,
         characterData: true
+    });
+}
+
+function openFileDialog(maxSizeMB: number): Promise<File | null> {
+    return new Promise((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+
+        input.onchange = (e) => {
+            const files = input.files;
+            if (files && files.length > 0) {
+                const file = files[0];
+
+                const maxSizeBytes = maxSizeMB * 1024 * 1024;
+                if (file.size > maxSizeBytes) {
+                    alert(`Image size is too large. Please select an image under ${maxSizeMB}MB.`);
+                    resolve(null);
+                    return;
+                }
+
+                resolve(file);
+            } else {
+                resolve(null);
+            }
+        };
+
+        input.onclick = () => {
+            input.oncancel = () => resolve(null);
+        };
+
+        input.click();
+    });
+}
+
+async function saveFileToIndexedDB(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const dbName = 'PinetreeImageDB';
+        const storeName = 'images';
+        const request = indexedDB.open(dbName, 1);
+
+        request.onupgradeneeded = (event) => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(storeName)) {
+                db.createObjectStore(storeName, { keyPath: 'id' });
+            }
+        };
+
+        request.onerror = (event) => {
+            reject('IndexedDB error: ' + request.error);
+        };
+
+        request.onsuccess = (event) => {
+            try {
+                const db = request.result;
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+
+                const id = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+                const imageData = {
+                    id: id,
+                    name: file.name,
+                    type: file.type,
+                    blob: file,
+                    date: new Date()
+                };
+
+                const addRequest = store.add(imageData);
+
+                addRequest.onsuccess = () => {
+                    resolve(id);
+                };
+
+                addRequest.onerror = () => {
+                    reject('Error saving to IndexedDB: ' + addRequest.error);
+                };
+
+                transaction.oncomplete = () => {
+                    console.log('Transaction completed: saved image to IndexedDB');
+                };
+            } catch (error) {
+                reject('Error in IndexedDB transaction: ' + error);
+            }
+        };
+    });
+}
+
+async function getImageBlobUrl(id: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const dbName = 'PinetreeImageDB';
+        const storeName = 'images';
+        const request = indexedDB.open(dbName, 1);
+
+        request.onerror = () => {
+            reject('IndexedDB error: ' + request.error);
+        };
+
+        request.onsuccess = () => {
+            const db = request.result;
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+
+            const getRequest = store.get(id);
+
+            getRequest.onsuccess = () => {
+                if (getRequest.result) {
+                    const blob = getRequest.result.blob;
+                    const blobUrl = URL.createObjectURL(blob);
+                    resolve(blobUrl);
+                } else {
+                    reject('Image not found');
+                }
+            };
+
+            getRequest.onerror = () => {
+                reject('Error retrieving from IndexedDB: ' + getRequest.error);
+            };
+        };
     });
 }
