@@ -275,6 +275,24 @@
         await RedoAsync();
     }
 
+    [JSInvokable]
+    public async Task HandleDroppedFile(MarkdownJsInterop.ImageUploadResult result)
+    {
+        if (string.IsNullOrEmpty(result.BlobUrl)) return;
+
+
+        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+
+        string markdownText = $"![{result.FileName}]({result.BlobUrl})\n\n";
+        await _jsInterop.ReplaceSelectionAsync(TextAreaRef, markdownText);
+
+        int newPosition = selection.Start + markdownText.Length;
+        await _jsInterop.SetCaretPositionAsync(TextAreaRef, newPosition, newPosition);
+
+        var content = await JS.GetTextAreaValueAsync();
+        UpdateContent(content);
+    }
+
     private void SetViewMode(string mode)
     {
         ViewMode = mode;

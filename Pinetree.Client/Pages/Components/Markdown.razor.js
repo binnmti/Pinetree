@@ -99,6 +99,7 @@ export function setupAllEventListeners(container, textArea, dotNetHelper) {
     enableContinuousList(textArea);
     initializeTooltips();
     setupScrollSync(textArea, container);
+    setupDropZone(textArea, dotNetHelper);
 }
 function initializeTooltips() {
     const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -418,6 +419,43 @@ async function getImageBlobUrl(id) {
                 reject('Error retrieving from IndexedDB: ' + getRequest.error);
             };
         };
+    });
+}
+function setupDropZone(dropZoneElement, dotNetHelper) {
+    if (!dropZoneElement)
+        return;
+    dropZoneElement.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZoneElement.classList.add('drag-over');
+    });
+    dropZoneElement.addEventListener('dragleave', () => {
+        dropZoneElement.classList.remove('drag-over');
+    });
+    dropZoneElement.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZoneElement.classList.remove('drag-over');
+        if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            const maxSizeMB = 5;
+            const maxSizeBytes = maxSizeMB * 1024 * 1024;
+            if (file.size > maxSizeBytes) {
+                alert(`Image size is too large. Please select an image under ${maxSizeMB}MB.`);
+                return;
+            }
+            try {
+                const imageId = await saveFileToIndexedDB(file);
+                const blobUrl = await getImageBlobUrl(imageId);
+                await dotNetHelper.invokeMethodAsync('HandleDroppedFile', {
+                    blobUrl: blobUrl,
+                    fileName: file.name
+                });
+            }
+            catch (error) {
+                console.error("Error handling file:", error);
+            }
+        }
     });
 }
 //# sourceMappingURL=Markdown.razor.js.map
