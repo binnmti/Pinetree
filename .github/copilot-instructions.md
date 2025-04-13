@@ -1,3 +1,14 @@
-特定のソースファイルについて質問したときに、解答で全ソースを出力する必要はありません。関係する箇所だけを抜粋するようにしてください。
+Guidelines for displaying source code when responding to queries:
+1. As a general rule, display only the relevant portions of the code
+2. Display the entire source code in the following exceptions:
+   - When modifications span multiple functions or classes
+   - When understanding the entire file structure is necessary
+   - When explicitly requested to show the complete source
+3. When suggesting code changes, clearly highlight the differences between the original and modified code
 
-普段の会話は日本語で、ソースファイルを出力する場合はコメント、文章を含め全て英語でお願いします。
+Please respond in Japanese for regular conversation. However, use English in the following cases:
+1. When displaying existing source code
+2. When generating new code (including all comments, string literals, messages, variable names, etc.)
+3. When providing technical explanations related to code
+
+Generate all text elements within code (comments, message box strings, log messages, etc.) in English.
