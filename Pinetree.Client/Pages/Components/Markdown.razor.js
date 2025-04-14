@@ -458,4 +458,75 @@ function setupDropZone(dropZoneElement, dotNetHelper) {
         }
     });
 }
+export async function getAllImagesFromIndexedDB() {
+    return new Promise((resolve, reject) => {
+        const dbName = 'PinetreeImageDB';
+        const storeName = 'images';
+        const request = indexedDB.open(dbName, 1);
+        request.onerror = () => {
+            reject('IndexedDB error: ' + request.error);
+        };
+        request.onsuccess = () => {
+            const db = request.result;
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const images = [];
+            const cursorRequest = store.openCursor();
+            cursorRequest.onsuccess = (event) => {
+                const cursor = cursorRequest.result;
+                if (cursor) {
+                    const image = cursor.value;
+                    const blobUrl = URL.createObjectURL(image.blob);
+                    images.push({
+                        id: image.id,
+                        name: image.name,
+                        blobUrl: blobUrl
+                    });
+                    cursor.continue();
+                }
+                else {
+                    resolve(images);
+                }
+            };
+            cursorRequest.onerror = () => {
+                reject('Error retrieving images from IndexedDB: ' + cursorRequest.error);
+            };
+        };
+    });
+}
+export async function getImageBase64(id) {
+    return new Promise((resolve, reject) => {
+        const dbName = 'PinetreeImageDB';
+        const storeName = 'images';
+        const request = indexedDB.open(dbName, 1);
+        request.onerror = () => {
+            reject('IndexedDB error: ' + request.error);
+        };
+        request.onsuccess = () => {
+            const db = request.result;
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const getRequest = store.get(id);
+            getRequest.onsuccess = () => {
+                if (getRequest.result) {
+                    const blob = getRequest.result.blob;
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64data = reader.result;
+                        // "data:image/jpeg;base64," �Ȃǂ̃v���t�B�b�N�X���폜
+                        const base64 = base64data.substring(base64data.indexOf(',') + 1);
+                        resolve(base64);
+                    };
+                    reader.readAsDataURL(blob);
+                }
+                else {
+                    reject('Image not found');
+                }
+            };
+            getRequest.onerror = () => {
+                reject('Error retrieving from IndexedDB: ' + getRequest.error);
+            };
+        };
+    });
+}
 //# sourceMappingURL=Markdown.razor.js.map

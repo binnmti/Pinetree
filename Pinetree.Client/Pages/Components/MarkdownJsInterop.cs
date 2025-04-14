@@ -57,6 +57,25 @@ public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
         return await module.InvokeAsync<string>("clearAllImagesFromIndexedDB");
     }
 
+    public async ValueTask<List<IndexedDBImageInfo>> GetAllImagesFromIndexedDBAsync()
+    {
+        var module = await _moduleTask.Value;
+        return await module.InvokeAsync<List<IndexedDBImageInfo>>("getAllImagesFromIndexedDB");
+    }
+
+    public async ValueTask<string> GetImageBase64Async(string imageId)
+    {
+        var module = await _moduleTask.Value;
+        return await module.InvokeAsync<string>("getImageBase64", imageId);
+    }
+
+    public class IndexedDBImageInfo
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string BlobUrl { get; set; } = string.Empty;
+    }
+
     public async ValueTask SetupAllEventListenersAsync<T>(ElementReference container, ElementReference textArea, DotNetObjectReference<T> dotNetRef) where T : class
     {
         var module = await _moduleTask.Value;
