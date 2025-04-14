@@ -12,8 +12,3 @@ Please respond in Japanese for regular conversation. However, use English in the
 3. When providing technical explanations related to code
 
 Generate all text elements within code (comments, message box strings, log messages, etc.) in English.
-
-When generating client-side scripting code:
-1. Always use TypeScript instead of JavaScript
-2. Include proper type annotations for all variables, parameters, and return values
-3. Ensure compatibility with the Blazor WebAssembly environment

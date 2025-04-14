@@ -1,7 +1,6 @@
 ﻿@using Pinetree.Client.VModel
 @using Pinetree.Client.Services
 @using Pinetree.Client.Pages.Components;
-@using System.Text.RegularExpressions
 
 @implements IAsyncDisposable
 
@@ -367,41 +366,12 @@
         }
     }
 
-
-    private class UploadResult
-    {
-        public string Url { get; set; } = string.Empty;
-    }
-
     private async Task SaveChanges()
     {
         if (IsTry) return;
 
         try
         {
-            // 進捗表示
-            await JS.InvokeVoidAsync("alert", "保存中です。画像のアップロードには時間がかかる場合があります。");
-
-            // IndexedDBの画像をAzure Blobにアップロードし、URLマッピングを取得
-            var urlMap = await UploadAllImagesAsync();
-
-            if (urlMap.Count > 0)
-            {
-                // Pinetree内の全てのMarkdownコンテンツのURLを更新
-                UpdateAllImageUrls(Pinetree, urlMap);
-
-                // 現在開いているドキュメントのコンテンツを更新
-                Content = ReplaceImageUrlsInContent(Content, urlMap);
-                MarkdownText = MarkdownService.ToHtml(Content);
-                Current.Content = Content;
-
-                // テキストエリアの表示を更新
-                await _jsInterop.SetTextAreaValueAsync(TextAreaRef, Content, true);
-
-                // IndexedDBの画像をクリア
-                await _jsInterop.ClearAllImagesFromIndexedDB();
-            }
-
             await MarkdownUtil.AllUpdateAsync(Pinetree, HttpClient);
             LastSavedState = Pinetree.DeepClone();
             StateHasChanged();
@@ -409,99 +379,7 @@
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error saving changes: {ex.Message}");
-            await JS.InvokeVoidAsync("alert", $"保存中にエラーが発生しました: {ex.Message}");
         }
-    }
-
-    private void UpdateAllImageUrls(PinetreeView pinetree, Dictionary<string, string> urlMap)
-    {
-        if (urlMap.Count == 0) return;
-
-        // 現在のノードのコンテンツを更新
-        pinetree.Content = ReplaceImageUrlsInContent(pinetree.Content, urlMap);
-
-        // 子ノードを再帰的に処理
-        foreach (var child in pinetree.Children)
-        {
-            UpdateAllImageUrls(child, urlMap);
-        }
-    }
-
-    private async Task<Dictionary<string, string>> UploadAllImagesAsync()
-    {
-        var urlMap = new Dictionary<string, string>();
-
-        try
-        {
-            // IndexedDBから全ての画像情報を取得
-            var images = await _jsInterop.GetAllImagesFromIndexedDBAsync();
-            if (images == null || images.Count == 0)
-                return urlMap;
-
-            foreach (var image in images)
-            {
-                try
-                {
-                    // 画像IDから拡張子を抽出（ない場合はファイル名から推測）
-                    string extension = Path.GetExtension(image.Name);
-                    if (string.IsNullOrEmpty(extension))
-                    {
-                        extension = ".jpg"; // デフォルト
-                    }
-
-                    // Base64データを取得
-                    var base64Data = await _jsInterop.GetImageBase64Async(image.Id);
-                    if (string.IsNullOrEmpty(base64Data))
-                        continue;
-
-                    // サーバーにアップロード
-                    var response = await HttpClient.PostAsJsonAsync(
-                        $"/api/Images/upload-from-indexeddb?imageId={image.Id}&extension={extension}",
-                        base64Data);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var result = await response.Content.ReadFromJsonAsync<UploadResult>();
-                        if (result != null && !string.IsNullOrEmpty(result.Url))
-                        {
-                            urlMap[image.BlobUrl] = result.Url;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine($"Error uploading image {image.Id}: {ex.Message}");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error in UploadAllImagesAsync: {ex.Message}");
-        }
-
-        return urlMap;
-    }
-
-    private string ReplaceImageUrlsInContent(string content, Dictionary<string, string> urlMap)
-    {
-        if (string.IsNullOrEmpty(content) || urlMap.Count == 0)
-            return content;
-
-        // Markdown形式の画像リンクを探す正規表現
-        var regex = new Regex(@"!\[(.*?)\]\((blob:.*?)\)", RegexOptions.Compiled);
-
-        return regex.Replace(content, match =>
-        {
-            var altText = match.Groups[1].Value;
-            var blobUrl = match.Groups[2].Value;
-
-            if (urlMap.TryGetValue(blobUrl, out var newUrl))
-            {
-                return $"![{altText}]({newUrl})";
-            }
-
-            return match.Value;
-        });
     }
 
     private void SetCurrent(long id)

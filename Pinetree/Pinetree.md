@@ -1,11 +1,8 @@
 - Paid Membership
-- Save is Guruguru
-- monaco-editor
-- TreeView Custom
 - Multilingualization, or rather Japaneseization
 - Image update
-- Publish to the web
-
+- Page Publish
+ 
 # TODO
 - localhost
 https://ngrok.com/
