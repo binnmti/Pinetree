@@ -150,7 +150,9 @@
                 @if (ViewMode == "edit" || ViewMode == "split")
                 {
                     <div class="col py-2">
-                        <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize" style="width:100%; height:101%; overflow:auto" @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
+                    <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize"
+                              style="width:100%; height:101%; overflow:auto; padding-bottom: 50vh;"
+                              @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
                         <div class="counter">@Content.Length characters</div>
                     </div>
                 }
