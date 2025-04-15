@@ -1,5 +1,7 @@
 ﻿@using Pinetree.Client.VModel
 @using Pinetree.Client.Services
+@using Pinetree.Client.Pages.Components;
+
 @implements IAsyncDisposable
 
 <div class="editor-container">
@@ -54,9 +56,22 @@
             <div class="markdown-title d-flex align-items-center">
                 <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" class="flex-grow-1" />
                 <div class="d-flex align-items-center ms-2">
-                    <button @onclick="SaveChanges" disabled="@(!HasPendingChanges() || IsTry)"
-                    class="btn btn-sm btn-primary me-2" title="Save changes">
-                        <i class="bi bi-save"></i> save
+                    <button @onclick="SaveChanges" disabled="@(!HasPendingChanges() || IsTry || _isSaving)"
+                            class="btn btn-sm btn-primary me-2" title="Save changes">
+                        @if (_isSaving)
+                        {
+                            <span class="d-flex align-items-center">
+                                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                <span>Saving...</span>
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="d-flex align-items-center">
+                                <i class="bi bi-save me-1"></i>
+                                <span>Save</span>
+                            </span>
+                        }
                     </button>
                 </div>
             </div>
@@ -68,10 +83,10 @@
                         </button>
                     </div>
                     <div class="btn-group me-2" role="group" aria-label="Undo/Redo">
-                        <button type="button" class="btn btn-sm btn-outline-dark" title="Undo (Ctrl+Z)" @onclick="UndoAsync">
+                        <button type="button" class="btn btn-sm btn-outline-dark" title="Undo (Ctrl+Z)" @onclick="UndoAsync" disabled="@(!CanUndo)">
                             <i class="bi bi-arrow-counterclockwise"></i>
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-dark" title="Redo (Ctrl+Y)" @onclick="RedoAsync">
+                        <button type="button" class="btn btn-sm btn-outline-dark" title="Redo (Ctrl+Y)" @onclick="RedoAsync" disabled="@(!CanRedo)">
                             <i class="bi bi-arrow-clockwise"></i>
                         </button>
                     </div>
@@ -122,15 +137,15 @@
                     </div>
                     <div class="btn-group ms-2" role="group" aria-label="View mode">
                         <button type="button" class="btn btn-sm @(ViewMode == "split" ? "btn-primary" : "btn-outline-secondary")"
-                                @onclick='() => SetViewMode("split")' title="Split view">
+                        @onclick='() => SetViewMode("split")' title="Split view">
                             <i class="bi bi-layout-split"></i>
                         </button>
                         <button type="button" class="btn btn-sm @(ViewMode == "edit" ? "btn-primary" : "btn-outline-secondary")"
-                                @onclick='() => SetViewMode("edit")' title="Edit only">
+                        @onclick='() => SetViewMode("edit")' title="Edit only">
                             <i class="bi bi-pencil-square"></i>
                         </button>
                         <button type="button" class="btn btn-sm @(ViewMode == "preview" ? "btn-primary" : "btn-outline-secondary")"
-                                @onclick='() => SetViewMode("preview")' title="Preview only">
+                        @onclick='() => SetViewMode("preview")' title="Preview only">
                             <i class="bi bi-eye"></i>
                         </button>
                     </div>
@@ -206,9 +221,12 @@
     private string MarkdownText { get; set; } = "";
     private IDisposable? registration;
     private bool _copyIconState = false;
+    private bool _isSaving = false;
     private System.Threading.Timer? _resetIconTimer;
     private string ViewMode { get; set; } = "split";
     private bool IsSidebarOpen { get; set; } = true;
+    private bool CanUndo => Current.CanUndo;
+    private bool CanRedo => Current.CanRedo;
 
     private void ToggleSidebar()
     {
@@ -230,6 +248,7 @@
             LastSavedState = Pinetree.DeepClone();
             objRef = DotNetObjectReference.Create(this);
             await _jsInterop.SetupAllEventListenersAsync(MarkdownContainer, TextAreaRef, objRef);
+            await _jsInterop.ClearAllImagesFromIndexedDB();
         }
     }
 
@@ -240,6 +259,7 @@
         _resetIconTimer?.Dispose();
         if (_jsInterop != null)
         {
+            await _jsInterop.ClearAllImagesFromIndexedDB();
             await _jsInterop.DisposeAsync();
         }
     }
@@ -269,6 +289,24 @@
     public async Task HandleRedoShortcut()
     {
         await RedoAsync();
+    }
+
+    [JSInvokable]
+    public async Task HandleDroppedFile(MarkdownJsInterop.ImageUploadResult result)
+    {
+        if (string.IsNullOrEmpty(result.BlobUrl)) return;
+
+
+        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+
+        string markdownText = $"![{result.FileName}]({result.BlobUrl})\n\n";
+        await _jsInterop.ReplaceSelectionAsync(TextAreaRef, markdownText);
+
+        int newPosition = selection.Start + markdownText.Length;
+        await _jsInterop.SetCaretPositionAsync(TextAreaRef, newPosition, newPosition);
+
+        var content = await JS.GetTextAreaValueAsync();
+        UpdateContent(content);
     }
 
     private void SetViewMode(string mode)
@@ -350,13 +388,49 @@
 
         try
         {
+            _isSaving = true;
+            if (Content.Contains("blob:"))
+            {
+                var updatedContent = await _jsInterop.ReplaceBlobUrlsInContentAsync(Content, TextAreaRef);
+
+                if (updatedContent != Content)
+                {
+                    Content = updatedContent;
+                    MarkdownText = MarkdownService.ToHtml(Content);
+                    Current.Content = Content;
+                }
+                await ProcessAllNodesAsync(Pinetree);
+                await _jsInterop.ClearAllImagesFromIndexedDB();
+            }
+
             await MarkdownUtil.AllUpdateAsync(Pinetree, HttpClient);
             LastSavedState = Pinetree.DeepClone();
-            StateHasChanged();
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error saving changes: {ex.Message}");
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ProcessAllNodesAsync(PinetreeView node)
+    {
+        if (node.Content.Contains("blob:"))
+        {
+            var updatedContent = await _jsInterop.ReplaceBlobUrlsInContentAsync(node.Content);
+            if (updatedContent != node.Content)
+            {
+                node.Content = updatedContent;
+            }
+        }
+
+        foreach (var child in node.Children)
+        {
+            await ProcessAllNodesAsync(child);
         }
     }
 
@@ -455,19 +529,38 @@
 
     private async Task InsertImage()
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
-        if (selection.Text.Length > 0)
+        try
         {
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![{selection.Text}](https://)");
+            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+            var result = await _jsInterop.OpenFileDialogAndGetBlobUrlAsync();
+            if (!string.IsNullOrEmpty(result.BlobUrl))
+            {
+                await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![{result.FileName}]({result.BlobUrl})");
+
+                int start = selection.Start;
+                await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + 2, start + 2 + result.FileName.Length);
+            }
+            else
+            {
+                if (selection.Text.Length > 0)
+                {
+                    await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![{selection.Text}](https://)");
+                }
+                else
+                {
+                    await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![](https://)");
+                }
+
+                int start = selection.Start;
+                await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + 2, start + 2);
+            }
+            var content = await JS.GetTextAreaValueAsync();
+            UpdateContent(content);
         }
-        else
+        catch (Exception ex)
         {
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![](https://)");
+            Console.Error.WriteLine(ex.Message);
         }
-        int start = selection.Start;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + 2, start + 2);
-        var content = await JS.GetTextAreaValueAsync();
-        UpdateContent(content);
     }
 
     private async Task InsertGrid()

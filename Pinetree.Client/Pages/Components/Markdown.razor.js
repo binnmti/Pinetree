@@ -50,6 +50,48 @@ export function setCaretPosition(element, start, end) {
     element.focus();
     element.setSelectionRange(start, end);
 }
+export async function openFileDialogAndGetBlobUrl() {
+    try {
+        const maxSizeMB = 5;
+        const file = await openFileDialog(maxSizeMB);
+        if (!file) {
+            return { blobUrl: '', fileName: '' };
+        }
+        const imageId = await saveFileToIndexedDB(file);
+        const blobUrl = await getImageBlobUrl(imageId);
+        return {
+            blobUrl: blobUrl,
+            fileName: file.name
+        };
+    }
+    catch (error) {
+        console.error("Error handling file:", error);
+        return { blobUrl: '', fileName: '' };
+    }
+}
+export async function clearAllImagesFromIndexedDB() {
+    return new Promise((resolve, reject) => {
+        const dbName = 'PinetreeImageDB';
+        const storeName = 'images';
+        const request = indexedDB.open(dbName, 1);
+        request.onerror = () => {
+            reject('IndexedDB error: ' + request.error);
+        };
+        request.onsuccess = () => {
+            const db = request.result;
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+            const clearRequest = store.clear();
+            clearRequest.onsuccess = () => {
+                console.log('All images cleared from IndexedDB');
+                resolve();
+            };
+            clearRequest.onerror = () => {
+                reject('Error clearing images: ' + clearRequest.error);
+            };
+        };
+    });
+}
 export function setupAllEventListeners(container, textArea, dotNetHelper) {
     setupLinkInterceptor(container, dotNetHelper);
     setupBeforeUnloadWarning(dotNetHelper);
@@ -57,6 +99,7 @@ export function setupAllEventListeners(container, textArea, dotNetHelper) {
     enableContinuousList(textArea);
     initializeTooltips();
     setupScrollSync(textArea, container);
+    setupDropZone(textArea, dotNetHelper);
 }
 function initializeTooltips() {
     const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -277,5 +320,282 @@ export function setupScrollSync(textArea, previewContainer) {
         subtree: true,
         characterData: true
     });
+}
+function openFileDialog(maxSizeMB) {
+    return new Promise((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e) => {
+            const files = input.files;
+            if (files && files.length > 0) {
+                const file = files[0];
+                const maxSizeBytes = maxSizeMB * 1024 * 1024;
+                if (file.size > maxSizeBytes) {
+                    alert(`Image size is too large. Please select an image under ${maxSizeMB}MB.`);
+                    resolve(null);
+                    return;
+                }
+                resolve(file);
+            }
+            else {
+                resolve(null);
+            }
+        };
+        input.onclick = () => {
+            input.oncancel = () => resolve(null);
+        };
+        input.click();
+    });
+}
+async function saveFileToIndexedDB(file) {
+    return new Promise((resolve, reject) => {
+        const dbName = 'PinetreeImageDB';
+        const storeName = 'images';
+        const request = indexedDB.open(dbName, 1);
+        request.onupgradeneeded = (event) => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(storeName)) {
+                db.createObjectStore(storeName, { keyPath: 'id' });
+            }
+        };
+        request.onerror = (event) => {
+            reject('IndexedDB error: ' + request.error);
+        };
+        request.onsuccess = (event) => {
+            try {
+                const db = request.result;
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const id = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                const imageData = {
+                    id: id,
+                    name: file.name,
+                    type: file.type,
+                    blob: file,
+                    date: new Date()
+                };
+                const addRequest = store.add(imageData);
+                addRequest.onsuccess = () => {
+                    resolve(id);
+                };
+                addRequest.onerror = () => {
+                    reject('Error saving to IndexedDB: ' + addRequest.error);
+                };
+                transaction.oncomplete = () => {
+                    console.log('Transaction completed: saved image to IndexedDB');
+                };
+            }
+            catch (error) {
+                reject('Error in IndexedDB transaction: ' + error);
+            }
+        };
+    });
+}
+async function getImageBlobUrl(id) {
+    return new Promise((resolve, reject) => {
+        const dbName = 'PinetreeImageDB';
+        const storeName = 'images';
+        const request = indexedDB.open(dbName, 1);
+        request.onerror = () => {
+            reject('IndexedDB error: ' + request.error);
+        };
+        request.onsuccess = () => {
+            const db = request.result;
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const getRequest = store.get(id);
+            getRequest.onsuccess = () => {
+                if (getRequest.result) {
+                    const blob = getRequest.result.blob;
+                    const blobUrl = URL.createObjectURL(blob);
+                    resolve(blobUrl);
+                }
+                else {
+                    reject('Image not found');
+                }
+            };
+            getRequest.onerror = () => {
+                reject('Error retrieving from IndexedDB: ' + getRequest.error);
+            };
+        };
+    });
+}
+function setupDropZone(dropZoneElement, dotNetHelper) {
+    if (!dropZoneElement)
+        return;
+    dropZoneElement.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZoneElement.classList.add('drag-over');
+    });
+    dropZoneElement.addEventListener('dragleave', () => {
+        dropZoneElement.classList.remove('drag-over');
+    });
+    dropZoneElement.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZoneElement.classList.remove('drag-over');
+        if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            const maxSizeMB = 5;
+            const maxSizeBytes = maxSizeMB * 1024 * 1024;
+            if (file.size > maxSizeBytes) {
+                alert(`Image size is too large. Please select an image under ${maxSizeMB}MB.`);
+                return;
+            }
+            try {
+                const imageId = await saveFileToIndexedDB(file);
+                const blobUrl = await getImageBlobUrl(imageId);
+                await dotNetHelper.invokeMethodAsync('HandleDroppedFile', {
+                    blobUrl: blobUrl,
+                    fileName: file.name
+                });
+            }
+            catch (error) {
+                console.error("Error handling file:", error);
+            }
+        }
+    });
+}
+/**
+ * Replaces all blob URLs in the given content with permanent URLs by uploading the images to the server.
+ *
+ * @param content The markdown content containing blob URLs
+ * @param contentRef Optional reference to the textarea element to update its value
+ * @returns Promise resolving to the updated content with blob URLs replaced by permanent URLs
+ */
+export async function replaceBlobUrlsInContent(content, contentRef) {
+    // Regular expression to find markdown image syntax with blob URLs
+    const regex = /!\[(.*?)\]\((blob:[^)]+)\)/g;
+    let match;
+    let contentCopy = content;
+    let changed = false;
+    // Array to store all the matches and their processing promises
+    const processingTasks = [];
+    // Find all blob URLs in the content
+    while ((match = regex.exec(content)) !== null) {
+        const fullMatch = match[0]; // The entire match: ![alt](blob:url)
+        const altText = match[1]; // The alt text part
+        const blobUrl = match[2]; // The blob URL part
+        // Create a task for processing each blob URL
+        const task = processBlobUrl(fullMatch, altText, blobUrl);
+        processingTasks.push(task);
+    }
+    // Wait for all processing tasks to complete
+    const results = await Promise.all(processingTasks);
+    // Apply all replacements
+    for (const result of results) {
+        if (result.newText) {
+            contentCopy = contentCopy.replace(result.originalText, result.newText);
+            changed = true;
+        }
+    }
+    // If contentRef is provided and content changed, update the textarea
+    if (changed && contentRef) {
+        contentRef.value = contentCopy;
+        // Dispatch input event to trigger any listeners
+        contentRef.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    return contentCopy;
+}
+/**
+ * Processes a single blob URL by fetching its content and uploading it to the server.
+ *
+ * @param originalText The original markdown image text with blob URL
+ * @param altText The alt text of the image
+ * @param blobUrl The blob URL to process
+ * @returns Promise resolving to an object containing the original text and its replacement
+ */
+async function processBlobUrl(originalText, altText, blobUrl) {
+    try {
+        // Fetch the blob from the URL
+        const response = await fetch(blobUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch blob: ${response.status} ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        // Convert blob to base64
+        const base64 = await blobToBase64(blob);
+        // Get file extension from alt text or default to jpg
+        const extension = getExtensionFromAltText(altText);
+        // Upload the image to the server
+        const uploadResult = await uploadImageToServer(base64, extension);
+        if (uploadResult && uploadResult.url) {
+            // Create the new markdown image text with the permanent URL
+            const newText = `![${altText}](${uploadResult.url})`;
+            console.log(`Replaced: ${originalText} with ${newText}`);
+            return { originalText, newText };
+        }
+        return { originalText, newText: null };
+    }
+    catch (error) {
+        console.error(`Error processing blob URL ${blobUrl}:`, error);
+        return { originalText, newText: null };
+    }
+}
+/**
+ * Converts a Blob to base64 string.
+ *
+ * @param blob The blob to convert
+ * @returns Promise resolving to the base64 string (without data URL prefix)
+ */
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result;
+            // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+            const base64 = base64String.substring(base64String.indexOf(',') + 1);
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+/**
+ * Extracts a file extension from the alt text, or returns a default extension.
+ *
+ * @param altText The alt text that might contain a filename with extension
+ * @returns The extension with a leading dot, or .jpg as default
+ */
+function getExtensionFromAltText(altText) {
+    // Try to extract extension from the alt text (which might be a filename)
+    const lastDotIndex = altText.lastIndexOf('.');
+    if (lastDotIndex > 0 && lastDotIndex < altText.length - 1) {
+        const extension = altText.substring(lastDotIndex).toLowerCase();
+        // Check if it's a common image extension
+        if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'].includes(extension)) {
+            return extension;
+        }
+    }
+    // Default extension
+    return '.jpg';
+}
+/**
+ * Uploads an image to the server.
+ *
+ * @param base64 The base64-encoded image data (without data URL prefix)
+ * @param extension The file extension with a leading dot
+ * @returns Promise resolving to the upload result containing the URL
+ */
+async function uploadImageToServer(base64, extension) {
+    try {
+        const response = await fetch(`/api/Images/upload?extension=${extension}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(base64)
+        });
+        if (!response.ok) {
+            throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+        }
+        return await response.json();
+    }
+    catch (error) {
+        console.error('Error uploading image to server:', error);
+        return null;
+    }
 }
 //# sourceMappingURL=Markdown.razor.js.map

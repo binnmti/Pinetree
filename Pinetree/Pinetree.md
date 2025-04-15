@@ -1,8 +1,9 @@
 - Paid Membership
+- monaco-editor
+- TreeView Custom
 - Multilingualization, or rather Japaneseization
-- Image update
-- Page Publish
- 
+- Publish to the web
+
 # TODO
 - localhost
 https://ngrok.com/

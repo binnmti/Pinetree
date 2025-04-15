@@ -7,6 +7,7 @@ using Pinetree.Data;
 using Azure.Identity;
 using Pinetree.Shared;
 using Pinetree.Components.Account.Services;
+using Pinetree.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,7 @@ builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 builder.Services.AddScoped<PaymentService>();
+builder.Services.AddScoped<BlobStorageService>();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthorization();
