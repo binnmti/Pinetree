@@ -458,4 +458,144 @@ function setupDropZone(dropZoneElement, dotNetHelper) {
         }
     });
 }
+/**
+ * Replaces all blob URLs in the given content with permanent URLs by uploading the images to the server.
+ *
+ * @param content The markdown content containing blob URLs
+ * @param contentRef Optional reference to the textarea element to update its value
+ * @returns Promise resolving to the updated content with blob URLs replaced by permanent URLs
+ */
+export async function replaceBlobUrlsInContent(content, contentRef) {
+    // Regular expression to find markdown image syntax with blob URLs
+    const regex = /!\[(.*?)\]\((blob:[^)]+)\)/g;
+    let match;
+    let contentCopy = content;
+    let changed = false;
+    // Array to store all the matches and their processing promises
+    const processingTasks = [];
+    // Find all blob URLs in the content
+    while ((match = regex.exec(content)) !== null) {
+        const fullMatch = match[0]; // The entire match: ![alt](blob:url)
+        const altText = match[1]; // The alt text part
+        const blobUrl = match[2]; // The blob URL part
+        // Create a task for processing each blob URL
+        const task = processBlobUrl(fullMatch, altText, blobUrl);
+        processingTasks.push(task);
+    }
+    // Wait for all processing tasks to complete
+    const results = await Promise.all(processingTasks);
+    // Apply all replacements
+    for (const result of results) {
+        if (result.newText) {
+            contentCopy = contentCopy.replace(result.originalText, result.newText);
+            changed = true;
+        }
+    }
+    // If contentRef is provided and content changed, update the textarea
+    if (changed && contentRef) {
+        contentRef.value = contentCopy;
+        // Dispatch input event to trigger any listeners
+        contentRef.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    return contentCopy;
+}
+/**
+ * Processes a single blob URL by fetching its content and uploading it to the server.
+ *
+ * @param originalText The original markdown image text with blob URL
+ * @param altText The alt text of the image
+ * @param blobUrl The blob URL to process
+ * @returns Promise resolving to an object containing the original text and its replacement
+ */
+async function processBlobUrl(originalText, altText, blobUrl) {
+    try {
+        // Fetch the blob from the URL
+        const response = await fetch(blobUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch blob: ${response.status} ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        // Convert blob to base64
+        const base64 = await blobToBase64(blob);
+        // Get file extension from alt text or default to jpg
+        const extension = getExtensionFromAltText(altText);
+        // Upload the image to the server
+        const uploadResult = await uploadImageToServer(base64, extension);
+        if (uploadResult && uploadResult.url) {
+            // Create the new markdown image text with the permanent URL
+            const newText = `![${altText}](${uploadResult.url})`;
+            console.log(`Replaced: ${originalText} with ${newText}`);
+            return { originalText, newText };
+        }
+        return { originalText, newText: null };
+    }
+    catch (error) {
+        console.error(`Error processing blob URL ${blobUrl}:`, error);
+        return { originalText, newText: null };
+    }
+}
+/**
+ * Converts a Blob to base64 string.
+ *
+ * @param blob The blob to convert
+ * @returns Promise resolving to the base64 string (without data URL prefix)
+ */
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result;
+            // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+            const base64 = base64String.substring(base64String.indexOf(',') + 1);
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+/**
+ * Extracts a file extension from the alt text, or returns a default extension.
+ *
+ * @param altText The alt text that might contain a filename with extension
+ * @returns The extension with a leading dot, or .jpg as default
+ */
+function getExtensionFromAltText(altText) {
+    // Try to extract extension from the alt text (which might be a filename)
+    const lastDotIndex = altText.lastIndexOf('.');
+    if (lastDotIndex > 0 && lastDotIndex < altText.length - 1) {
+        const extension = altText.substring(lastDotIndex).toLowerCase();
+        // Check if it's a common image extension
+        if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'].includes(extension)) {
+            return extension;
+        }
+    }
+    // Default extension
+    return '.jpg';
+}
+/**
+ * Uploads an image to the server.
+ *
+ * @param base64 The base64-encoded image data (without data URL prefix)
+ * @param extension The file extension with a leading dot
+ * @returns Promise resolving to the upload result containing the URL
+ */
+async function uploadImageToServer(base64, extension) {
+    try {
+        const response = await fetch(`/api/Images/upload?extension=${extension}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(base64)
+        });
+        if (!response.ok) {
+            throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+        }
+        return await response.json();
+    }
+    catch (error) {
+        console.error('Error uploading image to server:', error);
+        return null;
+    }
+}
 //# sourceMappingURL=Markdown.razor.js.map

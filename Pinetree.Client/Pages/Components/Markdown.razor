@@ -56,9 +56,22 @@
             <div class="markdown-title d-flex align-items-center">
                 <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" class="flex-grow-1" />
                 <div class="d-flex align-items-center ms-2">
-                    <button @onclick="SaveChanges" disabled="@(!HasPendingChanges() || IsTry)"
-                    class="btn btn-sm btn-primary me-2" title="Save changes">
-                        <i class="bi bi-save"></i> save
+                    <button @onclick="SaveChanges" disabled="@(!HasPendingChanges() || IsTry || _isSaving)"
+                            class="btn btn-sm btn-primary me-2" title="Save changes">
+                        @if (_isSaving)
+                        {
+                            <span class="d-flex align-items-center">
+                                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                <span>Saving...</span>
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="d-flex align-items-center">
+                                <i class="bi bi-save me-1"></i>
+                                <span>Save</span>
+                            </span>
+                        }
                     </button>
                 </div>
             </div>
@@ -206,6 +219,7 @@
     private string MarkdownText { get; set; } = "";
     private IDisposable? registration;
     private bool _copyIconState = false;
+    private bool _isSaving = false;
     private System.Threading.Timer? _resetIconTimer;
     private string ViewMode { get; set; } = "split";
     private bool IsSidebarOpen { get; set; } = true;
@@ -372,13 +386,50 @@
 
         try
         {
+            _isSaving = true;
+            if (Content.Contains("blob:"))
+            {
+                var updatedContent = await _jsInterop.ReplaceBlobUrlsInContentAsync(Content, TextAreaRef);
+
+                if (updatedContent != Content)
+                {
+                    Content = updatedContent;
+                    MarkdownText = MarkdownService.ToHtml(Content);
+                    Current.Content = Content;
+                }
+                await ProcessAllNodesAsync(Pinetree);
+                await _jsInterop.ClearAllImagesFromIndexedDB();
+            }
+
             await MarkdownUtil.AllUpdateAsync(Pinetree, HttpClient);
             LastSavedState = Pinetree.DeepClone();
-            StateHasChanged();
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error saving changes: {ex.Message}");
+        }
+        finally
+        {
+            // ローディング状態を終了
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ProcessAllNodesAsync(PinetreeView node)
+    {
+        if (node.Content.Contains("blob:"))
+        {
+            var updatedContent = await _jsInterop.ReplaceBlobUrlsInContentAsync(node.Content);
+            if (updatedContent != node.Content)
+            {
+                node.Content = updatedContent;
+            }
+        }
+
+        foreach (var child in node.Children)
+        {
+            await ProcessAllNodesAsync(child);
         }
     }
 
