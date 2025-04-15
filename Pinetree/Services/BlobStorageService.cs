@@ -19,6 +19,10 @@ public class BlobStorageService
 
     public async Task<string> UploadImageAsync(Stream content, string fileExtension)
     {
+        if (content.CanSeek && content.Position != 0)
+        {
+            content.Position = 0;
+        }
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
         await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
         var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
@@ -33,7 +37,6 @@ public class BlobStorageService
         };
 
         await blobClient.UploadAsync(content, options);
-
         return blobClient.Uri.ToString();
     }
 }
