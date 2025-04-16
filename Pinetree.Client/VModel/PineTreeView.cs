@@ -5,7 +5,7 @@ public class PinetreeView(long id, string title, string content, PinetreeView? p
     public long Id { get; } = id;
     public string Title { get; set; } = title;
     public string Content { get; set; } = content;
-    public PinetreeView? Parent { get; } = parent;
+    public PinetreeView? Parent { get; set; } = parent;
     public long GroupId { get; } = groupId;
     public bool IsCurrent { get; set; }
     public bool IsExpanded { get; set; }
