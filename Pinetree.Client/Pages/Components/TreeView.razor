@@ -101,10 +101,10 @@
             var confirmed = await JS.ConfirmAsync("Are you sure you want to delete this item?");
             if (confirmed)
             {
-                if (!IsTry)
-                {
-                    await HttpClient.DeleteAsync($"/api/Pinecones/delete-include-child/{Pinetree.Id}");
-                }
+                // if (!IsTry)
+                // {
+                //     await HttpClient.DeleteAsync($"/api/Pinecones/delete-include-child/{Pinetree.Id}");
+                // }
                 var id = Pinetree.DeleteIncludeChild();
                 await OnChildEvent.InvokeAsync(id);
                 StateHasChanged();

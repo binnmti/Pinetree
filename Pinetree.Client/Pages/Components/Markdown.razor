@@ -403,17 +403,154 @@
                 await _jsInterop.ClearAllImagesFromIndexedDB();
             }
 
-            await MarkdownUtil.AllUpdateAsync(Pinetree, HttpClient);
-            LastSavedState = Pinetree.DeepClone();
+            // 構造変更の検出
+            bool hasStructuralChanges = TreeStructureDetector.HasStructuralChanges(Pinetree, LastSavedState);
+
+            // ノードをDTO形式に変換 - Order情報を含める
+            var nodeDtos = ConvertToPineconeDtos(Pinetree);
+
+            // 更新リクエスト作成
+            var request = new TreeUpdateRequest
+                {
+                    RootId = Pinetree.Id,
+                    HasStructuralChanges = hasStructuralChanges,
+                    Nodes = hasStructuralChanges
+                        ? nodeDtos
+                        : GetChangedNodes(Pinetree, LastSavedState)
+                };
+
+            // APIリクエスト
+            var response = await HttpClient.PostAsJsonAsync("/api/Pinecones/update-tree", request);
+            if (response.IsSuccessStatusCode)
+            {
+                // 成功したら現在の状態を保存状態として記録
+                LastSavedState = Pinetree.DeepClone();
+            }
+            else
+            {
+                // エラー処理
+                var errorContent = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Error saving: {errorContent}");
+            }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error saving changes: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", $"Error: {ex.Message}");
         }
         finally
         {
             _isSaving = false;
             StateHasChanged();
+        }
+    }
+
+    // PinetreeViewからPineconeDTOへの変換メソッド（Orderプロパティを含む）
+    private List<PineconeDto> ConvertToPineconeDtos(PinetreeView tree)
+    {
+        var result = new List<PineconeDto>();
+        ConvertNodeRecursively(tree, null, result);
+        return result;
+    }
+
+    private void ConvertNodeRecursively(PinetreeView node, long? parentId, List<PineconeDto> result)
+    {
+        var dto = new PineconeDto
+            {
+                Id = node.Id,
+                Title = node.Title,
+                Content = node.Content,
+                GroupId = node.GroupId,
+                ParentId = parentId,
+                Order = GetNodeOrder(node) // 兄弟内での位置をOrderとして使用
+            };
+
+        result.Add(dto);
+
+        for (int i = 0; i < node.Children.Count; i++)
+        {
+            ConvertNodeRecursively(node.Children[i], node.Id, result);
+        }
+    }
+
+    // ノードの順序を取得（兄弟内でのインデックスを使用）
+    private int GetNodeOrder(PinetreeView node)
+    {
+        if (node.Parent == null) return 0;
+
+        return node.Parent.Children.IndexOf(node);
+    }
+
+    // 変更されたノードのみを取得するメソッド
+    private List<PineconeDto> GetChangedNodes(PinetreeView current, PinetreeView previous)
+    {
+        var changedNodes = new List<PineconeDto>();
+        var previousNodeMap = IndexNodes(previous);
+
+        FindChangedNodesRecursive(current, null, previousNodeMap, changedNodes);
+
+        return changedNodes;
+    }
+
+    private Dictionary<long, (PinetreeView Node, int Order)> IndexNodes(PinetreeView tree)
+    {
+        var result = new Dictionary<long, (PinetreeView Node, int Order)>();
+        IndexNodesRecursive(tree, result);
+        return result;
+    }
+
+    private void IndexNodesRecursive(PinetreeView node, Dictionary<long, (PinetreeView Node, int Order)> nodeMap)
+    {
+        nodeMap[node.Id] = (node, GetNodeOrder(node));
+
+        foreach (var child in node.Children)
+        {
+            IndexNodesRecursive(child, nodeMap);
+        }
+    }
+
+    private void FindChangedNodesRecursive(
+        PinetreeView node,
+        long? parentId,
+        Dictionary<long, (PinetreeView Node, int Order)> previousNodeMap,
+        List<PineconeDto> changedNodes)
+    {
+        int currentOrder = GetNodeOrder(node);
+        bool isChanged = false;
+
+        if (previousNodeMap.TryGetValue(node.Id, out var previousInfo))
+        {
+            var (previousNode, previousOrder) = previousInfo;
+
+            // 内容、タイトル、親、または順序が変更されたかチェック
+            isChanged = node.Title != previousNode.Title ||
+                        node.Content != previousNode.Content ||
+                        parentId != (previousNode.Parent?.Id) ||
+                        currentOrder != previousOrder;
+        }
+        else
+        {
+            // 新規ノード
+            isChanged = true;
+        }
+
+        if (isChanged)
+        {
+            changedNodes.Add(new PineconeDto
+                {
+                    Id = node.Id,
+                    Title = node.Title,
+                    Content = node.Content,
+                    GroupId = node.GroupId,
+                    ParentId = parentId,
+                    Order = currentOrder
+                });
+        }
+
+        // 子ノードを再帰的に処理
+        for (int i = 0; i < node.Children.Count; i++)
+        {
+            FindChangedNodesRecursive(node.Children[i], node.Id, previousNodeMap, changedNodes);
         }
     }
 

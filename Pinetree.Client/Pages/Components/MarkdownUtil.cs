@@ -65,28 +65,30 @@ internal static class MarkdownUtil
         }
 
         PinetreeView pinetree;
-        if (isTry)
-        {
-            var uniqueId = current.GetUniqueId();
-            pinetree = new PinetreeView(uniqueId, title, content, current, -1);
-        }
-        else
-        {
-            var child = new
-            {
-                Id = -1,
-                title,
-                content,
-                current.GroupId,
-                ParentId = current.Id,
-            };
-            var response = await httpClient.PostAsJsonAsync($"/api/Pinecones/add-child", child);
-            if (!response.IsSuccessStatusCode) return -1;
-            var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
-            if (pinecone == null) return -1;
+        var uniqueId = current.GetUniqueId();
+        pinetree = new PinetreeView(uniqueId, title, content, current, -1);
+        //if (isTry)
+        //{
+        //    var uniqueId = current.GetUniqueId();
+        //    pinetree = new PinetreeView(uniqueId, title, content, current, -1);
+        //}
+        //else
+        //{
+        //    var child = new
+        //    {
+        //        Id = -1,
+        //        title,
+        //        content,
+        //        current.GroupId,
+        //        ParentId = current.Id,
+        //    };
+        //    var response = await httpClient.PostAsJsonAsync($"/api/Pinecones/add-child", child);
+        //    if (!response.IsSuccessStatusCode) return -1;
+        //    var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
+        //    if (pinecone == null) return -1;
 
-            pinetree = pinecone.ToPinetree(current);
-        }
+        //    pinetree = pinecone.ToPinetree(current);
+        //}
         // If you don't save it, the ID won't be decided.
         current.IsExpanded = true;
         current.Children.Add(pinetree);
