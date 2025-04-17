@@ -45,7 +45,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         }
 
         var maxOrder = (await DbContext.Pinecone
-            .Where(p => p.UserName == userName && p.ParentId == null && !p.IsDelete)
+            .Where(p => p.UserName == userName && p.ParentId == null)
             .MaxAsync(p => (int?)p.Order)) ?? -1;
         maxOrder += 1;
 
@@ -71,7 +71,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
     }
 
     [HttpDelete("delete-include-child/{id}")]
-    public async Task<Pinecone> DeleteIncludeChild(long id)
+    public async Task<IActionResult> DeleteIncludeChild(long id)
     {
         var userName = User.Identity?.Name ?? "";
         var pinecone = await SingleIncludeChild(id);
@@ -79,12 +79,31 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         {
             throw new UnauthorizedAccessException("You do not own this Pinecone.");
         }
-        pinecone.Delete = DateTime.UtcNow;
-        pinecone.IsDelete = true;
-        DeleteChildren(pinecone);
-        pinecone.Parent?.Children.Remove(pinecone);
+        var parentId = pinecone.ParentId;
+        await RemoveChildrenFromDatabaseAsync(pinecone);
+        DbContext.Pinecone.Remove(pinecone);
         await DbContext.SaveChangesAsync();
-        return pinecone;
+        if (parentId.HasValue)
+        {
+            await ReindexSiblingsAsync(parentId.Value);
+        }
+
+        return Ok();
+    }
+
+    private async Task ReindexSiblingsAsync(long parentId)
+    {
+        var siblings = await DbContext.Pinecone
+            .Where(p => p.ParentId == parentId)
+            .OrderBy(p => p.Order)
+            .ToListAsync();
+
+        for (int i = 0; i < siblings.Count; i++)
+        {
+            siblings[i].Order = i;
+        }
+
+        await DbContext.SaveChangesAsync();
     }
 
     [HttpGet("get-include-child/{id}")]
@@ -133,10 +152,10 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         try
         {
             var currentTree = await SingleIncludeChild(rootId);
-            await LogicalDeleteTreeAsync(currentTree, userName);
+
+            await RemoveTreeFromDatabaseAsync(currentTree, userName);
 
             var newRoot = await CreateNewTreeAsync(nodes, userName);
-
             await UpdateChildrenGroupIds(newRoot.Id, newRoot.Id, userName);
 
             await DbContext.SaveChangesAsync();
@@ -146,6 +165,35 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         {
             await transaction.RollbackAsync();
             throw;
+        }
+    }
+
+    private async Task RemoveTreeFromDatabaseAsync(Pinecone root, string userName)
+    {
+        if (root.UserName != userName)
+        {
+            throw new UnauthorizedAccessException("You do not own this Pinecone.");
+        }
+
+        await RemoveChildrenFromDatabaseAsync(root);
+        DbContext.Pinecone.Remove(root);
+    }
+
+    private async Task RemoveChildrenFromDatabaseAsync(Pinecone parent)
+    {
+        if (!DbContext.Entry(parent).Collection(p => p.Children).IsLoaded)
+        {
+            await DbContext.Entry(parent)
+                .Collection(p => p.Children)
+                .LoadAsync();
+        }
+
+        var children = parent.Children.ToList();
+
+        foreach (var child in children)
+        {
+            await RemoveChildrenFromDatabaseAsync(child);
+            DbContext.Pinecone.Remove(child);
         }
     }
 
@@ -167,7 +215,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
     private async Task UpdateChildrenGroupIds(long nodeId, long groupId, string userName)
     {
         var children = await DbContext.Pinecone
-            .Where(p => p.ParentId == nodeId && !p.IsDelete && p.UserName == userName)
+            .Where(p => p.ParentId == nodeId && p.UserName == userName)
             .ToListAsync();
 
         foreach (var child in children)
@@ -235,23 +283,6 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         await DbContext.SaveChangesAsync();
     }
 
-    private static async Task LogicalDeleteTreeAsync(Pinecone root, string userName)
-    {
-        if (root.UserName != userName)
-        {
-            throw new UnauthorizedAccessException("You do not own this Pinecone.");
-        }
-
-        var now = DateTime.UtcNow;
-        root.IsDelete = true;
-        root.Delete = now;
-
-        foreach (var child in root.Children)
-        {
-            await LogicalDeleteTreeAsync(child, userName);
-        }
-    }
-
     private async Task<Pinecone> SingleIncludeChild(long id)
     {
         var userName = User.Identity?.Name ?? "";
@@ -264,29 +295,16 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         return await LoadChildrenRecursively(parent);
     }
 
-    private static void DeleteChildren(Pinecone parent)
-    {
-        foreach (var child in parent.Children)
-        {
-            DeleteChildren(child);
-            child.Delete = DateTime.UtcNow;
-            child.IsDelete = true;
-        }
-        parent.Children.Clear();
-    }
-
     private IQueryable<Pinecone> GetUserTopList(string userName)
         => DbContext.Pinecone
             .Where(x => x.UserName == userName)
-            .Where(x => x.ParentId == null)
-            .Where(x => x.IsDelete == false);
+            .Where(x => x.ParentId == null);
 
     private async Task<Pinecone> LoadChildrenRecursively(Pinecone parent)
     {
         await DbContext.Entry(parent)
             .Collection(p => p.Children)
             .Query()
-            .Where(x => x.IsDelete == false)
             .OrderBy(x => x.Order)
             .LoadAsync();
 
