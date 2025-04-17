@@ -21,3 +21,29 @@
 .tree-sidebar.visible + .main-content .tree-toggle {
     left: 250px;
 }
+
+.btn-outline-dark {
+    background-color: #ffffff;
+    color: #343a40;
+    border-color: #343a40;
+}
+
+.btn-outline-dark:disabled {
+    background-color: #f8f9fa;
+    color: #adb5bd;
+    border-color: #ced4da;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: #ffffff;
+    border-color: #007bff;
+}
+
+.btn-primary:disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+    border-color: #c6c8ca;
+    opacity: 0.65;
+    cursor: not-allowed;
+}

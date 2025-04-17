@@ -16,6 +16,10 @@ public class Pinecone
     // そもそも最親はParentがない。最初の１個を作る時にダミーデータが必要になるが制約によりエラーになる
     public required long? ParentId { get; set; }
 
+    public required int Order { get; set; }
+
+    public required Guid Guid { get; set; }
+
     [MaxLength(256)]
     public required string UserName { get; set; }
     public Pinecone? Parent { get; set; }
@@ -25,3 +29,20 @@ public class Pinecone
     public required DateTime Update { get; set; } = DateTime.UtcNow;
     public required DateTime Delete { get; set; } = DateTime.UtcNow;
 }
+public class PineconeDto
+{
+    public long Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public long GroupId { get; set; }
+    public long? ParentId { get; set; }
+    public int Order { get; set; }
+}
+
+public class TreeUpdateRequest
+{
+    public long RootId { get; set; }
+    public bool HasStructuralChanges { get; set; }
+    public List<PineconeDto> Nodes { get; set; } = [];
+}
+

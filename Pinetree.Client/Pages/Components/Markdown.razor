@@ -1,6 +1,7 @@
 ﻿@using Pinetree.Client.VModel
 @using Pinetree.Client.Services
 @using Pinetree.Client.Pages.Components;
+@using Pinetree.Shared.Model
 
 @implements IAsyncDisposable
 
@@ -403,17 +404,142 @@
                 await _jsInterop.ClearAllImagesFromIndexedDB();
             }
 
-            await MarkdownUtil.AllUpdateAsync(Pinetree, HttpClient);
-            LastSavedState = Pinetree.DeepClone();
+            bool hasStructuralChanges = TreeStructureDetector.HasStructuralChanges(Pinetree, LastSavedState);
+
+            var nodeDtos = ConvertToPineconeDtos(Pinetree);
+
+            var request = new TreeUpdateRequest
+                {
+                    RootId = Pinetree.Id,
+                    HasStructuralChanges = hasStructuralChanges,
+                    Nodes = hasStructuralChanges
+                        ? nodeDtos
+                        : GetChangedNodes(Pinetree, LastSavedState)
+                };
+
+            var response = await HttpClient.PostAsJsonAsync("/api/Pinecones/update-tree", request);
+            if (response.IsSuccessStatusCode)
+            {
+                LastSavedState = Pinetree.DeepClone();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Error saving: {errorContent}");
+            }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error saving changes: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", $"Error: {ex.Message}");
         }
         finally
         {
             _isSaving = false;
             StateHasChanged();
+        }
+    }
+
+    private List<PineconeDto> ConvertToPineconeDtos(PinetreeView tree)
+    {
+        var result = new List<PineconeDto>();
+        ConvertNodeRecursively(tree, null, result);
+        return result;
+    }
+
+    private void ConvertNodeRecursively(PinetreeView node, long? parentId, List<PineconeDto> result)
+    {
+        var dto = new PineconeDto
+            {
+                Id = node.Id,
+                Title = node.Title,
+                Content = node.Content,
+                GroupId = node.GroupId,
+                ParentId = parentId,
+                Order = GetNodeOrder(node)
+            };
+
+        result.Add(dto);
+
+        for (int i = 0; i < node.Children.Count; i++)
+        {
+            ConvertNodeRecursively(node.Children[i], node.Id, result);
+        }
+    }
+
+    private int GetNodeOrder(PinetreeView node)
+    {
+        if (node.Parent == null) return 0;
+
+        return node.Parent.Children.IndexOf(node);
+    }
+
+    private List<PineconeDto> GetChangedNodes(PinetreeView current, PinetreeView previous)
+    {
+        var changedNodes = new List<PineconeDto>();
+        var previousNodeMap = IndexNodes(previous);
+
+        FindChangedNodesRecursive(current, null, previousNodeMap, changedNodes);
+
+        return changedNodes;
+    }
+
+    private Dictionary<long, (PinetreeView Node, int Order)> IndexNodes(PinetreeView tree)
+    {
+        var result = new Dictionary<long, (PinetreeView Node, int Order)>();
+        IndexNodesRecursive(tree, result);
+        return result;
+    }
+
+    private void IndexNodesRecursive(PinetreeView node, Dictionary<long, (PinetreeView Node, int Order)> nodeMap)
+    {
+        nodeMap[node.Id] = (node, GetNodeOrder(node));
+
+        foreach (var child in node.Children)
+        {
+            IndexNodesRecursive(child, nodeMap);
+        }
+    }
+
+    private void FindChangedNodesRecursive(
+        PinetreeView node,
+        long? parentId,
+        Dictionary<long, (PinetreeView Node, int Order)> previousNodeMap,
+        List<PineconeDto> changedNodes)
+    {
+        int currentOrder = GetNodeOrder(node);
+        bool isChanged = false;
+
+        if (previousNodeMap.TryGetValue(node.Id, out var previousInfo))
+        {
+            var (previousNode, previousOrder) = previousInfo;
+
+            isChanged = node.Title != previousNode.Title ||
+                        node.Content != previousNode.Content ||
+                        parentId != (previousNode.Parent?.Id) ||
+                        currentOrder != previousOrder;
+        }
+        else
+        {
+            isChanged = true;
+        }
+
+        if (isChanged)
+        {
+            changedNodes.Add(new PineconeDto
+                {
+                    Id = node.Id,
+                    Title = node.Title,
+                    Content = node.Content,
+                    GroupId = node.GroupId,
+                    ParentId = parentId,
+                    Order = currentOrder
+                });
+        }
+
+        for (int i = 0; i < node.Children.Count; i++)
+        {
+            FindChangedNodesRecursive(node.Children[i], node.Id, previousNodeMap, changedNodes);
         }
     }
 

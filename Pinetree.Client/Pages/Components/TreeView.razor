@@ -2,27 +2,55 @@
 @using Pinetree.Client.Services
 @using Pinetree.Shared.Model
 
+@if (IsRoot)
+{
+    <div class="toolbar p-2 bg-light border-bottom d-flex justify-content-start align-items-center mb-2">
+        <div class="btn-toolbar" role="toolbar" aria-label="Tree actions toolbar">
+            <div class="btn-group me-2" role="group" aria-label="Navigation">
+                <button class="btn btn-sm btn-outline-dark" title="Move Left (Out of current level)"
+                        @onclick="MoveCurrentItemLeft" disabled="@(!CanMoveCurrentItemLeft())">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-dark" title="Move Right (Into as child)"
+                        @onclick="MoveCurrentItemRight" disabled="@(!CanMoveCurrentItemRight())">
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-dark" title="Move Up"
+                        @onclick="MoveCurrentItemUp" disabled="@(!CanMoveCurrentItemUp())">
+                    <i class="bi bi-arrow-up"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-dark" title="Move Down"
+                        @onclick="MoveCurrentItemDown" disabled="@(!CanMoveCurrentItemDown())">
+                    <i class="bi bi-arrow-down"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @if (Pinetree != null)
 {
     <ul class="list-unstyled" style="padding-left: 0.75rem;">
         <li style="">
             <div class="d-flex justify-content-between list-group-item-action">
-                @if (Pinetree.Children.Count != 0)
-                {
-                    if (Pinetree.IsExpanded)
+                <div class="d-flex align-items-center">
+                    @if (Pinetree.Children.Count != 0)
                     {
-                        <i class="bi bi-caret-down" @onclick="OnClickExpanded"></i>
+                        if (Pinetree.IsExpanded)
+                        {
+                            <i class="bi bi-caret-down" @onclick="OnClickExpanded" style="cursor:pointer"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-caret-right" @onclick="OnClickExpanded" style="cursor:pointer"></i>
+                        }
                     }
                     else
                     {
-                        <i class="bi bi-caret-right" @onclick="OnClickExpanded"></i>
+                        <span style="display:inline-block; width:1em;"></span>
                     }
-                }
-                else
-                {
-                    <span style="display:inline-block; width:1em;"></span>
-                }
-                <i class="bi bi-file-earmark-text"></i>
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
                 @if (Pinetree.IsCurrent)
                 {
                     <div class="title px-1 flex-grow-1 border" @onclick="ActivePinetree" style="font-weight: bold; background-color:aliceblue">@Pinetree.Title</div>
@@ -31,14 +59,21 @@
                 {
                     <div class="title px-1 flex-grow-1" @onclick="ActivePinetree">@Pinetree.Title</div>
                 }
-                <i @onclick="AddChild" class="bi bi-file-earmark-plus border px-1" style="cursor:pointer"></i>
-                <i @onclick="ConfirmDelete" class="bi bi-trash2 border px-1" style="cursor:pointer"></i>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-dark btn-sm" title="Add Child Item" @onclick="AddChild">
+                        <i class="bi bi-file-earmark-plus"></i>
+                    </button>
+                    <button class="btn btn-outline-dark btn-sm" title="Delete Item" @onclick="() => DeleteCurrentItem(Pinetree)" disabled="@(!CanDeleteItem(Pinetree))">
+                        <i class="bi bi-trash2"></i>
+                    </button>
+                </div>
             </div>
             @if (Pinetree.IsExpanded)
             {
                 @foreach (var tree in Pinetree.Children)
                 {
-                    <TreeView Pinetree="@(tree)" id="@(Id)" IsTry=@IsTry IsProfessional=@IsProfessional OnChildEvent ="OnChildEvent" />
+                    <TreeView Pinetree="@(tree)" Id="@(Id)" IsTry=@IsTry IsProfessional=@IsProfessional
+                              OnChildEvent="OnChildEvent" RootNode="RootNode ?? Pinetree" IsRoot="false" />
                 }
             }
         </li>
@@ -61,12 +96,26 @@
     [Parameter]
     public bool IsProfessional { get; set; }
 
+    [Parameter]
+    public PinetreeView? RootNode { get; set; }
+
+    [Parameter]
+    public bool IsRoot { get; set; } = true;
+
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
     [Inject]
     public required HttpClient HttpClient { get; set; }
     [Inject]
     public required IJSRuntime JS { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (IsRoot)
+        {
+            RootNode = Pinetree;
+        }
+    }
 
     private void OnClickExpanded()
     {
@@ -77,38 +126,168 @@
     private async Task ActivePinetree()
     {
         await OnChildEvent.InvokeAsync(Pinetree.Id);
-
         StateHasChanged();
     }
 
     private async Task AddChild()
     {
         var newChildId = await MarkdownUtil.AddChildAsync(Pinetree, "Untitled", "", JS, HttpClient, IsTry, IsProfessional);
-
-
         await OnChildEvent.InvokeAsync(newChildId);
         StateHasChanged();
     }
 
-    private async Task ConfirmDelete()
+    private bool CanDeleteItem(PinetreeView item)
     {
-        if (Pinetree.Parent == null)
+        return item != null && item.Parent != null;
+    }
+
+    private async Task DeleteCurrentItem(PinetreeView item)
+    {
+        if (item == null || item.Parent == null)
+            return;
+
+        if (!item.Parent.Children.Contains(item))
         {
-            await JS.AlertAsync("You can't delete the first");
+            await JS.AlertAsync("Invalid item state. Please refresh the page.");
+            return;
         }
-        else
+
+        var confirmed = await JS.ConfirmAsync($"Are you sure you want to delete '{item.Title}'?");
+        if (!confirmed)
+            return;
+
+        var idToNavigate = item.DeleteIncludeChild();
+
+        if (idToNavigate != -1)
         {
-            var confirmed = await JS.ConfirmAsync("Are you sure you want to delete this item?");
-            if (confirmed)
-            {
-                if (!IsTry)
-                {
-                    await HttpClient.DeleteAsync($"/api/Pinecones/delete-include-child/{Pinetree.Id}");
-                }
-                var id = Pinetree.DeleteIncludeChild();
-                await OnChildEvent.InvokeAsync(id);
-                StateHasChanged();
-            }
+            await OnChildEvent.InvokeAsync(idToNavigate);
         }
+
+        StateHasChanged();
+    }
+
+    private bool CanMoveCurrentItemUp()
+    {
+        var rootNode = RootNode ?? Pinetree;
+        var currentItem = GetCurrentItem(rootNode);
+        if (currentItem == null)
+            return false;
+
+        return currentItem.Parent != null &&
+               currentItem.Parent.Children.IndexOf(currentItem) > 0;
+    }
+
+    private bool CanMoveCurrentItemDown()
+    {
+        var rootNode = RootNode ?? Pinetree;
+        var currentItem = GetCurrentItem(rootNode);
+        if (currentItem == null || currentItem.Parent == null)
+            return false;
+
+        var parent = currentItem.Parent;
+        var index = parent.Children.IndexOf(currentItem);
+        return index >= 0 && index < parent.Children.Count - 1;
+    }
+
+    private bool CanMoveCurrentItemRight()
+    {
+        var rootNode = RootNode ?? Pinetree;
+        var currentItem = GetCurrentItem(rootNode);
+        if (currentItem == null || currentItem.Parent == null)
+            return false;
+
+        var parent = currentItem.Parent;
+        var index = parent.Children.IndexOf(currentItem);
+
+        return index > 0 && parent.Children[index - 1] != currentItem.Parent;
+    }
+
+    private bool CanMoveCurrentItemLeft()
+    {
+        var rootNode = RootNode ?? Pinetree;
+        var currentItem = GetCurrentItem(rootNode);
+
+        return currentItem != null && currentItem.Parent != null && currentItem.Parent.Parent != null;
+    }
+
+    private async Task MoveCurrentItemUp()
+    {
+        var rootNode = RootNode ?? Pinetree;
+        var currentItem = GetCurrentItem(rootNode);
+        if (currentItem == null)
+            return;
+
+        if (currentItem.MoveItemUp())
+        {
+            await OnChildEvent.InvokeAsync(currentItem.Id);
+            StateHasChanged();
+        }
+    }
+
+    private async Task MoveCurrentItemDown()
+    {
+        var rootNode = RootNode ?? Pinetree;
+        var currentItem = GetCurrentItem(rootNode);
+        if (currentItem == null)
+            return;
+
+        if (currentItem.MoveItemDown())
+        {
+            await OnChildEvent.InvokeAsync(currentItem.Id);
+            StateHasChanged();
+        }
+    }
+
+    private async Task MoveCurrentItemRight()
+    {
+        var rootNode = RootNode ?? Pinetree;
+        var currentItem = GetCurrentItem(rootNode);
+        if (currentItem == null)
+            return;
+
+        var originalParent = currentItem.Parent;
+        if (originalParent == null)
+            return;
+
+        if (currentItem.MoveItemRight())
+        {
+            await OnChildEvent.InvokeAsync(currentItem.Id);
+            StateHasChanged();
+        }
+    }
+
+    private async Task MoveCurrentItemLeft()
+    {
+        var rootNode = RootNode ?? Pinetree;
+        var currentItem = GetCurrentItem(rootNode);
+        if (currentItem == null)
+            return;
+
+        var originalParent = currentItem.Parent;
+        if (originalParent == null || originalParent.Parent == null)
+            return;
+
+        if (currentItem.MoveItemLeft())
+        {
+            await OnChildEvent.InvokeAsync(currentItem.Id);
+            StateHasChanged();
+        }
+    }
+
+    private PinetreeView? GetCurrentItem(PinetreeView node)
+    {
+        if (node == null) return null;
+
+        if (node.IsCurrent)
+            return node;
+
+        foreach (var child in node.Children)
+        {
+            var result = GetCurrentItem(child);
+            if (result != null)
+                return result;
+        }
+
+        return null;
     }
 }
