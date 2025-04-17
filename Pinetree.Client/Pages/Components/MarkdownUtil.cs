@@ -1,8 +1,6 @@
 ﻿using Microsoft.JSInterop;
 using Pinetree.Client.VModel;
 using Pinetree.Client.Services;
-using Pinetree.Shared.Model;
-using System.Net.Http.Json;
 
 namespace Pinetree.Client.Pages.Components;
 
@@ -23,35 +21,6 @@ internal static class MarkdownUtil
         return string.IsNullOrEmpty(firstLine) ? "Untitled" : firstLine;
     }
 
-    public static async Task AllUpdateAsync(this PinetreeView pinetree, HttpClient httpClient)
-    {
-        await UpdateAsync(pinetree, httpClient);
-    }
-
-    private static async Task UpdateAsync(PinetreeView pinetreeView, HttpClient httpClient)
-    {
-        try
-        {
-            var updateData = new
-            {
-                pinetreeView.Id,
-                pinetreeView.Title,
-                pinetreeView.Content,
-                GroupId = -1,
-                ParentId = -1,
-            };
-            await httpClient.PostAsJsonAsync($"/api/Pinecones/update", updateData);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error saving changes: {ex.Message}");
-        }
-        foreach (var child in pinetreeView.Children)
-        {
-            await UpdateAsync(child, httpClient);
-        }
-    }
-
 
     internal static async Task<long> AddChildAsync(PinetreeView current, string title, string content, IJSRuntime js, HttpClient httpClient, bool isTry, bool isProfessional)
     {
@@ -65,28 +34,8 @@ internal static class MarkdownUtil
         }
 
         PinetreeView pinetree;
-        if (isTry)
-        {
-            var uniqueId = current.GetUniqueId();
-            pinetree = new PinetreeView(uniqueId, title, content, current, -1);
-        }
-        else
-        {
-            var child = new
-            {
-                Id = -1,
-                title,
-                content,
-                current.GroupId,
-                ParentId = current.Id,
-            };
-            var response = await httpClient.PostAsJsonAsync($"/api/Pinecones/add-child", child);
-            if (!response.IsSuccessStatusCode) return -1;
-            var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
-            if (pinecone == null) return -1;
-
-            pinetree = pinecone.ToPinetree(current);
-        }
+        var uniqueId = current.GetUniqueId();
+        pinetree = new PinetreeView(uniqueId, title, content, current, -1);
         // If you don't save it, the ID won't be decided.
         current.IsExpanded = true;
         current.Children.Add(pinetree);
