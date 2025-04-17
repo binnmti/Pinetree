@@ -171,35 +171,6 @@
         StateHasChanged();
     }
 
-    // Save reordered children to server
-    private async Task SaveReorderedChildren(PinetreeView parent)
-    {
-        try
-        {
-            if (parent == null || parent.Children == null)
-                return;
-
-            // Create list of child IDs
-            var childIds = parent.Children.Select(c => c.Id).ToList();
-
-            // Call API to update child order
-            var response = await HttpClient.PostAsJsonAsync($"/api/Pinecones/reorder-children/{parent.Id}", childIds);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.Error.WriteLine($"Error saving order: {errorContent}");
-                await JS.AlertAsync($"Failed to save the new order: {response.StatusCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Exception in SaveReorderedChildren: {ex}");
-            await JS.AlertAsync($"Failed to save the new order: {ex.Message}");
-        }
-    }
-
-
     private bool CanMoveCurrentItemUp()
     {
         var rootNode = RootNode ?? Pinetree;
@@ -253,12 +224,6 @@
 
         if (currentItem.MoveItemUp())
         {
-            var parent = currentItem.Parent;
-            if (parent != null && !IsTry)
-            {
-                await SaveReorderedChildren(parent);
-            }
-
             await OnChildEvent.InvokeAsync(currentItem.Id);
             StateHasChanged();
         }
@@ -273,12 +238,6 @@
 
         if (currentItem.MoveItemDown())
         {
-            var parent = currentItem.Parent;
-            if (parent != null && !IsTry)
-            {
-                await SaveReorderedChildren(parent);
-            }
-
             await OnChildEvent.InvokeAsync(currentItem.Id);
             StateHasChanged();
         }
@@ -297,17 +256,6 @@
 
         if (currentItem.MoveItemRight())
         {
-            var newParent = currentItem.Parent;
-
-            if (!IsTry)
-            {
-                await SaveReorderedChildren(originalParent);
-                if (newParent != null)
-                {
-                    await SaveReorderedChildren(newParent);
-                }
-            }
-
             await OnChildEvent.InvokeAsync(currentItem.Id);
             StateHasChanged();
         }
@@ -326,17 +274,6 @@
 
         if (currentItem.MoveItemLeft())
         {
-            var newParent = currentItem.Parent;
-
-            if (!IsTry)
-            {
-                await SaveReorderedChildren(originalParent);
-                if (newParent != null)
-                {
-                    await SaveReorderedChildren(newParent);
-                }
-            }
-
             await OnChildEvent.InvokeAsync(currentItem.Id);
             StateHasChanged();
         }
