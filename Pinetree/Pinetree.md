@@ -1,6 +1,8 @@
 - Paid Membership
 - monaco-editor
-- TreeView Custom
+- Drag＆Drop
+  - TreeView File
+  - TreeView→Markdown
 - Multilingualization, or rather Japaneseization
 - Publish to the web
 

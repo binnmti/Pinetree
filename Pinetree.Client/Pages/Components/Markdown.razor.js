@@ -93,6 +93,7 @@ export async function clearAllImagesFromIndexedDB() {
     });
 }
 export function setupAllEventListeners(container, textArea, dotNetHelper) {
+    initializeIndexedDB();
     setupLinkInterceptor(container, dotNetHelper);
     setupBeforeUnloadWarning(dotNetHelper);
     setupKeyboardShortcuts(textArea, dotNetHelper);
@@ -597,5 +598,47 @@ async function uploadImageToServer(base64, extension) {
         console.error('Error uploading image to server:', error);
         return null;
     }
+}
+async function initializeIndexedDB() {
+    const dbName = 'PinetreeImageDB';
+    const storeName = 'images';
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, 1);
+        request.onupgradeneeded = (event) => {
+            console.log('Initializing IndexedDB...');
+            const db = request.result;
+            if (!db.objectStoreNames.contains(storeName)) {
+                db.createObjectStore(storeName, { keyPath: 'id' });
+                console.log(`Created object store: ${storeName}`);
+            }
+        };
+        request.onerror = (event) => {
+            console.error(`Error initializing IndexedDB: ${request.error}`);
+            reject(`Error initializing IndexedDB: ${request.error}`);
+        };
+        request.onsuccess = () => {
+            const db = request.result;
+            console.log(`IndexedDB initialized successfully with version ${db.version}`);
+            try {
+                const transaction = db.transaction([storeName], 'readonly');
+                console.log(`Object store ${storeName} exists and is accessible`);
+                resolve();
+            }
+            catch (error) {
+                console.error(`Object store ${storeName} check failed:`, error);
+                db.close();
+                const deleteRequest = indexedDB.deleteDatabase(dbName);
+                deleteRequest.onsuccess = () => {
+                    console.log(`Database ${dbName} deleted due to missing object store`);
+                    initializeIndexedDB()
+                        .then(resolve)
+                        .catch(reject);
+                };
+                deleteRequest.onerror = () => {
+                    reject(`Failed to delete database: ${deleteRequest.error}`);
+                };
+            }
+        };
+    });
 }
 //# sourceMappingURL=Markdown.razor.js.map
