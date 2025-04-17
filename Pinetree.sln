@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Shared", "Pinetree
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Client", "Pinetree.Client\Pinetree.Client.csproj", "{CC166F25-F9EB-4521-972E-C5EFEE8AA07E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Client.TestProject", "Pinetree.Client.TestProject\Pinetree.Client.TestProject.csproj", "{73C16934-8C8E-44F5-B037-1567133D88E1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{CC166F25-F9EB-4521-972E-C5EFEE8AA07E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC166F25-F9EB-4521-972E-C5EFEE8AA07E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CC166F25-F9EB-4521-972E-C5EFEE8AA07E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{73C16934-8C8E-44F5-B037-1567133D88E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73C16934-8C8E-44F5-B037-1567133D88E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73C16934-8C8E-44F5-B037-1567133D88E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73C16934-8C8E-44F5-B037-1567133D88E1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

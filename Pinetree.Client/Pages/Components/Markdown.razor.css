@@ -21,3 +21,15 @@
 .tree-sidebar.visible + .main-content .tree-toggle {
     left: 250px;
 }
+
+.btn-outline-dark {
+    background-color: #ffffff;
+    color: #343a40;
+    border-color: #343a40;
+}
+
+.btn-outline-dark:disabled {
+    background-color: #f8f9fa;
+    color: #adb5bd;
+    border-color: #ced4da;
+}
