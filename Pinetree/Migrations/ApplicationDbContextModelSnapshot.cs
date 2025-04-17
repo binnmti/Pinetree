@@ -253,14 +253,8 @@ namespace Pinetree.Migrations
                     b.Property<long>("GroupId")
                         .HasColumnType("bigint");
 
-                    b.Property<Guid>("Guid")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<bool>("IsDelete")
                         .HasColumnType("bit");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("int");
 
                     b.Property<long?>("ParentId")
                         .HasColumnType("bigint");

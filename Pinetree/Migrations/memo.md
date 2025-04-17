@@ -2,7 +2,7 @@
 dotnet tool update --global dotnet-ef
 cd .\Pinetree
 dotnet ef migrations remove
-dotnet ef migrations add AddOrder
+dotnet ef migrations add AddApplicationUser
 dotnet ef database update --configuration Release
 
 CREATE UNIQUE NONCLUSTERED INDEX [EmailIndex]

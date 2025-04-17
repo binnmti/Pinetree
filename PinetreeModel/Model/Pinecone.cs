@@ -16,10 +16,6 @@ public class Pinecone
     // そもそも最親はParentがない。最初の１個を作る時にダミーデータが必要になるが制約によりエラーになる
     public required long? ParentId { get; set; }
 
-    public required int Order { get; set; }
-
-    public required Guid Guid { get; set; }
-
     [MaxLength(256)]
     public required string UserName { get; set; }
     public Pinecone? Parent { get; set; }
