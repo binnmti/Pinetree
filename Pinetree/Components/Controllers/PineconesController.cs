@@ -153,10 +153,33 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         {
             var currentTree = await SingleIncludeChild(rootId);
 
-            await RemoveTreeFromDatabaseAsync(currentTree, userName);
+            var rootNodeDto = nodes.FirstOrDefault(n => n.ParentId == null);
+            if (rootNodeDto == null)
+            {
+                throw new InvalidOperationException("Root node is missing in the provided nodes.");
+            }
 
-            var newRoot = await CreateNewTreeAsync(nodes, userName);
-            await UpdateChildrenGroupIds(newRoot.Id, newRoot.Id, userName);
+            if (currentTree.UserName != userName)
+            {
+                throw new UnauthorizedAccessException("You do not own this Pinecone.");
+            }
+
+            currentTree.Title = rootNodeDto.Title;
+            currentTree.Content = rootNodeDto.Content;
+            currentTree.Update = DateTime.UtcNow;
+
+            await RemoveChildrenFromDatabaseAsync(currentTree);
+
+            var nodeMap = nodes.ToDictionary(n => n.Id, n => n);
+            var childrenNodes = nodeMap.Values
+                .Where(n => n.ParentId == rootNodeDto.Id)
+                .OrderBy(n => n.Order)
+                .ToList();
+
+            foreach (var childNode in childrenNodes)
+            {
+                await CreateNodeRecursivelyAsync(childNode, currentTree.Id, nodeMap, userName, currentTree.GroupId);
+            }
 
             await DbContext.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -166,17 +189,6 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
             await transaction.RollbackAsync();
             throw;
         }
-    }
-
-    private async Task RemoveTreeFromDatabaseAsync(Pinecone root, string userName)
-    {
-        if (root.UserName != userName)
-        {
-            throw new UnauthorizedAccessException("You do not own this Pinecone.");
-        }
-
-        await RemoveChildrenFromDatabaseAsync(root);
-        DbContext.Pinecone.Remove(root);
     }
 
     private async Task RemoveChildrenFromDatabaseAsync(Pinecone parent)
@@ -194,34 +206,6 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         {
             await RemoveChildrenFromDatabaseAsync(child);
             DbContext.Pinecone.Remove(child);
-        }
-    }
-
-    private async Task<Pinecone> CreateNewTreeAsync(List<PineconeDto> nodes, string userName)
-    {
-        var nodeMap = nodes.ToDictionary(n => n.Id, n => n);
-
-        var rootNode = nodes.FirstOrDefault(n => n.ParentId == null);
-        if (rootNode == null) return null;
-
-        var newRoot = await CreateNodeRecursivelyAsync(rootNode, null, nodeMap, userName, 0);
-
-        newRoot.GroupId = newRoot.Id;
-        await DbContext.SaveChangesAsync();
-
-        return newRoot;
-    }
-
-    private async Task UpdateChildrenGroupIds(long nodeId, long groupId, string userName)
-    {
-        var children = await DbContext.Pinecone
-            .Where(p => p.ParentId == nodeId && p.UserName == userName)
-            .ToListAsync();
-
-        foreach (var child in children)
-        {
-            child.GroupId = groupId;
-            await UpdateChildrenGroupIds(child.Id, groupId, userName);
         }
     }
 
