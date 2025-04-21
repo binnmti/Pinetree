@@ -234,16 +234,11 @@
         IsSidebarOpen = !IsSidebarOpen;
     }
 
-    protected override void OnInitialized()
-    {
-        _jsInterop = new MarkdownJsInterop(JS);
-        base.OnInitialized();
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            _jsInterop = new MarkdownJsInterop(JS);
             SetCurrent(Guid);
             registration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
             LastSavedState = Pinetree.DeepClone();
@@ -443,11 +438,11 @@
     private List<PineconeDto> ConvertToPineconeDtos(PinetreeView tree)
     {
         var result = new List<PineconeDto>();
-        ConvertNodeRecursively(tree, null, result);
+        ConvertNodeRecursively(tree, Guid.Empty, result);
         return result;
     }
 
-    private void ConvertNodeRecursively(PinetreeView node, Guid? parentGuid, List<PineconeDto> result)
+    private void ConvertNodeRecursively(PinetreeView node, Guid parentGuid, List<PineconeDto> result)
     {
         var dto = new PineconeDto
             {
@@ -479,7 +474,7 @@
         var changedNodes = new List<PineconeDto>();
         var previousNodeMap = IndexNodes(previous);
 
-        FindChangedNodesRecursive(current, null, previousNodeMap, changedNodes);
+        FindChangedNodesRecursive(current, Guid.Empty, previousNodeMap, changedNodes);
 
         return changedNodes;
     }
@@ -503,7 +498,7 @@
 
     private void FindChangedNodesRecursive(
         PinetreeView node,
-        Guid? parentGuid,
+        Guid parentGuid,
         Dictionary<Guid, (PinetreeView Node, int Order)> previousNodeMap,
         List<PineconeDto> changedNodes)
     {

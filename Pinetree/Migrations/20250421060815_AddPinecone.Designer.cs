@@ -12,7 +12,7 @@ using Pinetree.Data;
 namespace Pinetree.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250421052932_AddPinecone")]
+    [Migration("20250421060815_AddPinecone")]
     partial class AddPinecone
     {
         /// <inheritdoc />
@@ -259,7 +259,7 @@ namespace Pinetree.Migrations
                     b.Property<int>("Order")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("ParentGuid")
+                    b.Property<Guid>("ParentGuid")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Title")
@@ -342,7 +342,8 @@ namespace Pinetree.Migrations
                         .WithMany("Children")
                         .HasForeignKey("ParentGuid")
                         .HasPrincipalKey("Guid")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Parent");
                 });

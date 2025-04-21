@@ -55,7 +55,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
             Title = title,
             Content = "",
             GroupGuid = guid,
-            ParentGuid = null,
+            ParentGuid = Guid.Empty,
             Order = maxOrder,
             UserName = userName,
             Guid = guid,
@@ -80,9 +80,9 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         await RemoveChildrenFromDatabaseAsync(pinecone);
         DbContext.Pinecone.Remove(pinecone);
         await DbContext.SaveChangesAsync();
-        if (parentGuid.HasValue)
+        if (parentGuid != Guid.Empty)
         {
-            await ReindexSiblingsAsync(parentGuid.Value);
+            await ReindexSiblingsAsync(parentGuid);
         }
 
         return Ok();
@@ -150,7 +150,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         {
             var currentTree = await SingleIncludeChild(rootId);
 
-            var rootNodeDto = nodes.FirstOrDefault(n => n.ParentGuid == null);
+            var rootNodeDto = nodes.FirstOrDefault(n => n.ParentGuid == Guid.Empty);
             if (rootNodeDto == null)
             {
                 throw new InvalidOperationException("Root node is missing in the provided nodes.");
@@ -219,7 +219,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
             Title = nodeDto.Title,
             Content = nodeDto.Content,
             GroupGuid = groupGuid,
-            ParentGuid = parentGuid,
+            ParentGuid = Guid.Empty,
             Order = nodeDto.Order,
             UserName = userName,
             Guid = Guid.NewGuid(),
@@ -277,7 +277,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
     private IQueryable<Pinecone> GetUserTopList(string userName)
         => DbContext.Pinecone
             .Where(x => x.UserName == userName)
-            .Where(x => x.ParentGuid == null);
+            .Where(x => x.ParentGuid == Guid.Empty);
 
     private async Task<Pinecone> LoadChildrenRecursively(Pinecone parent)
     {

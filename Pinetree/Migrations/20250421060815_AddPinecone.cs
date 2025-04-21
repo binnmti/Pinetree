@@ -61,7 +61,7 @@ namespace Pinetree.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Guid = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     GroupGuid = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ParentGuid = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ParentGuid = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Order = table.Column<int>(type: "int", nullable: false),
