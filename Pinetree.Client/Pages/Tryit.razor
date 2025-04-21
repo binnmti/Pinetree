@@ -18,18 +18,15 @@
 }
 
 @code {
-    [Parameter]
-    public string UserName { get; set; } = "";
 
-    [Parameter]
-    public Guid Guid { get; set; }
-
+    private Guid Guid { get; set; }
     private PinetreeView? Pinetree { get; set; }
     private int FileCount { get; set; }
 
     protected override void OnInitialized()
     {
-        Pinetree = new PinetreeView(default, "Untitled", "", null, default);
+        Guid = Guid.NewGuid();
+        Pinetree = new PinetreeView(Guid, "Untitled", "", null, Guid);
         FileCount = 1;
     }
 }
