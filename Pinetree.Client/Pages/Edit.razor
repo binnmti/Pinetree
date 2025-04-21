@@ -1,4 +1,4 @@
-﻿@page "/Edit/{id:long}"
+﻿@page "/Edit/{GuidString}"
 @attribute [Authorize]
 
 @using System.Net.Http
@@ -13,12 +13,14 @@
 
 @if (Pinetree != null)
 {
-    <Markdown Pinetree="@(Pinetree)" Id="@(Id)" IsTry=false IsProfessional=IsProfessional FileCount =@FileCount />
+    <Markdown Pinetree="@(Pinetree)" Guid="@(Guid)" IsTry=false IsProfessional=IsProfessional FileCount=@FileCount />
 }
 
 @code {
     [Parameter]
-    public long Id { get; set; }
+    public string GuidString { get; set; } = string.Empty;
+
+    private Guid Guid => Guid.TryParse(GuidString, out var guid) ? guid : Guid.Empty;
 
     private PinetreeView? Pinetree { get; set; }
     private int FileCount { get; set; }
@@ -44,7 +46,7 @@
             }
             var roleClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role);
             IsProfessional = Roles.IsProfessional(roleClaim?.Value ?? "");
-            var hit = await HttpClient.GetFromJsonAsync<Pinecone>($"/api/Pinecones/get-include-child/{Id}");
+            var hit = await HttpClient.GetFromJsonAsync<Pinecone>($"/api/Pinecones/get-include-child/{Guid}");
             if (hit == null)
             {
                 NavigationManager.NavigateTo("/");

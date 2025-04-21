@@ -1,3 +1,5 @@
+- Update Log
+- User Image List
 - Paid Membership
 - monaco-editor
 - Drag＆Drop
@@ -5,6 +7,8 @@
   - TreeView→Markdown
 - Multilingualization, or rather Japaneseization
 - Publish to the web
+- CI Test
+- check DeleteBehavior.Cascade
 
 # TODO
 - localhost

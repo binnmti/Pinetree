@@ -32,7 +32,7 @@
                             </div>
                         }
                         <div>
-                            <TreeView Pinetree="@Pinetree" Id="@Id" IsTry=@IsTry IsProfessional=IsProfessional OnChildEvent="SetCurrent" />
+                            <TreeView Pinetree="@Pinetree" Guid="@Guid" IsTry=@IsTry IsProfessional=IsProfessional OnChildEvent="SetCurrent" />
                         </div>
                     </div>
                 </div>
@@ -152,10 +152,10 @@
                     </div>
                 </div>
                 <div class="btn-group ms-auto" role="group" aria-label="Id actions">
-                    <button @onclick="CopyDocumentId" class="btn btn-sm btn-outline-secondary" title="@(_copyIconState ? "Copied!" : "Click to copy document ID")">
+                    <button @onclick="CopyDocumentId" class="btn btn-sm btn-outline-secondary" title="@(_copyIconState ? "Copied!" : $"Click to copy {Current.Guid}")">
                         <span class="d-flex align-items-center">
                             <i class="@(_copyIconState ? "bi bi-check-lg" : "bi bi-clipboard")" style="transition: all 0.3s"></i>
-                            <small class="ms-1">ID: @Current.Id</small>
+                            <small class="ms-1">ID: @($"{Current.Guid.ToString()[..8]}...")</small>
                         </span>
                     </button>
                     <i class="bi bi-question-circle ms-1 p-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" data-bs-custom-class="custom-tooltip"
@@ -187,7 +187,7 @@
 
 @code {
     [Parameter]
-    public long Id { get; set; }
+    public Guid Guid { get; set; }
 
     [Parameter]
     public PinetreeView Pinetree { get; set; } = PinetreeView.Nothing;
@@ -234,17 +234,12 @@
         IsSidebarOpen = !IsSidebarOpen;
     }
 
-    protected override void OnInitialized()
-    {
-        _jsInterop = new MarkdownJsInterop(JS);
-        base.OnInitialized();
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            SetCurrent(Id);
+            _jsInterop = new MarkdownJsInterop(JS);
+            SetCurrent(Guid);
             registration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
             LastSavedState = Pinetree.DeepClone();
             objRef = DotNetObjectReference.Create(this);
@@ -268,7 +263,7 @@
     [JSInvokable]
     public void HandleMarkdownLinkClick(string idString)
     {
-        if (long.TryParse(idString, out long id))
+        if (Guid.TryParse(idString, out var id))
         {
             SetCurrent(id);
         }
@@ -366,7 +361,7 @@
     {
         try
         {
-            await JS.CopyToClipboardAsync($"[{Current.Title}](//{Current.Id})");
+            await JS.CopyToClipboardAsync($"[{Current.Title}](//{Current.Guid})");
             _copyIconState = true;
             StateHasChanged();
 
@@ -410,7 +405,7 @@
 
             var request = new TreeUpdateRequest
                 {
-                    RootId = Pinetree.Id,
+                    RootId = Pinetree.Guid,
                     HasStructuralChanges = hasStructuralChanges,
                     Nodes = hasStructuralChanges
                         ? nodeDtos
@@ -443,19 +438,19 @@
     private List<PineconeDto> ConvertToPineconeDtos(PinetreeView tree)
     {
         var result = new List<PineconeDto>();
-        ConvertNodeRecursively(tree, null, result);
+        ConvertNodeRecursively(tree, Guid.Empty, result);
         return result;
     }
 
-    private void ConvertNodeRecursively(PinetreeView node, long? parentId, List<PineconeDto> result)
+    private void ConvertNodeRecursively(PinetreeView node, Guid parentGuid, List<PineconeDto> result)
     {
         var dto = new PineconeDto
             {
-                Id = node.Id,
+                Guid = node.Guid,
                 Title = node.Title,
                 Content = node.Content,
-                GroupId = node.GroupId,
-                ParentId = parentId,
+                GroupGuid = node.GroupGuid,
+                ParentGuid = parentGuid,
                 Order = GetNodeOrder(node)
             };
 
@@ -463,7 +458,7 @@
 
         for (int i = 0; i < node.Children.Count; i++)
         {
-            ConvertNodeRecursively(node.Children[i], node.Id, result);
+            ConvertNodeRecursively(node.Children[i], node.Guid, result);
         }
     }
 
@@ -479,21 +474,21 @@
         var changedNodes = new List<PineconeDto>();
         var previousNodeMap = IndexNodes(previous);
 
-        FindChangedNodesRecursive(current, null, previousNodeMap, changedNodes);
+        FindChangedNodesRecursive(current, Guid.Empty, previousNodeMap, changedNodes);
 
         return changedNodes;
     }
 
-    private Dictionary<long, (PinetreeView Node, int Order)> IndexNodes(PinetreeView tree)
+    private Dictionary<Guid, (PinetreeView Node, int Order)> IndexNodes(PinetreeView tree)
     {
-        var result = new Dictionary<long, (PinetreeView Node, int Order)>();
+        var result = new Dictionary<Guid, (PinetreeView Node, int Order)>();
         IndexNodesRecursive(tree, result);
         return result;
     }
 
-    private void IndexNodesRecursive(PinetreeView node, Dictionary<long, (PinetreeView Node, int Order)> nodeMap)
+    private void IndexNodesRecursive(PinetreeView node, Dictionary<Guid, (PinetreeView Node, int Order)> nodeMap)
     {
-        nodeMap[node.Id] = (node, GetNodeOrder(node));
+        nodeMap[node.Guid] = (node, GetNodeOrder(node));
 
         foreach (var child in node.Children)
         {
@@ -503,20 +498,20 @@
 
     private void FindChangedNodesRecursive(
         PinetreeView node,
-        long? parentId,
-        Dictionary<long, (PinetreeView Node, int Order)> previousNodeMap,
+        Guid parentGuid,
+        Dictionary<Guid, (PinetreeView Node, int Order)> previousNodeMap,
         List<PineconeDto> changedNodes)
     {
         int currentOrder = GetNodeOrder(node);
         bool isChanged = false;
 
-        if (previousNodeMap.TryGetValue(node.Id, out var previousInfo))
+        if (previousNodeMap.TryGetValue(node.Guid, out var previousInfo))
         {
             var (previousNode, previousOrder) = previousInfo;
 
             isChanged = node.Title != previousNode.Title ||
                         node.Content != previousNode.Content ||
-                        parentId != (previousNode.Parent?.Id) ||
+                        parentGuid != (previousNode.Parent?.Guid) ||
                         currentOrder != previousOrder;
         }
         else
@@ -528,18 +523,18 @@
         {
             changedNodes.Add(new PineconeDto
                 {
-                    Id = node.Id,
+                    Guid = node.Guid,
                     Title = node.Title,
                     Content = node.Content,
-                    GroupId = node.GroupId,
-                    ParentId = parentId,
+                    GroupGuid = node.GroupGuid,
+                    ParentGuid = parentGuid,
                     Order = currentOrder
                 });
         }
 
         for (int i = 0; i < node.Children.Count; i++)
         {
-            FindChangedNodesRecursive(node.Children[i], node.Id, previousNodeMap, changedNodes);
+            FindChangedNodesRecursive(node.Children[i], node.Guid, previousNodeMap, changedNodes);
         }
     }
 
@@ -560,14 +555,14 @@
         }
     }
 
-    private void SetCurrent(long id)
+    private void SetCurrent(Guid guid)
     {
         int fileCount = 0;
-        var hit = Pinetree.SetCurrentIncludeChild(id, ref fileCount, 1);
+        var hit = Pinetree.SetCurrentIncludeChild(guid, ref fileCount, 1);
         if (hit == null) return;
 
         Current = hit;
-        Id = id;
+        Guid = guid;
         FileCount = fileCount;
         Title = Current.Title;
         Content = Current.Content;
@@ -589,7 +584,7 @@
             var linkText = $"[{childTitle}](//{childId})";
             await _jsInterop.ReplaceSelectionAsync(TextAreaRef, linkText);
             Current.Content = await JS.GetTextAreaValueAsync();
-            SetCurrent(Id);
+            SetCurrent(Guid);
             StateHasChanged();
         }
         catch (Exception ex)

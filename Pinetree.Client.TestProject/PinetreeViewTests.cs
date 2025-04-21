@@ -7,19 +7,21 @@ public class PinetreeViewTests
 {
     private static PinetreeView CreateTestHierarchy()
     {
+        var guid = Guid.NewGuid();
+
         // Root
-        var root = new PinetreeView(1, "Root", "Root Content", null, 1);
+        var root = new PinetreeView(guid, "Root", "Root Content", null, guid);
 
         // Parent
-        var parent = new PinetreeView(2, "Parent", "Parent Content", root, 1);
+        var parent = new PinetreeView(Guid.NewGuid(), "Parent", "Parent Content", root, guid);
         root.Children.Add(parent);
 
         // Child 1
-        var child1 = new PinetreeView(3, "Child 1", "Child 1 Content", parent, 1);
+        var child1 = new PinetreeView(Guid.NewGuid(), "Child 1", "Child 1 Content", parent, guid);
         parent.Children.Add(child1);
 
         // Child 2
-        var child2 = new PinetreeView(4, "Child 2", "Child 2 Content", parent, 1);
+        var child2 = new PinetreeView(Guid.NewGuid(), "Child 2", "Child 2 Content", parent, guid);
         parent.Children.Add(child2);
 
         return root;
@@ -117,7 +119,7 @@ public class PinetreeViewTests
         var clone = root.DeepClone();
 
         // Assert
-        Assert.AreEqual(root.Id, clone.Id);
+        Assert.AreEqual(root.Guid, clone.Guid);
         Assert.AreEqual(root.Title, clone.Title);
         Assert.AreEqual(root.Content, clone.Content);
         Assert.AreEqual(root.Children.Count, clone.Children.Count);
@@ -135,8 +137,8 @@ public class PinetreeViewTests
     {
         // Arrange
         var root1 = CreateTestHierarchy();
-        var root2 = CreateTestHierarchy();
-        var root3 = CreateTestHierarchy();
+        var root2 = root1.DeepClone();
+        var root3 = root1.DeepClone();
         root3.Children[0].Title = "Different Title";
 
         // Assert

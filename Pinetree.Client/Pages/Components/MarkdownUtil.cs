@@ -22,23 +22,23 @@ internal static class MarkdownUtil
     }
 
 
-    internal static async Task<long> AddChildAsync(PinetreeView current, string title, string content, IJSRuntime js, HttpClient httpClient, bool isTry, bool isProfessional)
+    internal static async Task<Guid> AddChildAsync(PinetreeView current, string title, string content, IJSRuntime js, HttpClient httpClient, bool isTry, bool isProfessional)
     {
         if (await js.CheckDepthAsync(current, isProfessional))
         {
-            return -1;
+            return default;
         }
         if (await js.CheckFileCountAsync(current, isProfessional))
         {
-            return -1;
+            return default;
         }
 
         PinetreeView pinetree;
         var uniqueId = current.GetUniqueId();
-        pinetree = new PinetreeView(uniqueId, title, content, current, -1);
+        pinetree = new PinetreeView(uniqueId, title, content, current, default);
         // If you don't save it, the ID won't be decided.
         current.IsExpanded = true;
         current.Children.Add(pinetree);
-        return pinetree.Id;
+        return pinetree.Guid;
     }
 }

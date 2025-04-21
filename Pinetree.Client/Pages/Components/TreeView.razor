@@ -72,7 +72,7 @@
             {
                 @foreach (var tree in Pinetree.Children)
                 {
-                    <TreeView Pinetree="@(tree)" Id="@(Id)" IsTry=@IsTry IsProfessional=@IsProfessional
+                    <TreeView Pinetree="@(tree)" Guid="@(Guid)" IsTry=@IsTry IsProfessional=@IsProfessional
                               OnChildEvent="OnChildEvent" RootNode="RootNode ?? Pinetree" IsRoot="false" />
                 }
             }
@@ -82,7 +82,7 @@
 
 @code {
     [Parameter]
-    public long Id { get; set; }
+    public Guid Guid { get; set; }
 
     [Parameter]
     public required PinetreeView Pinetree { get; set; }
@@ -91,7 +91,7 @@
     public bool IsTry { get; set; }
 
     [Parameter]
-    public EventCallback<long> OnChildEvent { get; set; }
+    public EventCallback<Guid> OnChildEvent { get; set; }
 
     [Parameter]
     public bool IsProfessional { get; set; }
@@ -125,7 +125,7 @@
 
     private async Task ActivePinetree()
     {
-        await OnChildEvent.InvokeAsync(Pinetree.Id);
+        await OnChildEvent.InvokeAsync(Pinetree.Guid);
         StateHasChanged();
     }
 
@@ -158,7 +158,7 @@
 
         var idToNavigate = item.DeleteIncludeChild();
 
-        if (idToNavigate != -1)
+        if (idToNavigate != Guid.Empty)
         {
             await OnChildEvent.InvokeAsync(idToNavigate);
         }
@@ -219,7 +219,7 @@
 
         if (currentItem.MoveItemUp())
         {
-            await OnChildEvent.InvokeAsync(currentItem.Id);
+            await OnChildEvent.InvokeAsync(currentItem.Guid);
             StateHasChanged();
         }
     }
@@ -233,7 +233,7 @@
 
         if (currentItem.MoveItemDown())
         {
-            await OnChildEvent.InvokeAsync(currentItem.Id);
+            await OnChildEvent.InvokeAsync(currentItem.Guid);
             StateHasChanged();
         }
     }
@@ -251,7 +251,7 @@
 
         if (currentItem.MoveItemRight())
         {
-            await OnChildEvent.InvokeAsync(currentItem.Id);
+            await OnChildEvent.InvokeAsync(currentItem.Guid);
             StateHasChanged();
         }
     }
@@ -269,7 +269,7 @@
 
         if (currentItem.MoveItemLeft())
         {
-            await OnChildEvent.InvokeAsync(currentItem.Id);
+            await OnChildEvent.InvokeAsync(currentItem.Guid);
             StateHasChanged();
         }
     }

@@ -12,8 +12,8 @@ using Pinetree.Data;
 namespace Pinetree.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250416122426_AddOrder")]
-    partial class AddOrder
+    [Migration("20250421060815_AddPinecone")]
+    partial class AddPinecone
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -250,23 +250,17 @@ namespace Pinetree.Migrations
                     b.Property<DateTime>("Create")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("Delete")
-                        .HasColumnType("datetime2");
-
-                    b.Property<long>("GroupId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("GroupGuid")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("Guid")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<bool>("IsDelete")
-                        .HasColumnType("bit");
-
                     b.Property<int>("Order")
                         .HasColumnType("int");
 
-                    b.Property<long?>("ParentId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("ParentGuid")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -283,7 +277,10 @@ namespace Pinetree.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentId");
+                    b.HasIndex("Guid")
+                        .IsUnique();
+
+                    b.HasIndex("ParentGuid");
 
                     b.ToTable("Pinecone");
                 });
@@ -343,7 +340,10 @@ namespace Pinetree.Migrations
                 {
                     b.HasOne("Pinetree.Shared.Model.Pinecone", "Parent")
                         .WithMany("Children")
-                        .HasForeignKey("ParentId");
+                        .HasForeignKey("ParentGuid")
+                        .HasPrincipalKey("Guid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Parent");
                 });

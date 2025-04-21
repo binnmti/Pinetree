@@ -14,22 +14,19 @@
 
 @if (Pinetree != null)
 {
-    <Markdown Id="@(Id)" Pinetree="@(Pinetree)" IsTry="@(true)" IsProfessional=false FileCount=@FileCount />
+    <Markdown Guid="@(Guid)" Pinetree="@(Pinetree)" IsTry="@(true)" IsProfessional=false FileCount=@FileCount />
 }
 
 @code {
-    [Parameter]
-    public string UserName { get; set; } = "";
 
-    [Parameter]
-    public long Id { get; set; }
-
+    private Guid Guid { get; set; }
     private PinetreeView? Pinetree { get; set; }
     private int FileCount { get; set; }
 
     protected override void OnInitialized()
     {
-        Pinetree = new PinetreeView(0, "Untitled", "", null, -1);
+        Guid = Guid.NewGuid();
+        Pinetree = new PinetreeView(Guid, "Untitled", "", null, Guid);
         FileCount = 1;
     }
 }
