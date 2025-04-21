@@ -38,14 +38,14 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
 
         var title = Untitled;
         var counter = 1;
-        while (await DbContext.Pinecone.AnyAsync(p => p.UserName == userName && p.Title == title && p.ParentGuid == Guid.Empty))
+        while (await DbContext.Pinecone.AnyAsync(p => p.UserName == userName && p.Title == title && p.ParentGuid == null))
         {
             title = $"{Untitled} {counter}";
             counter++;
         }
 
         var maxOrder = (await DbContext.Pinecone
-            .Where(p => p.UserName == userName && p.ParentGuid == Guid.Empty)
+            .Where(p => p.UserName == userName && p.ParentGuid == null)
             .MaxAsync(p => (int?)p.Order)) ?? -1;
         maxOrder += 1;
 
@@ -55,7 +55,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
             Title = title,
             Content = "",
             GroupGuid = guid,
-            ParentGuid = Guid.Empty,
+            ParentGuid = null,
             Order = maxOrder,
             UserName = userName,
             Guid = guid,
@@ -80,9 +80,9 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         await RemoveChildrenFromDatabaseAsync(pinecone);
         DbContext.Pinecone.Remove(pinecone);
         await DbContext.SaveChangesAsync();
-        if (parentGuid != Guid.Empty)
+        if (parentGuid != null)
         {
-            await ReindexSiblingsAsync(parentGuid);
+            await ReindexSiblingsAsync((Guid)parentGuid);
         }
 
         return Ok();
@@ -108,11 +108,6 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
     {
         var userName = User.Identity?.Name ?? "";
         var pinecone = await GetPineconeAndVerifyOwnership(guid, userName);
-
-        if (pinecone.GroupGuid == Guid.Empty)
-        {
-            return await LoadChildrenRecursively(pinecone);
-        }
 
         try
         {
@@ -150,12 +145,8 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         {
             var currentTree = await SingleIncludeChild(rootId);
 
-            var rootNodeDto = nodes.FirstOrDefault(n => n.ParentGuid == Guid.Empty);
-            if (rootNodeDto == null)
-            {
-                throw new InvalidOperationException("Root node is missing in the provided nodes.");
-            }
-
+            var rootNodeDto = nodes.FirstOrDefault(n => n.ParentGuid == null)
+                ?? throw new InvalidOperationException("Root node is missing in the provided nodes.");
             if (currentTree.UserName != userName)
             {
                 throw new UnauthorizedAccessException("You do not own this Pinecone.");
@@ -219,7 +210,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
             Title = nodeDto.Title,
             Content = nodeDto.Content,
             GroupGuid = groupGuid,
-            ParentGuid = Guid.Empty,
+            ParentGuid = parentGuid,
             Order = nodeDto.Order,
             UserName = userName,
             Guid = Guid.NewGuid(),
@@ -277,7 +268,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
     private IQueryable<Pinecone> GetUserTopList(string userName)
         => DbContext.Pinecone
             .Where(x => x.UserName == userName)
-            .Where(x => x.ParentGuid == Guid.Empty);
+            .Where(x => x.ParentGuid == null);
 
     private async Task<Pinecone> LoadChildrenRecursively(Pinecone parent)
     {

@@ -438,11 +438,11 @@
     private List<PineconeDto> ConvertToPineconeDtos(PinetreeView tree)
     {
         var result = new List<PineconeDto>();
-        ConvertNodeRecursively(tree, Guid.Empty, result);
+        ConvertNodeRecursively(tree, null, result);
         return result;
     }
 
-    private void ConvertNodeRecursively(PinetreeView node, Guid parentGuid, List<PineconeDto> result)
+    private void ConvertNodeRecursively(PinetreeView node, Guid? parentGuid, List<PineconeDto> result)
     {
         var dto = new PineconeDto
             {

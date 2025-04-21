@@ -11,9 +11,8 @@ public class Pinecone
     public long Id { get; set; }
     public required Guid Guid { get; set; }
     public required Guid GroupGuid { get; set; }
-    // DB的にここはNULLに出来た方が便利なのでlong?を許容することにした
-    [ForeignKey("Parent")]
-    public required Guid ParentGuid { get; set; }
+    // From a database perspective, it is more convenient to set this to NULL, so we decided to allow long?    [ForeignKey("Parent")]
+    public required Guid? ParentGuid { get; set; }
     [MaxLength(200)]
     public required string Title { get; set; }
     public required string Content { get; set; }
@@ -33,7 +32,7 @@ public class PineconeDto
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public Guid GroupGuid { get; set; }
-    public Guid ParentGuid { get; set; }
+    public Guid? ParentGuid { get; set; }
     public int Order { get; set; }
 }
 
