@@ -11,8 +11,8 @@ public static class TreeStructureDetector
         if (currentCount != previousCount)
             return true;
 
-        var currentIds = new HashSet<long>();
-        var previousIds = new HashSet<long>();
+        var currentIds = new HashSet<Guid>();
+        var previousIds = new HashSet<Guid>();
         CollectIds(current, currentIds);
         CollectIds(previous, previousIds);
 
@@ -32,9 +32,9 @@ public static class TreeStructureDetector
         return count;
     }
 
-    private static void CollectIds(PinetreeView node, HashSet<long> ids)
+    private static void CollectIds(PinetreeView node, HashSet<Guid> ids)
     {
-        ids.Add(node.Id);
+        ids.Add(node.Guid);
         foreach (var child in node.Children)
         {
             CollectIds(child, ids);
@@ -43,8 +43,8 @@ public static class TreeStructureDetector
 
     private static bool HasParentChildRelationshipChanged(PinetreeView current, PinetreeView previous)
     {
-        var currentParentMap = new Dictionary<long, long?>();
-        var previousParentMap = new Dictionary<long, long?>();
+        var currentParentMap = new Dictionary<Guid, Guid?>();
+        var previousParentMap = new Dictionary<Guid, Guid?>();
 
         BuildParentMap(current, currentParentMap, null);
         BuildParentMap(previous, previousParentMap, null);
@@ -61,12 +61,12 @@ public static class TreeStructureDetector
         return HasSiblingOrderChanged(current, previous);
     }
 
-    private static void BuildParentMap(PinetreeView node, Dictionary<long, long?> parentMap, long? parentId)
+    private static void BuildParentMap(PinetreeView node, Dictionary<Guid, Guid?> parentMap, Guid? parentId)
     {
-        parentMap[node.Id] = parentId;
+        parentMap[node.Guid] = parentId;
         foreach (var child in node.Children)
         {
-            BuildParentMap(child, parentMap, node.Id);
+            BuildParentMap(child, parentMap, node.Guid);
         }
     }
 
@@ -77,7 +77,7 @@ public static class TreeStructureDetector
 
         for (int i = 0; i < current.Children.Count; i++)
         {
-            if (current.Children[i].Id != previous.Children[i].Id)
+            if (current.Children[i].Guid != previous.Children[i].Guid)
                 return true;
         }
 

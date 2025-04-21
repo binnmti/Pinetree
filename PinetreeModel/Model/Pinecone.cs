@@ -1,24 +1,23 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Pinetree.Shared.Model;
 
+[Index(nameof(Guid), IsUnique = true)] // Move the Index attribute to the class level
 public class Pinecone
 {
     [Key]
     public long Id { get; set; }
+    public required Guid Guid { get; set; }
+    public required Guid GroupGuid { get; set; }
+    // DB的にここはNULLに出来た方が便利なのでlong?を許容することにした
+    [ForeignKey("Parent")]
+    public required Guid? ParentGuid { get; set; }
     [MaxLength(200)]
     public required string Title { get; set; }
     public required string Content { get; set; }
-    public required long GroupId { get; set; }
-    public required bool IsDelete { get; set; }
-
-    // DB的にここはNULLに出来た方が便利なのでlong?を許容することにした
-    // そもそも最親はParentがない。最初の１個を作る時にダミーデータが必要になるが制約によりエラーになる
-    public required long? ParentId { get; set; }
-
     public required int Order { get; set; }
-
-    public required Guid Guid { get; set; }
 
     [MaxLength(256)]
     public required string UserName { get; set; }
@@ -27,21 +26,20 @@ public class Pinecone
 
     public required DateTime Create { get; set; } = DateTime.UtcNow;
     public required DateTime Update { get; set; } = DateTime.UtcNow;
-    public required DateTime Delete { get; set; } = DateTime.UtcNow;
 }
 public class PineconeDto
 {
-    public long Id { get; set; }
+    public Guid Guid { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
-    public long GroupId { get; set; }
-    public long? ParentId { get; set; }
+    public Guid GroupGuid { get; set; }
+    public Guid? ParentGuid { get; set; }
     public int Order { get; set; }
 }
 
 public class TreeUpdateRequest
 {
-    public long RootId { get; set; }
+    public Guid RootId { get; set; }
     public bool HasStructuralChanges { get; set; }
     public List<PineconeDto> Nodes { get; set; } = [];
 }

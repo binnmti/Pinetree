@@ -1,12 +1,12 @@
 ﻿namespace Pinetree.Client.VModel;
 
-public class PinetreeView(long id, string title, string content, PinetreeView? parent, long groupId) : IEquatable<PinetreeView>
+public class PinetreeView(Guid guid, string title, string content, PinetreeView? parent, Guid groupId) : IEquatable<PinetreeView>
 {
-    public long Id { get; } = id;
+    public Guid Guid { get; } = guid;
     public string Title { get; set; } = title;
     public string Content { get; set; } = content;
     public PinetreeView? Parent { get; set; } = parent;
-    public long GroupId { get; } = groupId;
+    public Guid GroupGuid { get; } = groupId;
     public bool IsCurrent { get; set; }
     public bool IsExpanded { get; set; }
     public List<PinetreeView> Children { get; } = [];
@@ -15,7 +15,7 @@ public class PinetreeView(long id, string title, string content, PinetreeView? p
     public bool CanUndo => UndoStack.Count != 0;
     public bool CanRedo => RedoStack.Count != 0;
 
-    public static PinetreeView Nothing => new(0, "", "", null, 0);
+    public static PinetreeView Nothing => new(default, "", "", null, default);
 
     public void SaveContentToHistory(string previousContent)
     {
@@ -45,12 +45,12 @@ public class PinetreeView(long id, string title, string content, PinetreeView? p
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
-        if (Title != other.Title || Content != other.Content || Id != other.Id || GroupId != other.GroupId)
+        if (Title != other.Title || Content != other.Content || Guid != other.Guid || GroupGuid != other.GroupGuid)
         {
             return false;
         }
         bool parentEqual = (Parent is null && other.Parent is null) ||
-                           (Parent is not null && other.Parent is not null && Parent.Id == other.Parent.Id);
+                           (Parent is not null && other.Parent is not null && Parent.Guid == other.Parent.Guid);
         if (!parentEqual) return false;
         if (Children.Count != other.Children.Count) return false;
         for (int i = 0; i < Children.Count; i++)
@@ -70,12 +70,12 @@ public class PinetreeView(long id, string title, string content, PinetreeView? p
         var hash = new HashCode();
         hash.Add(Title);
         hash.Add(Content);
-        hash.Add(Parent?.Id ?? 0);
-        hash.Add(GroupId);
-        hash.Add(Id);
+        hash.Add(Parent?.Guid ?? default);
+        hash.Add(GroupGuid);
+        hash.Add(Guid);
         foreach (var child in Children)
         {
-            hash.Add(child.Id);
+            hash.Add(child.Guid);
         }
         return hash.ToHashCode();
     }
@@ -91,7 +91,7 @@ public class PinetreeView(long id, string title, string content, PinetreeView? p
 
     public PinetreeView DeepClone()
     {
-        var clone = new PinetreeView(Id, Title, Content, Parent, GroupId)
+        var clone = new PinetreeView(Guid, Title, Content, Parent, GroupGuid)
         {
             IsCurrent = IsCurrent,
             IsExpanded = IsExpanded

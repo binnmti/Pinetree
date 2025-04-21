@@ -5,18 +5,18 @@ public static class PinetreeUpdater
     public static bool IsEqual(this PinetreeView src, PinetreeView dst)
         => IsEqual(src.GetRoot(), dst.GetRoot());
 
-    public static long GetUniqueId(this PinetreeView pinetree)
+    public static Guid GetUniqueId(this PinetreeView pinetree)
     {
         var root = pinetree.GetRoot();
-        var usedIds = new List<long>();
+        var usedIds = new List<Guid>();
         CollectUsedIds(root, usedIds);
         var orderedEnumerable = usedIds.OrderBy(id => id);
-        return orderedEnumerable.Last() + 1;
+        return Guid.NewGuid();
     }
 
-    private static void CollectUsedIds(PinetreeView node, List<long> usedIds)
+    private static void CollectUsedIds(PinetreeView node, List<Guid> usedIds)
     {
-        usedIds.Add(node.Id);
+        usedIds.Add(node.Guid);
         foreach (var child in node.Children)
         {
             CollectUsedIds(child, usedIds);
@@ -42,10 +42,10 @@ public static class PinetreeUpdater
         return depth;
     }
 
-    public static PinetreeView? SetCurrentIncludeChild(this PinetreeView pineTree, long id, ref int fileCount, int currentDepth)
+    public static PinetreeView? SetCurrentIncludeChild(this PinetreeView pineTree, Guid guid, ref int fileCount, int currentDepth)
     {
         PinetreeView? result = null;
-        pineTree.IsCurrent = pineTree.Id == id;
+        pineTree.IsCurrent = pineTree.Guid == guid;
         if (pineTree.IsCurrent)
         {
             result = pineTree;
@@ -54,7 +54,7 @@ public static class PinetreeUpdater
         fileCount++;
         foreach (var child in pineTree.Children)
         {
-            var childResult = child.SetCurrentIncludeChild(id, ref fileCount, currentDepth + 1);
+            var childResult = child.SetCurrentIncludeChild(guid, ref fileCount, currentDepth + 1);
             if (childResult != null)
             {
                 result = childResult;
@@ -64,11 +64,11 @@ public static class PinetreeUpdater
         return result;
     }
 
-    public static long DeleteIncludeChild(this PinetreeView tree)
+    public static Guid DeleteIncludeChild(this PinetreeView tree)
     {
         DeleteChildren(tree);
         tree.Parent?.Children.Remove(tree);
-        return tree.Parent?.Id ?? -1;
+        return tree.Parent?.Guid ?? default;
     }
 
     private static PinetreeView GetRoot(this PinetreeView pineTree)

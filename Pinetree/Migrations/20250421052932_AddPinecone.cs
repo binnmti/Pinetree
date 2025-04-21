@@ -30,6 +30,9 @@ namespace Pinetree.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    StripeCustomerId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    StripeSubscriptionId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SubscriptionStatus = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -56,24 +59,26 @@ namespace Pinetree.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    Guid = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    GroupGuid = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ParentGuid = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    GroupId = table.Column<long>(type: "bigint", nullable: false),
-                    IsDelete = table.Column<bool>(type: "bit", nullable: false),
-                    ParentId = table.Column<long>(type: "bigint", nullable: true),
+                    Order = table.Column<int>(type: "int", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
                     Create = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Update = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Delete = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Update = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Pinecone", x => x.Id);
+                    table.UniqueConstraint("AK_Pinecone_Guid", x => x.Guid);
                     table.ForeignKey(
-                        name: "FK_Pinecone_Pinecone_ParentId",
-                        column: x => x.ParentId,
+                        name: "FK_Pinecone_Pinecone_ParentGuid",
+                        column: x => x.ParentGuid,
                         principalTable: "Pinecone",
-                        principalColumn: "Id");
+                        principalColumn: "Guid",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -222,9 +227,15 @@ namespace Pinetree.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Pinecone_ParentId",
+                name: "IX_Pinecone_Guid",
                 table: "Pinecone",
-                column: "ParentId");
+                column: "Guid",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Pinecone_ParentGuid",
+                table: "Pinecone",
+                column: "ParentGuid");
         }
 
         /// <inheritdoc />
