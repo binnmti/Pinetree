@@ -238,7 +238,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
     {
         foreach (var node in nodes)
         {
-            var dbNode = await DbContext.Pinecone.FindAsync(node.Guid);
+            var dbNode = await DbContext.Pinecone.SingleOrDefaultAsync(p => p.Guid == node.Guid);
             if (dbNode == null || dbNode.UserName != userName)
             {
                 continue;
