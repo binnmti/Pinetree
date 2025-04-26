@@ -167,9 +167,16 @@
                             @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
                         <div class="panel-content-wrapper">
                             <div class="panel-content">
+@*                                 <MonacoEditor @ref="editor"
+                                              EditorId="my-editor"
+                                              Value="@Content"
+                                              OnChange="@OnInputChange" />
+ *@
+
+
                                 <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize"
                                           style="width:100%; height:99%; padding-bottom: 50vh; box-sizing: border-box;"
-                                          @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
+                                           placeholder="Write your markdown here..."></textarea>
                             </div>
                             <div class="panel-footer">
                                 <div class="counter">@Content.Length characters</div>
@@ -196,6 +203,7 @@
         </div>
     </div>
 </div>
+<script src="Pages/Components/MonacoEditor.razor.js"></script>
 
 @code {
     [Parameter]
@@ -240,6 +248,7 @@
     private bool IsSidebarOpen { get; set; } = true;
     private bool CanUndo => Current.CanUndo;
     private bool CanRedo => Current.CanRedo;
+    private MonacoEditor? editor;
 
     private void ToggleSidebar()
     {
@@ -250,13 +259,13 @@
     {
         if (firstRender)
         {
-            _jsInterop = new MarkdownJsInterop(JS);
+            // _jsInterop = new MarkdownJsInterop(JS);
             SetCurrent(Guid);
             registration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
             LastSavedState = Pinetree.DeepClone();
             objRef = DotNetObjectReference.Create(this);
-            await _jsInterop.SetupAllEventListenersAsync(MarkdownContainer, TextAreaRef, objRef);
-            await _jsInterop.ClearAllImagesFromIndexedDB();
+            // await _jsInterop.SetupAllEventListenersAsync(MarkdownContainer, TextAreaRef, objRef);
+            // await _jsInterop.ClearAllImagesFromIndexedDB();
 
             await JS.InvokeVoidAsync("initResizers");
         }
@@ -267,11 +276,11 @@
         objRef?.Dispose();
         registration?.Dispose();
         _resetIconTimer?.Dispose();
-        if (_jsInterop != null)
-        {
-            await _jsInterop.ClearAllImagesFromIndexedDB();
-            await _jsInterop.DisposeAsync();
-        }
+        // if (_jsInterop != null)
+        // {
+        //     await _jsInterop.ClearAllImagesFromIndexedDB();
+        //     await _jsInterop.DisposeAsync();
+        // }
     }
 
     [JSInvokable]
@@ -346,10 +355,10 @@
         StateHasChanged();
     }
 
-    private async Task OnInputChange(ChangeEventArgs e)
+    private async Task OnInputChange(string newContent)
     {
         var previousContent = Content;
-        var content = e.Value?.ToString() ?? "";
+        var content = newContent;
         if (await JS.CheckCharacterAsync(content, IsProfessional))
         {
             var maxCharacter = LimitCheckService.GetMaxCharacter(IsProfessional);
@@ -367,6 +376,28 @@
         Current.Content = Content;
         StateHasChanged();
     }
+
+    // private async Task OnInputChange(ChangeEventArgs e)
+    // {
+    //     var previousContent = Content;
+    //     var content = e.Value?.ToString() ?? "";
+    //     if (await JS.CheckCharacterAsync(content, IsProfessional))
+    //     {
+    //         var maxCharacter = LimitCheckService.GetMaxCharacter(IsProfessional);
+    //         Content = content[0..maxCharacter];
+    //     }
+    //     else
+    //     {
+    //         Content = content;
+    //     }
+    //     if (previousContent != Content)
+    //     {
+    //         Current.SaveContentToHistory(previousContent);
+    //     }
+    //     MarkdownText = MarkdownService.ToHtml(Content);
+    //     Current.Content = Content;
+    //     StateHasChanged();
+    // }
 
     private void OnFileListClick()
     {
@@ -611,19 +642,36 @@
 
     private async Task FormatText(string prefix, string suffix)
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
-        if (selection.Text.Length > 0)
+        // テキストエリアの代わりにMonacoエディタを使用する場合の処理
+        if (editor != null)
         {
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{selection.Text}{suffix}");
+            // MonacoEditorの選択範囲とテキスト操作をJavaScriptで実行
+            await JS.InvokeVoidAsync("monacoInterop.formatText", editor.EditorId, prefix, suffix);
+
+            // カーソル位置を設定
+            await JS.InvokeVoidAsync("monacoInterop.setCaretPosition", editor.EditorId, prefix.Length);
+
+            // エディタの最新の内容を取得して更新
+            var content = await JS.InvokeAsync<string>("monacoInterop.getValue", editor.EditorId);
+            UpdateContent(content);
         }
         else
         {
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{suffix}");
+            // 従来のテキストエリア操作
+            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+            if (selection.Text.Length > 0)
+            {
+                await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{selection.Text}{suffix}");
+            }
+            else
+            {
+                await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{suffix}");
+            }
+            int start = selection.Start;
+            await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + prefix.Length, start + prefix.Length);
+            var content = await JS.GetTextAreaValueAsync();
+            UpdateContent(content);
         }
-        int start = selection.Start;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + prefix.Length, start + prefix.Length);
-        var content = await JS.GetTextAreaValueAsync();
-        UpdateContent(content);
     }
 
     private async Task InsertList(string prefix)

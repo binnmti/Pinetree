@@ -1,0 +1,46 @@
+﻿@page "/monaco-test"
+@rendermode InteractiveAuto
+
+
+<h3>Monaco Editor Test</h3>
+
+<div class="row mb-3">
+    <div class="col">
+        <button class="btn btn-primary" @onclick="SaveContent">保存</button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col" style="width:800px; height:800px;">
+        <MonacoEditor @ref="editor"
+                      EditorId="my-editor"
+                      Value="@editorContent"
+                      OnChange="@HandleEditorChange" />
+    </div>
+</div>
+
+
+@code {
+    private MonacoEditor? editor;
+    private string editorContent = "// ここにテキストを入力してください\n\nこれはプレーンテキストエディタのテストです。";
+
+    private void HandleEditorChange(string newContent)
+    {
+        editorContent = newContent;
+        Console.WriteLine($"Content changed: {editorContent.Length} characters");
+    }
+
+    private async Task SaveContent()
+    {
+        await Task.Delay(100); // ダミー処理
+        Console.WriteLine("Content saved!");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // if (firstRender && editor != null)
+        // {
+        //     await editor.FocusAsync();
+        // }
+    }
+}
