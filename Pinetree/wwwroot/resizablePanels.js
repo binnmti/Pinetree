@@ -13,6 +13,7 @@
     
     if (!resizer2 || !panel2) {
         console.error("Required elements not found for resizer2");
+        return;
     }
     
     function setupResizer(resizer, targetPanel, minPercent, maxPercent) {

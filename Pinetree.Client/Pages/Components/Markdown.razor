@@ -324,7 +324,6 @@
         ViewMode = mode;
         StateHasChanged();
 
-        await Task.Delay(10);
         await JS.InvokeVoidAsync("initResizers");
     }
 
