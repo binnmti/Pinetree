@@ -13,7 +13,7 @@
                 automaticLayout: true,
                 minimap: { enabled: true }
             });
-            
+
             // エディタのインスタンスを保存
             monacoInterop.editors[editorId] = {
                 instance: editor,

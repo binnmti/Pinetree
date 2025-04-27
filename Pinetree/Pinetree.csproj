@@ -7,6 +7,14 @@
     <UserSecretsId>aspnet-Pinetree-0259e929-ab8f-4e3d-b3a5-551225d37215</UserSecretsId>
     <ApplicationInsightsResourceId>/subscriptions/6ffdd37c-9b89-4f4c-889e-56017146b636/resourcegroups/Pinetree/providers/microsoft.insights/components/Pinetree</ApplicationInsightsResourceId>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\MonacoEditor.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\MonacoEditor.js" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Communication.Email" Version="1.0.1" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.24.0" />
