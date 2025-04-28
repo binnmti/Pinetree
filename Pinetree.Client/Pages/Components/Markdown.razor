@@ -639,38 +639,28 @@
         }
     }
 
+    public class SelectionRange
+    {
+        public string Text { get; set; } = "";
+        public int Start { get; set; }
+        public int End { get; set; }
+    }
+
+/**/
     private async Task FormatText(string prefix, string suffix)
     {
-        // テキストエリアの代わりにMonacoエディタを使用する場合の処理
-        if (editor != null)
+        var selection = await JS.InvokeAsync<SelectionRange>("monacoInterop.getTextAreaSelection", editor.EditorId);
+        if (selection.Text.Length > 0)
         {
-            // MonacoEditorの選択範囲とテキスト操作をJavaScriptで実行
-            await JS.InvokeVoidAsync("monacoInterop.formatText", editor.EditorId, prefix, suffix);
-
-            // カーソル位置を設定
-            await JS.InvokeVoidAsync("monacoInterop.setCaretPosition", editor.EditorId, prefix.Length);
-
-            // エディタの最新の内容を取得して更新
-            var content = await JS.InvokeAsync<string>("monacoInterop.getValue", editor.EditorId);
-            UpdateContent(content);
+            await JS.InvokeVoidAsync("monacoInterop.replaceTextAreaSelection", editor.EditorId, $"{prefix}{selection.Text}{suffix}");
         }
         else
         {
-            // 従来のテキストエリア操作
-            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
-            if (selection.Text.Length > 0)
-            {
-                await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{selection.Text}{suffix}");
-            }
-            else
-            {
-                await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{suffix}");
-            }
-            int start = selection.Start;
-            await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + prefix.Length, start + prefix.Length);
-            var content = await JS.GetTextAreaValueAsync();
-            UpdateContent(content);
+            await JS.InvokeVoidAsync("monacoInterop.replaceTextAreaSelection", editor.EditorId, $"{prefix}{suffix}");
         }
+        await JS.InvokeVoidAsync("monacoInterop.setCaretPosition", editor.EditorId, selection.Start + prefix.Length);
+        var content = await JS.InvokeAsync<string>("monacoInterop.getValue", editor.EditorId);
+        UpdateContent(content);
     }
 
     private async Task InsertList(string prefix)
