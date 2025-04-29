@@ -23,6 +23,9 @@ jobs:
       uses: azure/login@v2
       with:
         creds: ${{ secrets.Pinetree_SPN }}
+    - name: Create terraform.tfvars from JSON
+      run: |
+        echo '${{ secrets.TERRAFORM_VARS }}' | jq -r 'to_entries | .[] | "\(.key) = \"\(.value)\""' > ${{ env.TF_WORKING_DIR }}/terraform.tfvars
     - name: Terraform Init
       run: terraform init
       working-directory: ${{ env.TF_WORKING_DIR }}
