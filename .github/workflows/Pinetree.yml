@@ -30,8 +30,11 @@ jobs:
       run: terraform validate
       working-directory: ${{ env.TF_WORKING_DIR }}
     - name: Terraform Plan
-      run: terraform plan
+      run: terraform plan -detailed-exitcode -input=false -parallelism=30 -out=tfplan
       working-directory: ${{ env.TF_WORKING_DIR }}
+      timeout-minutes: 15
+      env:
+        TF_LOG: INFO
     - name: Terraform Apply
       run: terraform apply -auto-approve
       working-directory: ${{ env.TF_WORKING_DIR }}
