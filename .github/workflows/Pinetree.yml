@@ -2,7 +2,7 @@ name: Pinetree Deploy
 on:
   push:
     branches:
-    - main
+    - terraform
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
@@ -85,7 +85,7 @@ jobs:
         cd Pinetree
         dotnet ef database update --configuration ${{ env.CONFIGURATION }} --verbose
       env:
-        ConnectionStrings__DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION }}
+        ConnectionStrings__DefaultConnection: ${{ secrets.STAGING_DB_CONNECTION }}
         TypeScriptCompileBlocked: true
     - name: Remove IP from Azure SQL firewall
       if: always()
