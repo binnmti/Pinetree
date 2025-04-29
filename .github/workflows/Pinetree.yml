@@ -5,15 +5,40 @@ on:
     - main
 
 env:
-  AZURE_WEBAPP_NAME: Pinetree
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 9.0.x
-  WORKING_DIRECTORY: Pinetree
+  TF_WORKING_DIR: terraform-pinetree/environments/staging
 
 jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.5.0
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.Pinetree_SPN }}
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ${{ env.TF_WORKING_DIR }}
+    - name: Terraform Validate
+      run: terraform validate
+      working-directory: ${{ env.TF_WORKING_DIR }}
+    - name: Terraform Plan
+      run: terraform plan
+      working-directory: ${{ env.TF_WORKING_DIR }}
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
+      working-directory: ${{ env.TF_WORKING_DIR }}
+
   build:
     runs-on: windows-latest
+    needs: terraform
     steps:
     - uses: actions/checkout@v4
     - name: Setup .NET SDK
@@ -21,13 +46,13 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
     - name: Restore
-      run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
+      run: dotnet restore
     - name: Build
-      run: dotnet build "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
+      run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Test
-      run: dotnet test "${{ env.WORKING_DIRECTORY }}" --no-build
+      run: dotnet test --no-build
     - name: Publish
-      run: dotnet publish "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+      run: dotnet publish --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
     - name: Publish Artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -50,14 +75,14 @@ jobs:
         $ip = (Invoke-WebRequest -Uri https://api.ipify.org).Content
         Write-Host "GitHub Actions IP: $ip"
         az sql server firewall-rule create `
-          --resource-group "${{ env.AZURE_WEBAPP_NAME }}" `
-          --server "${{ env.AZURE_WEBAPP_NAME }}" `
+          --resource-group "pinetree-staging" `
+          --server "pinetree-staging" `
           --name "GithubActions-Temporary" `
           --start-ip-address $ip `
           --end-ip-address $ip
     - name: Run database migrations
       run: |
-        cd "${{ env.WORKING_DIRECTORY }}"
+        cd Pinetree
         dotnet ef database update --configuration ${{ env.CONFIGURATION }} --verbose
       env:
         ConnectionStrings__DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION }}
@@ -66,8 +91,8 @@ jobs:
       if: always()
       run: |
         az sql server firewall-rule delete `
-          --resource-group "${{ env.AZURE_WEBAPP_NAME }}" `
-          --server "${{ env.AZURE_WEBAPP_NAME }}" `
+          --resource-group "pinetree-staging" `
+          --server "pinetree-staging" `
           --name "GithubActions-Temporary"
 
   deploy:
@@ -87,5 +112,5 @@ jobs:
     - name: Deploy to Azure WebApp
       uses: azure/webapps-deploy@v2
       with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        app-name: pinetree-staging
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}

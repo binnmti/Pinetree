@@ -37,6 +37,36 @@ resource "azurerm_windows_web_app" "webapp" {
     "APPINSIGHTS_INSTRUMENTATIONKEY" = azurerm_application_insights.appinsights.instrumentation_key
     "WEBSITE_RUN_FROM_PACKAGE"       = "1"
   }
+
+  connection_string {
+    name  = "SupportEmail"
+    type  = "Custom"
+    value = var.support_email
+  }
+
+  connection_string {
+    name  = "SenderEmail"
+    type  = "Custom"
+    value = var.sender_email
+  }
+
+  connection_string {
+    name  = "AzureCommunicationServicesConnectionString"
+    type  = "Custom"
+    value = var.azure_communication_services_connection_string
+  }
+
+  connection_string {
+    name  = "DefaultConnection"
+    type  = "SQLAzure"
+    value = var.default_connection
+  }
+
+  connection_string {
+    name  = "AzureStorage"
+    type  = "Custom"
+    value = var.azure_storage
+  }
 }
 
 # SQL Server
@@ -66,12 +96,22 @@ resource "azurerm_storage_account" "storage" {
   account_replication_type = "LRS"
 }
 
+# Log Analytics Workspace
+resource "azurerm_log_analytics_workspace" "workspace" {
+  name                = "${azurerm_resource_group.rg.name}-workspace"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
 # Application Insights
 resource "azurerm_application_insights" "appinsights" {
   name                = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   application_type    = "web"
+  workspace_id        = azurerm_log_analytics_workspace.workspace.id
 }
 
 # Outputs
