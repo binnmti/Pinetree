@@ -32,6 +32,13 @@ jobs:
     - name: Terraform Validate
       run: terraform validate
       working-directory: ${{ env.TF_WORKING_DIR }}
+    - name: Import Resource Group if needed
+      run: |
+        if ! terraform state list azurerm_resource_group.rg &>/dev/null; then
+          echo "Importing existing resource group into terraform state"
+          terraform import azurerm_resource_group.rg ${{ secrets.AZURE_RESOURCE_GROUP_ID }}
+        fi
+      working-directory: ${{ env.TF_WORKING_DIR }}
     - name: Terraform Plan
       run: terraform plan
       working-directory: ${{ env.TF_WORKING_DIR }}
