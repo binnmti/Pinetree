@@ -1,4 +1,5 @@
 - Update Log
+- GUI Test
 - User Image List
 - Paid Membership
 - monaco-editor
@@ -9,6 +10,11 @@
 - Publish to the web
 - CI Test
 - check DeleteBehavior.Cascade
+- One User Image File Check
+- Layout CSS 100% Check
+- Toolbar Refactor
+- Top Page Image
+
 
 # TODO
 - localhost
