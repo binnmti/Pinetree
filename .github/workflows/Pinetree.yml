@@ -8,47 +8,10 @@ env:
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 9.0.x
-  TF_WORKING_DIR: terraform-pinetree/environments/staging
 
 jobs:
-  terraform:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.5.0
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.Pinetree_SPN }}
-    - name: Create terraform.tfvars from JSON
-      run: |
-        echo '${{ secrets.TERRAFORM_VARS }}' | jq -r 'to_entries | .[] | "\(.key) = \"\(.value)\""' > ${{ env.TF_WORKING_DIR }}/terraform.tfvars
-    - name: Terraform Init
-      run: terraform init
-      working-directory: ${{ env.TF_WORKING_DIR }}
-    - name: Terraform Validate
-      run: terraform validate
-      working-directory: ${{ env.TF_WORKING_DIR }}
-    - name: Import Resource Group if needed
-      run: |
-        if ! terraform state list azurerm_resource_group.rg &>/dev/null; then
-          echo "Importing existing resource group into terraform state"
-          terraform import azurerm_resource_group.rg ${{ secrets.AZURE_RESOURCE_GROUP_ID }}
-        fi
-      working-directory: ${{ env.TF_WORKING_DIR }}
-    - name: Terraform Plan
-      run: terraform plan
-      working-directory: ${{ env.TF_WORKING_DIR }}
-    - name: Terraform Apply
-      run: terraform apply -auto-approve
-      working-directory: ${{ env.TF_WORKING_DIR }}
-
   build:
     runs-on: windows-latest
-    needs: terraform
     steps:
     - uses: actions/checkout@v4
     - name: Setup .NET SDK
