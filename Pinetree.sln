@@ -8,7 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目", "ソリューション項目", "{5140C14F-88BA-4002-AF44-B9160A9C20AB}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
-		.github\workflows\Pinetree.yml = .github\workflows\Pinetree.yml
+		.github\workflows\pinetree-staging.yml = .github\workflows\pinetree-staging.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Shared", "PinetreeModel\Pinetree.Shared.csproj", "{CA1DF661-E634-40DC-A733-5024174BE271}"
@@ -16,6 +16,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Client", "Pinetree.Client\Pinetree.Client.csproj", "{CC166F25-F9EB-4521-972E-C5EFEE8AA07E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Client.TestProject", "Pinetree.Client.TestProject\Pinetree.Client.TestProject.csproj", "{73C16934-8C8E-44F5-B037-1567133D88E1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.UITests", "Pinetree.UITests\Pinetree.UITests.csproj", "{C3927299-352A-415B-AC2F-D7A339C69203}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{73C16934-8C8E-44F5-B037-1567133D88E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{73C16934-8C8E-44F5-B037-1567133D88E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{73C16934-8C8E-44F5-B037-1567133D88E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3927299-352A-415B-AC2F-D7A339C69203}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3927299-352A-415B-AC2F-D7A339C69203}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3927299-352A-415B-AC2F-D7A339C69203}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3927299-352A-415B-AC2F-D7A339C69203}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

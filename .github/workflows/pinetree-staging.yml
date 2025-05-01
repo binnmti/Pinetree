@@ -1,4 +1,4 @@
-name: Pinetree Deploy
+name: pinetree-staging Deploy
 on:
   push:
     branches:
@@ -8,6 +8,7 @@ env:
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 9.0.x
+  ASPNETCORE_ENVIRONMENT: Staging
 
 jobs:
   build:
@@ -87,3 +88,7 @@ jobs:
       with:
         app-name: pinetree-staging
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+    - name: Configure Azure Web App Settings
+      run: |
+        az webapp config appsettings set --name pinetree-staging --resource-group pinetree-staging --settings ASPNETCORE_ENVIRONMENT=Staging
+      if: success()
