@@ -8,24 +8,21 @@ namespace Pinetree.UITests
     public class PlaywrightTestBase
     {
         protected string TargetUrl { get; private set; }
-        protected IBrowser Browser { get; private set; }
-        protected IBrowserContext Context { get; private set; }
-        protected IPage Page { get; private set; }
-        private IPlaywright Playwright { get; set; }
-        protected IHostEnvironment Environment { get; private set; }
+        protected IBrowser Browser { get; private set; } = null!;
+        protected IBrowserContext Context { get; private set; } = null!;
+        protected IPage Page { get; private set; } = null!;
+        private IPlaywright Playwright { get; set; } = null!;
+        protected IHostEnvironment Environment { get; private set; } = null!;
 
         public PlaywrightTestBase()
         {
-            // 環境変数から環境名を取得
             var environmentName = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 
-            // ASP.NET Coreと同じホスティング環境を作成
             Environment = new HostingEnvironment
             {
                 EnvironmentName = environmentName
             };
 
-            // 環境に基づいてURLを設定
             TargetUrl = DetermineTargetUrl();
         }
 
@@ -39,7 +36,7 @@ namespace Pinetree.UITests
             {
                 return "https://pinetree-staging.azurewebsites.net";
             }
-            else // Production
+            else
             {
                 return "https://pinetree.azurewebsites.net";
             }
@@ -68,8 +65,8 @@ namespace Pinetree.UITests
         [TestCleanup]
         public async Task TestCleanup()
         {
-            await Context?.CloseAsync();
-            await Browser?.CloseAsync();
+            await Context.CloseAsync();
+            await Browser.CloseAsync();
             Playwright?.Dispose();
         }
     }
