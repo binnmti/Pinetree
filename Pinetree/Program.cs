@@ -99,6 +99,10 @@ else
         }
     }
 }
+if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
+{
+    await SeedData.Initialize(app.Services);
+}
 app.UseHttpsRedirection();
 
 

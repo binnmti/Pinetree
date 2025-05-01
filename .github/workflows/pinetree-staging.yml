@@ -1,18 +1,17 @@
-name: Pinetree Deploy
+name: pinetree-staging Deploy
 on:
   push:
     branches:
     - main
 
 env:
-  AZURE_WEBAPP_NAME: Pinetree
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 9.0.x
-  WORKING_DIRECTORY: Pinetree
+  ASPNETCORE_ENVIRONMENT: Staging
 
 jobs:
-  build:
+  build-and-tests:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
@@ -20,14 +19,16 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    - name: Install Playwright
+      run: npx playwright install
     - name: Restore
-      run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
+      run: dotnet restore
     - name: Build
-      run: dotnet build "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
-    - name: Test
-      run: dotnet test "${{ env.WORKING_DIRECTORY }}" --no-build
+      run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Run Tests
+      run: dotnet test --no-build
     - name: Publish
-      run: dotnet publish "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+      run: dotnet publish Pinetree/Pinetree.csproj --configuration ${{ env.CONFIGURATION }} --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
     - name: Publish Artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -36,7 +37,7 @@ jobs:
 
   migrate:
     runs-on: windows-latest
-    needs: build
+    needs: build-and-tests
     steps:
     - uses: actions/checkout@v4
     - name: Install EF Core tools
@@ -50,29 +51,29 @@ jobs:
         $ip = (Invoke-WebRequest -Uri https://api.ipify.org).Content
         Write-Host "GitHub Actions IP: $ip"
         az sql server firewall-rule create `
-          --resource-group "${{ env.AZURE_WEBAPP_NAME }}" `
-          --server "${{ env.AZURE_WEBAPP_NAME }}" `
+          --resource-group "pinetree-staging" `
+          --server "pinetree-staging" `
           --name "GithubActions-Temporary" `
           --start-ip-address $ip `
           --end-ip-address $ip
     - name: Run database migrations
       run: |
-        cd "${{ env.WORKING_DIRECTORY }}"
+        cd Pinetree
         dotnet ef database update --configuration ${{ env.CONFIGURATION }} --verbose
       env:
-        ConnectionStrings__DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION }}
+        ConnectionStrings__DefaultConnection: ${{ secrets.STAGING_DB_CONNECTION }}
         TypeScriptCompileBlocked: true
     - name: Remove IP from Azure SQL firewall
       if: always()
       run: |
         az sql server firewall-rule delete `
-          --resource-group "${{ env.AZURE_WEBAPP_NAME }}" `
-          --server "${{ env.AZURE_WEBAPP_NAME }}" `
+          --resource-group "pinetree-staging" `
+          --server "pinetree-staging" `
           --name "GithubActions-Temporary"
 
   deploy:
     runs-on: windows-latest
-    needs: [build, migrate]
+    needs: [build-and-tests, migrate]
     steps:
     - uses: actions/checkout@v4
     - name: Download artifact from build job
@@ -87,5 +88,9 @@ jobs:
     - name: Deploy to Azure WebApp
       uses: azure/webapps-deploy@v2
       with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        app-name: pinetree-staging
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+    - name: Configure Azure Web App Settings
+      run: |
+        az webapp config appsettings set --name pinetree-staging --resource-group pinetree-staging --settings ASPNETCORE_ENVIRONMENT=Staging
+      if: success()
