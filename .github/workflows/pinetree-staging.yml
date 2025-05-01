@@ -2,7 +2,7 @@ name: pinetree-staging Deploy
 on:
   push:
     branches:
-    - main
+    - terraform
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
