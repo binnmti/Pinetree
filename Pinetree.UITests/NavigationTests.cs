@@ -6,10 +6,48 @@ namespace Pinetree.UITests
     public class NavigationTests : PlaywrightTestBase
     {
         [TestMethod]
-        public async Task ShouldNavigateToHomePage()
+        public async Task ShouldNavigateToTryitAndAddChildElements()
         {
             await Page.GotoAsync(TargetUrl);
             StringAssert.Contains(await Page.TitleAsync(), "Pinetree");
+
+            await Page.ClickAsync("a[href='/Tryit']");
+            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+            StringAssert.Contains(await Page.TitleAsync(), "Tryit");
+
+            var initialFileCount = await Page.TextContentAsync(".panel-footer div") ?? "";
+            Assert.IsTrue(initialFileCount.Contains("FileCount : 1"));
+
+            await Page.ClickAsync("button[title='Add Child Item']");
+
+            var updatedFileCount = await Page.TextContentAsync(".panel-footer div") ?? "";
+            Assert.IsTrue(updatedFileCount.Contains("FileCount : 2"));
+
+            await Page.ClickAsync("button[title='Add Child Item']");
+
+            var finalFileCount = await Page.TextContentAsync(".panel-footer div") ?? "";
+            Assert.IsTrue(finalFileCount.Contains("FileCount : 3"));
+
+            var childItems = await Page.QuerySelectorAllAsync("ul li ul li .title");
+            if (childItems.Count > 0)
+            {
+                await childItems[0].ClickAsync();
+            }
+
+            Page.Dialog += (_, dialog) =>
+            {
+                if (dialog.Type == "confirm" &&
+                    dialog.Message.Contains("Are you sure you want to delete"))
+                {
+                    dialog.AcceptAsync();
+                }
+            };
+
+            await Page.ClickAsync("ul li ul li button[title='Delete Item']");
+
+            var afterDeletionCount = await Page.TextContentAsync(".panel-footer div") ?? "";
+            Assert.IsTrue(afterDeletionCount.Contains("FileCount : 2"));
         }
 
         [TestMethod]

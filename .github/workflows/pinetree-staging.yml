@@ -11,7 +11,7 @@ env:
   ASPNETCORE_ENVIRONMENT: Staging
 
 jobs:
-  build:
+  build-and-tests:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
@@ -19,11 +19,13 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    - name: Install Playwright
+      run: npx playwright install
     - name: Restore
       run: dotnet restore
     - name: Build
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
-    - name: Test
+    - name: Run Tests
       run: dotnet test --no-build
     - name: Publish
       run: dotnet publish Pinetree/Pinetree.csproj --configuration ${{ env.CONFIGURATION }} --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
@@ -35,7 +37,7 @@ jobs:
 
   migrate:
     runs-on: windows-latest
-    needs: build
+    needs: [build, ui-tests]
     steps:
     - uses: actions/checkout@v4
     - name: Install EF Core tools
@@ -71,7 +73,7 @@ jobs:
 
   deploy:
     runs-on: windows-latest
-    needs: [build, migrate]
+    needs: [build, ui-tests, migrate]
     steps:
     - uses: actions/checkout@v4
     - name: Download artifact from build job
