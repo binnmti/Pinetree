@@ -37,7 +37,7 @@ jobs:
 
   migrate:
     runs-on: windows-latest
-    needs: [build, ui-tests]
+    needs: build-and-tests
     steps:
     - uses: actions/checkout@v4
     - name: Install EF Core tools
@@ -73,7 +73,7 @@ jobs:
 
   deploy:
     runs-on: windows-latest
-    needs: [build, ui-tests, migrate]
+    needs: [build-and-tests, migrate]
     steps:
     - uses: actions/checkout@v4
     - name: Download artifact from build job
