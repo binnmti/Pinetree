@@ -1,12 +1,8 @@
-name: pinetree-production
+name: production
 on:
   push:
-    branches:
-    - production
-# on:
-#   push:
-#     tags:
-#       - 'v*'
+    tags:
+      - 'v*'
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
