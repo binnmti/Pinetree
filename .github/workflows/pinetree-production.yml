@@ -46,14 +46,14 @@ jobs:
     - name: Deploy to Green Slot
       uses: azure/webapps-deploy@v2
       with:
-        app-name: pinetree-production
+        app-name: pinetree
         slot-name: ${{ env.SLOT_NAME }}
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
     - name: Configure Azure Web App Settings for Green Slot
       run: |
-        az webapp config appsettings set --name pinetree-production --resource-group pinetree-production --slot ${{ env.SLOT_NAME }} --settings ASPNETCORE_ENVIRONMENT=Production
+        az webapp config appsettings set --name pinetree --resource-group pinetree --slot ${{ env.SLOT_NAME }} --settings ASPNETCORE_ENVIRONMENT=Production
 
     - name: Swap Slots
       run: |
-        az webapp deployment slot swap --name pinetree-production --resource-group pinetree-production --slot ${{ env.SLOT_NAME }}
+        az webapp deployment slot swap --name pinetree --resource-group pinetree --slot ${{ env.SLOT_NAME }}
