@@ -9,7 +9,7 @@ namespace Pinetree.UITests
         public async Task ShouldNavigateToTryitAndAddChildElements()
         {
             await Page.GotoAsync(TargetUrl);
-            StringAssert.Contains(await Page.TitleAsync(), "Home");
+            StringAssert.Contains(await Page.TitleAsync(), "Pinetree");
 
             //await Page.ClickAsync("a[href='/Tryit']");
             //await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
