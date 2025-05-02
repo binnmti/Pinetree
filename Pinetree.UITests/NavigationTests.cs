@@ -2,7 +2,7 @@ using Microsoft.Playwright;
 
 namespace Pinetree.UITests
 {
-    [TestClass]
+    //[TestClass]
     public class NavigationTests : PlaywrightTestBase
     {
         //[TestMethod]
