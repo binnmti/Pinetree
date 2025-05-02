@@ -1,8 +1,8 @@
-name: pinetree-staging Deploy
+name: pinetree-staging
 on:
   push:
     branches:
-    - main
+    - production
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
