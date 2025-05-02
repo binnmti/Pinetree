@@ -1,0 +1,55 @@
+name: production
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
+  CONFIGURATION: Release
+  DOTNET_CORE_VERSION: 9.0.x
+  ASPNETCORE_ENVIRONMENT: Production
+  SLOT_NAME: swap
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build the project
+      run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
+
+    - name: Publish the project
+      run: dotnet publish Pinetree/Pinetree.csproj --configuration ${{ env.CONFIGURATION }} --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.Pinetree_SPN }}
+
+    - name: Deploy to Green Slot
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: pinetree
+        slot-name: ${{ env.SLOT_NAME }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+    - name: Configure Azure Web App Settings for Green Slot
+      run: |
+        az webapp config appsettings set --name pinetree --resource-group pinetree --slot ${{ env.SLOT_NAME }} --settings ASPNETCORE_ENVIRONMENT=Production
+
+    - name: Swap Slots
+      run: |
+        az webapp deployment slot swap --name pinetree --resource-group pinetree --slot ${{ env.SLOT_NAME }}

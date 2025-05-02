@@ -1,4 +1,4 @@
-name: pinetree-staging Deploy
+name: staging
 on:
   push:
     branches:
