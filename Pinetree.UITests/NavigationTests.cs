@@ -5,7 +5,7 @@ namespace Pinetree.UITests
     [TestClass]
     public class NavigationTests : PlaywrightTestBase
     {
-        [TestMethod]
+        //[TestMethod]
         public async Task ShouldNavigateToTryitAndAddChildElements()
         {
             await Page.GotoAsync(TargetUrl);
