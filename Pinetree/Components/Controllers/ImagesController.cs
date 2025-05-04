@@ -1,50 +1,103 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Pinetree.Constants;
 using Pinetree.Services;
+using System.Security.Claims;
 
 namespace Pinetree.Components.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ImagesController(BlobStorageService blobStorageService, ILogger<ImagesController> logger) : ControllerBase
+[Authorize]
+public class ImagesController(BlobStorageService blobStorageService) : ControllerBase
 {
+    private readonly BlobStorageService _blobStorageService = blobStorageService;
+
     [HttpPost("upload")]
-    [Authorize]
-    public async Task<IActionResult> Upload(string extension, [FromBody] string base64Image)
+    public async Task<IActionResult> Upload([FromQuery] string extension)
     {
         try
         {
-            if (string.IsNullOrEmpty(base64Image))
+            using var reader = new StreamReader(Request.Body);
+            var jsonContent = await reader.ReadToEndAsync();
+
+            var base64String = System.Text.Json.JsonSerializer.Deserialize<string>(jsonContent)
+                ?? throw new ArgumentNullException("Base64 string is null");
+            if (base64String.Contains(','))
             {
-                return BadRequest(new { Error = "No image data provided" });
+                base64String = base64String.Split(',')[1];
+            }
+            var bytes = Convert.FromBase64String(base64String);
+            var stream = new MemoryStream(bytes);
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
             }
 
-            var fileExtension = extension.StartsWith('.') ? extension : $".{extension}";
-            if (!ImageConstants.IsAllowedExtension(fileExtension))
+            var usage = await _blobStorageService.GetUserStorageUsageAsync(userId);
+            if (usage.TotalSizeInBytes + bytes.Length > usage.QuotaInBytes)
             {
-                return BadRequest(new { Error = $"Unsupported file format. Supported formats: {string.Join(", ", ImageConstants.AllowedExtensions)}" });
+                return BadRequest(new { error = "Storage quota exceeded" });
             }
 
-            byte[] imageBytes = Convert.FromBase64String(base64Image);
-
-            if (imageBytes.Length > ImageConstants.MaxFileSizeBytes)
-            {
-                return BadRequest(new { Error = $"File size is too large. Please keep files under {ImageConstants.MaxFileSizeMB}MB" });
-            }
-
-            using var stream = new MemoryStream(imageBytes);
-
-            var blobUrl = await blobStorageService.UploadImageAsync(stream, fileExtension);
-
-            logger.LogInformation("Image uploaded from IndexedDB: {BlobUrl}", blobUrl);
-
-            return Ok(new { Url = blobUrl });
+            var url = await _blobStorageService.UploadImageAsync(stream, extension, userId);
+            return Ok(new { url });
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error uploading image from IndexedDB");
-            return StatusCode(500, new { Error = "An error occurred while uploading the image" });
+            return StatusCode(500, new { error = $"Error uploading image: {ex.Message}" });
         }
+    }
+
+    [HttpGet("list")]
+    public async Task<IActionResult> ListUserImages()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var images = await _blobStorageService.GetUserBlobsAsync(userId);
+
+        return Ok(images);
+    }
+
+    [HttpGet("usage")]
+    public async Task<IActionResult> GetStorageUsage()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var usage = await _blobStorageService.GetUserStorageUsageAsync(userId);
+
+        return Ok(new
+        {
+            used = usage.TotalSizeInBytes,
+            quota = usage.QuotaInBytes,
+            percentage = (double)usage.TotalSizeInBytes / usage.QuotaInBytes * 100
+        });
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteImage(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var result = await _blobStorageService.DeleteBlobAsync(id, userId);
+        if (!result)
+        {
+            return NotFound();
+        }
+
+        return Ok();
     }
 }

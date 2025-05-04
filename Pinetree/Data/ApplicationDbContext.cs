@@ -20,5 +20,7 @@ namespace Pinetree.Data
         }
 
         public DbSet<Pinecone> Pinecone { get; set; }
+        public DbSet<UserBlobInfo> UserBlobInfos { get; set; }
+        public DbSet<UserStorageUsage> UserStorageUsages { get; set; }
     }
 }
