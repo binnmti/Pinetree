@@ -3,6 +3,7 @@
 
 @using Microsoft.AspNetCore.Authorization
 @using Pinetree.Shared.Model
+@using Pinetree.Shared.ViewModels
 
 @rendermode InteractiveAuto
 
@@ -95,7 +96,7 @@
 
 @code {
 
-    private List<UserBlobInfo>? files;
+    private List<UserBlobViewModel>? files;
     private UserFiles? storageUsage;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -112,7 +113,7 @@
     {
         try
         {
-            files = await Http.GetFromJsonAsync<List<UserBlobInfo>>("api/Images/list");
+            files = await Http.GetFromJsonAsync<List<UserBlobViewModel>>("api/Images/list");
         }
         catch (Exception ex)
         {

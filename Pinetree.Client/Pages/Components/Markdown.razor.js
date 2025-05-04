@@ -466,7 +466,7 @@ function setupDropZone(dropZoneElement, dotNetHelper) {
  * @param contentRef Optional reference to the textarea element to update its value
  * @returns Promise resolving to the updated content with blob URLs replaced by permanent URLs
  */
-export async function replaceBlobUrlsInContent(content, contentRef) {
+export async function replaceBlobUrlsInContent(content, pineconeGuid, contentRef) {
     // Regular expression to find markdown image syntax with blob URLs
     const regex = /!\[(.*?)\]\((blob:[^)]+)\)/g;
     let match;
@@ -480,7 +480,7 @@ export async function replaceBlobUrlsInContent(content, contentRef) {
         const altText = match[1]; // The alt text part
         const blobUrl = match[2]; // The blob URL part
         // Create a task for processing each blob URL
-        const task = processBlobUrl(fullMatch, altText, blobUrl);
+        const task = processBlobUrl(fullMatch, altText, blobUrl, pineconeGuid);
         processingTasks.push(task);
     }
     // Wait for all processing tasks to complete
@@ -508,7 +508,7 @@ export async function replaceBlobUrlsInContent(content, contentRef) {
  * @param blobUrl The blob URL to process
  * @returns Promise resolving to an object containing the original text and its replacement
  */
-async function processBlobUrl(originalText, altText, blobUrl) {
+async function processBlobUrl(originalText, altText, blobUrl, pineconeGuid) {
     try {
         // Fetch the blob from the URL
         const response = await fetch(blobUrl);
@@ -521,7 +521,7 @@ async function processBlobUrl(originalText, altText, blobUrl) {
         // Get file extension from alt text or default to jpg
         const extension = getExtensionFromAltText(altText);
         // Upload the image to the server
-        const uploadResult = await uploadImageToServer(base64, extension);
+        const uploadResult = await uploadImageToServer(base64, extension, pineconeGuid);
         if (uploadResult && uploadResult.url) {
             // Create the new markdown image text with the permanent URL
             const newText = `![${altText}](${uploadResult.url})`;
@@ -580,9 +580,9 @@ function getExtensionFromAltText(altText) {
  * @param extension The file extension with a leading dot
  * @returns Promise resolving to the upload result containing the URL
  */
-async function uploadImageToServer(base64, extension) {
+async function uploadImageToServer(base64, extension, pineconeGuid) {
     try {
-        const response = await fetch(`/api/Images/upload?extension=${extension}`, {
+        const response = await fetch(`/api/Images/upload?extension=${extension}&pineconeGuid=${pineconeGuid}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

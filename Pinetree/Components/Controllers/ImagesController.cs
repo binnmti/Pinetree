@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pinetree.Services;
-using System.Security.Claims;
 
 namespace Pinetree.Components.Controllers;
 
@@ -13,7 +12,7 @@ public class ImagesController(BlobStorageService blobStorageService) : Controlle
     private readonly BlobStorageService _blobStorageService = blobStorageService;
 
     [HttpPost("upload")]
-    public async Task<IActionResult> Upload([FromQuery] string extension)
+    public async Task<IActionResult> Upload([FromQuery] string extension, [FromQuery] Guid pineconeGuid)
     {
         try
         {
@@ -29,19 +28,19 @@ public class ImagesController(BlobStorageService blobStorageService) : Controlle
             var bytes = Convert.FromBase64String(base64String);
             var stream = new MemoryStream(bytes);
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            var userName = User.Identity?.Name;
+            if (string.IsNullOrEmpty(userName))
             {
                 return Unauthorized();
             }
 
-            var usage = await _blobStorageService.GetUserStorageUsageAsync(userId);
+            var usage = await _blobStorageService.GetUserStorageUsageAsync(userName);
             if (usage.TotalSizeInBytes + bytes.Length > usage.QuotaInBytes)
             {
                 return BadRequest(new { error = "Storage quota exceeded" });
             }
 
-            var url = await _blobStorageService.UploadImageAsync(stream, extension, userId);
+            var url = await _blobStorageService.UploadImageAsync(stream, extension, userName, pineconeGuid);
             return Ok(new { url });
         }
         catch (Exception ex)
@@ -53,13 +52,13 @@ public class ImagesController(BlobStorageService blobStorageService) : Controlle
     [HttpGet("list")]
     public async Task<IActionResult> ListUserImages()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
+        var userName = User.Identity?.Name;
+        if (string.IsNullOrEmpty(userName))
         {
             return Unauthorized();
         }
 
-        var images = await _blobStorageService.GetUserBlobsAsync(userId);
+        var images = await _blobStorageService.GetUserBlobViewModelsAsync(userName);
 
         return Ok(images);
     }
@@ -67,13 +66,13 @@ public class ImagesController(BlobStorageService blobStorageService) : Controlle
     [HttpGet("usage")]
     public async Task<IActionResult> GetStorageUsage()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
+        var userName = User.Identity?.Name;
+        if (string.IsNullOrEmpty(userName))
         {
             return Unauthorized();
         }
 
-        var usage = await _blobStorageService.GetUserStorageUsageAsync(userId);
+        var usage = await _blobStorageService.GetUserStorageUsageAsync(userName);
 
         return Ok(new
         {
@@ -86,13 +85,13 @@ public class ImagesController(BlobStorageService blobStorageService) : Controlle
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteImage(int id)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
+        var userName = User.Identity?.Name;
+        if (string.IsNullOrEmpty(userName))
         {
             return Unauthorized();
         }
 
-        var result = await _blobStorageService.DeleteBlobAsync(id, userId);
+        var result = await _blobStorageService.DeleteBlobAsync(id, userName);
         if (!result)
         {
             return NotFound();

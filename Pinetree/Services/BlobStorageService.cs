@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Pinetree.Constants;
 using Pinetree.Data;
 using Pinetree.Shared.Model;
+using Pinetree.Shared.ViewModels;
 
 namespace Pinetree.Services;
 
@@ -23,7 +24,7 @@ public class BlobStorageService
         _dbContext = dbContext;
     }
 
-    public async Task<string> UploadImageAsync(Stream content, string fileExtension, string userId)
+    public async Task<string> UploadImageAsync(Stream content, string fileExtension, string userName, Guid pineconeGuid)
     {
         if (content.CanSeek && content.Position != 0)
         {
@@ -33,8 +34,10 @@ public class BlobStorageService
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
         await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
 
+        var folderPath = $"{userName}/";
         var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
-        var blobClient = containerClient.GetBlobClient(uniqueFileName);
+        var fullBlobPath = $"{folderPath}{uniqueFileName}";
+        var blobClient = containerClient.GetBlobClient(fullBlobPath);
 
         var options = new BlobUploadOptions
         {
@@ -50,22 +53,22 @@ public class BlobStorageService
 
         var blobInfo = new UserBlobInfo
         {
-            UserId = userId,
-            BlobUrl = blobClient.Uri.ToString(),
+            UserName = userName,
             BlobName = uniqueFileName,
             SizeInBytes = fileSize,
             ContentType = ImageConstants.GetContentType(fileExtension),
-            UploadedAt = DateTime.UtcNow
+            UploadedAt = DateTime.UtcNow,
+            PineconeGuid = pineconeGuid
         };
 
         _dbContext.UserBlobInfos.Add(blobInfo);
 
-        var usage = await _dbContext.UserStorageUsages.SingleOrDefaultAsync(x => x.UserId == userId);
+        var usage = await _dbContext.UserStorageUsages.SingleOrDefaultAsync(x => x.UserName == userName);
         if (usage == null)
         {
             usage = new UserStorageUsage
             {
-                UserId = userId,
+                UserName = userName,
                 TotalSizeInBytes = fileSize,
                 QuotaInBytes = DefaultQuotaInBytes,
                 LastUpdated = DateTime.UtcNow
@@ -83,17 +86,16 @@ public class BlobStorageService
 
         return blobClient.Uri.ToString();
     }
-
-    public async Task<List<UserBlobInfo>> GetUserBlobsAsync(string userId)
+    public async Task<List<UserBlobInfo>> GetUserBlobsAsync(string userName)
         => await _dbContext.UserBlobInfos
-            .Where(b => b.UserId == userId)
+            .Where(b => b.UserName == userName)
             .OrderByDescending(b => b.UploadedAt)
             .ToListAsync();
 
-    public async Task<bool> DeleteBlobAsync(int blobInfoId, string userId)
+    public async Task<bool> DeleteBlobAsync(int blobInfoId, string userName)
     {
         var blobInfo = await _dbContext.UserBlobInfos
-            .FirstOrDefaultAsync(b => b.Id == blobInfoId && b.UserId == userId);
+            .FirstOrDefaultAsync(b => b.Id == blobInfoId && b.UserName == userName);
 
         if (blobInfo == null)
         {
@@ -104,7 +106,7 @@ public class BlobStorageService
         var blobClient = containerClient.GetBlobClient(blobInfo.BlobName);
         await blobClient.DeleteIfExistsAsync();
 
-        var usage = await _dbContext.UserStorageUsages.SingleOrDefaultAsync(x => x.UserId == userId);
+        var usage = await _dbContext.UserStorageUsages.SingleOrDefaultAsync(x => x.UserName == userName);
         if (usage != null)
         {
             usage.TotalSizeInBytes -= blobInfo.SizeInBytes;
@@ -116,15 +118,15 @@ public class BlobStorageService
         return true;
     }
 
-    public async Task<UserStorageUsage> GetUserStorageUsageAsync(string userId)
+    public async Task<UserStorageUsage> GetUserStorageUsageAsync(string userName)
     {
-        var usage = await _dbContext.UserStorageUsages.SingleOrDefaultAsync(x => x.UserId == userId);
+        var usage = await _dbContext.UserStorageUsages.SingleOrDefaultAsync(x => x.UserName == userName);
         // TODO: Ensure creation at creation time, not acquisition time. Currently there is no creation time.
         if (usage == null)
         {
             usage = new UserStorageUsage
             {
-                UserId = userId,
+                UserName = userName,
                 TotalSizeInBytes = 0,
                 QuotaInBytes = DefaultQuotaInBytes,
                 LastUpdated = DateTime.UtcNow
@@ -133,5 +135,33 @@ public class BlobStorageService
             await _dbContext.SaveChangesAsync();
         }
         return usage;
+    }
+
+    public string GenerateBlobUrl(string userName, string blobName)
+    {
+        var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+        var folderPath = $"{userName}/";
+        var fullBlobPath = $"{folderPath}{blobName}";
+        var blobClient = containerClient.GetBlobClient(fullBlobPath);
+        return blobClient.Uri.ToString();
+    }
+
+    public UserBlobViewModel MapToViewModel(UserBlobInfo blobInfo)
+    {
+        return new UserBlobViewModel
+        {
+            Id = blobInfo.Id,
+            BlobUrl = GenerateBlobUrl(blobInfo.UserName, blobInfo.BlobName),
+            SizeInBytes = blobInfo.SizeInBytes,
+            ContentType = blobInfo.ContentType,
+            PineconeGuid = blobInfo.PineconeGuid,
+            UploadedAt = blobInfo.UploadedAt
+        };
+    }
+
+    public async Task<List<UserBlobViewModel>> GetUserBlobViewModelsAsync(string userName)
+    {
+        var blobs = await GetUserBlobsAsync(userName);
+        return [.. blobs.Select(MapToViewModel)];
     }
 }
