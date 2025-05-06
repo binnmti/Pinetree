@@ -118,23 +118,24 @@
                         <thead>
                             <tr>
                                 <th>Preview</th>
-                                <th>File Name</th>
+                                <th>Filename</th>
                                 <th>Size</th>
                                 <th>Upload Date</th>
-                                <th>Actions</th>
+@*                                 <th>Document</th>
+ *@                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @if (files == null)
                             {
                                 <tr>
-                                    <td colspan="5" class="text-center">Loading...</td>
+                                    <td colspan="6" class="text-center">Loading...</td>
                                 </tr>
                             }
                             else if (!files.Any())
                             {
                                 <tr>
-                                    <td colspan="5" class="text-center">No files found</td>
+                                    <td colspan="6" class="text-center">No files found</td>
                                 </tr>
                             }
                             else
@@ -145,17 +146,22 @@
                                         <td>
                                             @if (IsImageFile(file.ContentType))
                                             {
-                                                <img src="@file.BlobUrl" style="max-height: 50px; max-width: 50px;" />
+                                                <a href="@file.BlobUrl" target="_blank">
+                                                    <img src="@file.BlobUrl" style="max-height: 50px; max-width: 50px;" />
+                                                </a>
                                             }
                                             else
                                             {
-                                                <i class="bi bi-file-earmark"></i>
+                                                <a href="@file.BlobUrl" target="_blank">
+                                                    <i class="bi bi-file-earmark"></i>
+                                                </a>
                                             }
                                         </td>
-                                        <td>@file.BlobUrl</td>
+                                        <td>@file.FileName</td>
                                         <td>@FormatBytes(file.SizeInBytes)</td>
                                         <td>@file.UploadedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
-                                        <td>
+@*                                         <td><a href="/Edit/@file.PineconeGuid">Document</a></td>
+ *@                                        <td>
                                             <button class="btn btn-sm btn-danger" @onclick="() => DeleteFile(file.Id)">
                                                 Delete
                                             </button>

@@ -152,6 +152,7 @@ public class BlobStorageService
         {
             Id = blobInfo.Id,
             BlobUrl = GenerateBlobUrl(blobInfo.UserName, blobInfo.BlobName),
+            FileName  = blobInfo.BlobName,
             SizeInBytes = blobInfo.SizeInBytes,
             ContentType = blobInfo.ContentType,
             PineconeGuid = blobInfo.PineconeGuid,
