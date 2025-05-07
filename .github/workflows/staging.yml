@@ -109,7 +109,11 @@ jobs:
     - name: Build Tests
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Run GUI Tests
-      run: dotnet test Pinetree.UITests/Pinetree.UITests.csproj --logger "trx;LogFileName=guitests.trx" --results-directory TestResults
+      run: |
+        $outputDir = Join-Path $PWD "TestResults"
+        Write-Host "Output directory: $outputDir"
+        mkdir -Force $outputDir
+        dotnet test Pinetree.UITests/Pinetree.UITests.csproj --logger "trx;LogFileName=guitests.trx" --results-directory "$outputDir" --verbosity normal
       env:
         ASPNETCORE_ENVIRONMENT: Staging
 
@@ -117,12 +121,25 @@ jobs:
       if: always()
       run: |
         echo "Current directory structure:"
-        Get-ChildItem -Path . -Recurse -Filter "*.trx" | Select-Object FullName
+        Get-ChildItem -Path . -Recurse -Depth 4 -Filter "*.trx" | Select-Object FullName
         echo "TestResults directory content (if exists):"
         if (Test-Path -Path "TestResults") {
-          Get-ChildItem -Path "TestResults" -Recurse | Select-Object FullName
+          Get-ChildItem -Path "TestResults" -Recurse | Select-Object FullName, Length, LastWriteTime
         } else {
           echo "TestResults directory does not exist"
+        }
+    
+        echo "Checking default test output locations:"
+        $defaultPaths = @(
+          "Pinetree.UITests/TestResults",
+          "Pinetree.UITests/bin/Release/net9.0/TestResults"
+        )
+    
+        foreach ($path in $defaultPaths) {
+          if (Test-Path -Path $path) {
+            echo "Found test results in $path:"
+            Get-ChildItem -Path $path -Recurse | Select-Object FullName, Length, LastWriteTime
+          }
         }
       shell: pwsh
       continue-on-error: true
@@ -133,9 +150,9 @@ jobs:
       with:
         name: gui-test-results
         path: |
-          TestResults/**/*.trx
-          **/TestResults/**/*.trx
-          Pinetree.UITests/bin/**/*.trx
+          TestResults/**
+          **/TestResults/**
+          Pinetree.UITests/bin/**/TestResults/**
 
     - name: Rollback Deployment on Failure
       if: failure()
