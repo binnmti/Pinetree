@@ -161,24 +161,41 @@ public class BlobStorageService
 
     public async Task<List<UserBlobViewModel>> GetUserBlobViewModelsAsync(string userName)
     {
-        var blobs = await GetUserBlobsAsync(userName);
+        var results = await _dbContext.UserBlobInfos
+            .Where(b => b.UserName == userName && !b.IsDeleted)
+            .OrderByDescending(b => b.UploadedAt)
+            .GroupJoin(
+                _dbContext.Pinecone,
+                blob => blob.PineconeGuid,
+                pinecone => pinecone.Guid,
+                (blob, pinecones) => new { Blob = blob, Pinecones = pinecones }
+            )
+            .SelectMany(
+                x => x.Pinecones.DefaultIfEmpty(),
+                (x, pinecone) => new
+                {
+                    x.Blob.Id,
+                    x.Blob.UserName,
+                    x.Blob.BlobName,
+                    x.Blob.SizeInBytes,
+                    x.Blob.ContentType,
+                    x.Blob.PineconeGuid,
+                    PineconeTitle = pinecone != null ? pinecone.Title : "",
+                    x.Blob.UploadedAt
+                }
+            )
+            .ToListAsync();
 
-        var pineconeGuids = blobs.Select(b => b.PineconeGuid).Distinct().ToList();
-        var pinecones = await _dbContext.Pinecone
-            .Where(p => pineconeGuids.Contains(p.Guid))
-            .Select(p => new { p.Guid, p.Title })
-            .ToDictionaryAsync(p => p.Guid, p => p.Title);
-
-        return [.. blobs.Select(blob => new UserBlobViewModel
+        return [.. results.Select(x => new UserBlobViewModel
         {
-            Id = blob.Id,
-            BlobUrl = GenerateBlobUrl(blob.UserName, blob.BlobName),
-            FileName = blob.BlobName,
-            SizeInBytes = blob.SizeInBytes,
-            ContentType = blob.ContentType,
-            PineconeGuid = blob.PineconeGuid,
-            PineconeTitle = pinecones.TryGetValue(blob.PineconeGuid, out var title) ? title : "",
-            UploadedAt = blob.UploadedAt
+            Id = x.Id,
+            BlobUrl = GenerateBlobUrl(x.UserName, x.BlobName),
+            FileName = x.BlobName,
+            SizeInBytes = x.SizeInBytes,
+            ContentType = x.ContentType,
+            PineconeGuid = x.PineconeGuid,
+            PineconeTitle = x.PineconeTitle,
+            UploadedAt = x.UploadedAt
         })];
     }
 }
