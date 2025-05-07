@@ -370,7 +370,7 @@
 
     private void OnFileListClick()
     {
-        NavigationManager.NavigateTo($"/List");
+        NavigationManager.NavigateTo($"/User");
     }
 
     private async Task CopyDocumentId()
@@ -403,7 +403,7 @@
             _isSaving = true;
             if (Content.Contains("blob:"))
             {
-                var updatedContent = await _jsInterop.ReplaceBlobUrlsInContentAsync(Content, TextAreaRef);
+                var updatedContent = await _jsInterop.ReplaceBlobUrlsInContentAsync(Content, Guid, TextAreaRef);
 
                 if (updatedContent != Content)
                 {
@@ -558,7 +558,7 @@
     {
         if (node.Content.Contains("blob:"))
         {
-            var updatedContent = await _jsInterop.ReplaceBlobUrlsInContentAsync(node.Content);
+            var updatedContent = await _jsInterop.ReplaceBlobUrlsInContentAsync(node.Content, node.Guid);
             if (updatedContent != node.Content)
             {
                 node.Content = updatedContent;

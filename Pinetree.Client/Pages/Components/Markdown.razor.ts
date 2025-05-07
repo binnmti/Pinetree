@@ -541,6 +541,7 @@ function setupDropZone(
  */
 export async function replaceBlobUrlsInContent(
     content: string,
+    pineconeGuid: string,
     contentRef?: HTMLTextAreaElement
 ): Promise<string> {
     // Regular expression to find markdown image syntax with blob URLs
@@ -562,7 +563,7 @@ export async function replaceBlobUrlsInContent(
         const blobUrl = match[2];         // The blob URL part
 
         // Create a task for processing each blob URL
-        const task = processBlobUrl(fullMatch, altText, blobUrl);
+        const task = processBlobUrl(fullMatch, altText, blobUrl, pineconeGuid);
         processingTasks.push(task);
     }
 
@@ -598,7 +599,8 @@ export async function replaceBlobUrlsInContent(
 async function processBlobUrl(
     originalText: string,
     altText: string,
-    blobUrl: string
+    blobUrl: string,
+    pineconeGuid: string
 ): Promise<{ originalText: string; newText: string | null }> {
     try {
         // Fetch the blob from the URL
@@ -616,7 +618,7 @@ async function processBlobUrl(
         const extension = getExtensionFromAltText(altText);
 
         // Upload the image to the server
-        const uploadResult = await uploadImageToServer(base64, extension);
+        const uploadResult = await uploadImageToServer(base64, extension, pineconeGuid);
 
         if (uploadResult && uploadResult.url) {
             // Create the new markdown image text with the permanent URL
@@ -682,10 +684,11 @@ function getExtensionFromAltText(altText: string): string {
  */
 async function uploadImageToServer(
     base64: string,
-    extension: string
+    extension: string,
+    pineconeGuid: string
 ): Promise<{ url: string } | null> {
     try {
-        const response = await fetch(`/api/Images/upload?extension=${extension}`, {
+        const response = await fetch(`/api/Images/upload?extension=${extension}&pineconeGuid=${pineconeGuid}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

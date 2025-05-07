@@ -156,7 +156,19 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
             currentTree.Content = rootNodeDto.Content;
             currentTree.Update = DateTime.UtcNow;
 
-            await RemoveChildrenFromDatabaseAsync(currentTree);
+            var currentNodeGuids = CollectNodeGuids(currentTree);
+            var newNodeGuids = nodes.Select(n => n.Guid).ToHashSet();
+
+            var nodesToRemove = currentNodeGuids.Where(guid => !newNodeGuids.Contains(guid)).ToList();
+
+            foreach (var guidToRemove in nodesToRemove)
+            {
+                var nodeToRemove = await DbContext.Pinecone.FirstOrDefaultAsync(p => p.Guid == guidToRemove);
+                if (nodeToRemove != null)
+                {
+                    DbContext.Pinecone.Remove(nodeToRemove);
+                }
+            }
 
             var nodeMap = nodes.ToDictionary(n => n.Guid, n => n);
             var childrenNodes = nodeMap.Values
@@ -176,6 +188,23 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         {
             await transaction.RollbackAsync();
             throw;
+        }
+    }
+
+    private static HashSet<Guid> CollectNodeGuids(Pinecone root)
+    {
+        var guids = new HashSet<Guid>();
+        CollectNodeGuidsRecursively(root, guids);
+        return guids;
+    }
+
+    private static void CollectNodeGuidsRecursively(Pinecone node, HashSet<Guid> guids)
+    {
+        guids.Add(node.Guid);
+
+        foreach (var child in node.Children)
+        {
+            CollectNodeGuidsRecursively(child, guids);
         }
     }
 
@@ -204,21 +233,36 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         string userName,
         Guid groupGuid)
     {
-        var pinecone = new Pinecone
-        {
-            Id = 0,
-            Title = nodeDto.Title,
-            Content = nodeDto.Content,
-            GroupGuid = groupGuid,
-            ParentGuid = parentGuid,
-            Order = nodeDto.Order,
-            UserName = userName,
-            Guid = Guid.NewGuid(),
-            Create = DateTime.UtcNow,
-            Update = DateTime.UtcNow,
-        };
+        var existingPinecone = await DbContext.Pinecone.SingleOrDefaultAsync(p => p.Guid == nodeDto.Guid);
 
-        await DbContext.Pinecone.AddAsync(pinecone);
+        Pinecone pinecone;
+        if (existingPinecone != null && existingPinecone.UserName == userName)
+        {
+            pinecone = existingPinecone;
+            pinecone.Title = nodeDto.Title;
+            pinecone.Content = nodeDto.Content;
+            pinecone.ParentGuid = parentGuid;
+            pinecone.Order = nodeDto.Order;
+            pinecone.Update = DateTime.UtcNow;
+        }
+        else
+        {
+            pinecone = new Pinecone
+            {
+                Id = 0,
+                Title = nodeDto.Title,
+                Content = nodeDto.Content,
+                GroupGuid = groupGuid,
+                ParentGuid = parentGuid,
+                Order = nodeDto.Order,
+                UserName = userName,
+                Guid = nodeDto.Guid != Guid.Empty ? nodeDto.Guid : Guid.NewGuid(),
+                Create = DateTime.UtcNow,
+                Update = DateTime.UtcNow,
+            };
+            await DbContext.Pinecone.AddAsync(pinecone);
+        }
+
         await DbContext.SaveChangesAsync();
 
         var childrenNodes = nodeMap.Values

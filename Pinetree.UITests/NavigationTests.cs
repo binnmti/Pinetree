@@ -73,11 +73,11 @@ namespace Pinetree.UITests
 
             await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-            await Page.GotoAsync($"{TargetUrl}/List");
+            await Page.GotoAsync($"{TargetUrl}/User");
 
             await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-            StringAssert.Contains(Page.Url, "/List");
+            StringAssert.Contains(Page.Url, "/User");
         }
     }
 }

@@ -1,16 +1,14 @@
-- Update Log
-- GUI Test
+- One User Image File Check
 - User Image List
+
+- Publish to the web
+- Update Log
 - Paid Membership
 - monaco-editor
 - Drag＆Drop
   - TreeView File
   - TreeView→Markdown
 - Multilingualization, or rather Japaneseization
-- Publish to the web
-- CI Test
-- check DeleteBehavior.Cascade
-- One User Image File Check
 - Layout CSS 100% Check
 - Toolbar Refactor
 - Top Page Image
