@@ -21,8 +21,13 @@ namespace Pinetree.UITests
             var initialFileCount = await Page.TextContentAsync(".panel-footer div") ?? "";
             Assert.IsTrue(initialFileCount.Contains("FileCount : 1"));
 
+            //Ç±ÇÍï∑Ç¢ÇƒÇ»Ç¢ÅH
             await Page.ClickAsync("button[title='Add Child Item']");
-            await Page.WaitForSelectorAsync(".panel-footer div:has-text('FileCount : 2')");
+
+
+            //await Page.WaitForSelectorAsync(".panel-footer div:has-text('FileCount : 2')");
+
+
 
             var updatedFileCount = await Page.TextContentAsync(".panel-footer div") ?? "";
             Assert.IsTrue(updatedFileCount.Contains("FileCount : 2"));
