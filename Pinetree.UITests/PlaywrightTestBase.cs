@@ -53,7 +53,8 @@ namespace Pinetree.UITests
 
             Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
-                Headless = !Environment.IsDevelopment(),
+                Headless = false,
+                //Headless = !Environment.IsDevelopment(),
             });
 
             Context = await Browser.NewContextAsync(new BrowserNewContextOptions
