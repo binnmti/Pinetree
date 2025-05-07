@@ -106,8 +106,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
     - name: Cache Playwright browsers
       uses: actions/cache@v4
       id: playwright-cache
@@ -115,7 +113,7 @@ jobs:
         path: |
           ~\.cache\ms-playwright
           %APPDATA%\npm-cache
-        key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+        key: playwright-${{ runner.os }}-${{ github.sha }}
         restore-keys: |
             playwright-${{ runner.os }}-
     - name: Install Playwright
