@@ -109,15 +109,27 @@ jobs:
     - name: Build Tests
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Run GUI Tests
-      run: dotnet test Pinetree.UITests/Pinetree.UITests.csproj --logger "trx;LogFileName=guitests.trx" --results-directory TestResults 
+      run: dotnet test Pinetree.UITests/Pinetree.UITests.csproj --logger "trx;LogFileName=guitests.trx" --results-directory TestResults
       env:
         ASPNETCORE_ENVIRONMENT: Staging
+
+    - name: Debug - Find test result files
+      if: always()
+      run: |
+        echo "Current directory structure:"
+        dir /s /b TestResults
+        echo "All TRX files in workspace:"
+        dir /s /b *.trx
+      continue-on-error: true
+
     - name: Publish Test Results
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: gui-test-results
-        path: 'TestResults/**/*.trx'
+        path: |
+          TestResults/**/*.trx
+          **/TestResults/**/*.trx
     - name: Rollback Deployment on Failure
       if: failure()
       run: |
