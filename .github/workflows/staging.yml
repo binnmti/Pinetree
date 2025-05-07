@@ -24,7 +24,7 @@ jobs:
     - name: Build
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Run Unit Tests
-      run: dotnet test --no-build --filter "AssemblyName!=Pinetree.UITests"
+      run: dotnet test --no-build --filter "FullyQualifiedName!=Pinetree.UITests"
     - name: Publish
       run: dotnet publish Pinetree/Pinetree.csproj --configuration ${{ env.CONFIGURATION }} --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
     - name: Publish Artifacts
@@ -109,7 +109,7 @@ jobs:
     - name: Build Tests
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Run GUI Tests
-      run: dotnet test --filter "AssemblyName=Pinetree.UITests" --logger "trx;LogFileName=guitests.trx"
+      run: dotnet test --filter "FullyQualifiedName~Pinetree.UITests" --logger "trx;LogFileName=guitests.trx"
       env:
         ASPNETCORE_ENVIRONMENT: Staging
     - name: Publish Test Results
