@@ -121,8 +121,8 @@
                                 <th>Filename</th>
                                 <th>Size</th>
                                 <th>Upload Date</th>
-@*                                 <th>Document</th>
- *@                                <th>Actions</th>
+                                <th>Document</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -160,8 +160,17 @@
                                         <td>@file.FileName</td>
                                         <td>@FormatBytes(file.SizeInBytes)</td>
                                         <td>@file.UploadedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
-@*                                         <td><a href="/Edit/@file.PineconeGuid">Document</a></td>
- *@                                        <td>
+                                        <td>
+                                            @if (string.IsNullOrEmpty(file.PineconeTitle))
+                                            {
+                                                <span class="text-muted"><i class="bi bi-exclamation-circle"></i> Deleted Documents</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="/Edit/@file.PineconeGuid">/@file.PineconeTitle</a>
+                                            }
+                                        </td>
+                                        <td>
                                             <button class="btn btn-sm btn-danger" @onclick="() => DeleteFile(file.Id)">
                                                 Delete
                                             </button>

@@ -12,5 +12,7 @@ public class UserBlobInfo
     [MaxLength(50)]
     public string ContentType { get; set; } = "";
     public Guid PineconeGuid { get; set; }
+    public bool IsDeleted { get; set; } = false;
     public DateTime UploadedAt { get; set; }
+    public DateTime DeletedAt { get; set; }
 }

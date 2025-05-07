@@ -86,9 +86,10 @@ public class BlobStorageService
 
         return blobClient.Uri.ToString();
     }
+
     public async Task<List<UserBlobInfo>> GetUserBlobsAsync(string userName)
         => await _dbContext.UserBlobInfos
-            .Where(b => b.UserName == userName)
+            .Where(b => b.UserName == userName && !b.IsDeleted)
             .OrderByDescending(b => b.UploadedAt)
             .ToListAsync();
 
@@ -97,14 +98,13 @@ public class BlobStorageService
         var blobInfo = await _dbContext.UserBlobInfos
             .FirstOrDefaultAsync(b => b.Id == blobInfoId && b.UserName == userName);
 
-        if (blobInfo == null)
+        if (blobInfo == null || blobInfo.IsDeleted)
         {
             return false;
         }
 
-        var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
-        var blobClient = containerClient.GetBlobClient(blobInfo.BlobName);
-        await blobClient.DeleteIfExistsAsync();
+        blobInfo.IsDeleted = true;
+        blobInfo.DeletedAt = DateTime.UtcNow;
 
         var usage = await _dbContext.UserStorageUsages.SingleOrDefaultAsync(x => x.UserName == userName);
         if (usage != null)
@@ -113,6 +113,8 @@ public class BlobStorageService
             usage.LastUpdated = DateTime.UtcNow;
             _dbContext.UserStorageUsages.Update(usage);
         }
+
+        _dbContext.UserBlobInfos.Update(blobInfo);
         await _dbContext.SaveChangesAsync();
 
         return true;
@@ -146,23 +148,37 @@ public class BlobStorageService
         return blobClient.Uri.ToString();
     }
 
-    public UserBlobViewModel MapToViewModel(UserBlobInfo blobInfo)
+    public UserBlobViewModel MapToViewModel(UserBlobInfo blobInfo) => new()
     {
-        return new UserBlobViewModel
-        {
-            Id = blobInfo.Id,
-            BlobUrl = GenerateBlobUrl(blobInfo.UserName, blobInfo.BlobName),
-            FileName  = blobInfo.BlobName,
-            SizeInBytes = blobInfo.SizeInBytes,
-            ContentType = blobInfo.ContentType,
-            PineconeGuid = blobInfo.PineconeGuid,
-            UploadedAt = blobInfo.UploadedAt
-        };
-    }
+        Id = blobInfo.Id,
+        BlobUrl = GenerateBlobUrl(blobInfo.UserName, blobInfo.BlobName),
+        FileName = blobInfo.BlobName,
+        SizeInBytes = blobInfo.SizeInBytes,
+        ContentType = blobInfo.ContentType,
+        PineconeGuid = blobInfo.PineconeGuid,
+        UploadedAt = blobInfo.UploadedAt
+    };
 
     public async Task<List<UserBlobViewModel>> GetUserBlobViewModelsAsync(string userName)
     {
         var blobs = await GetUserBlobsAsync(userName);
-        return [.. blobs.Select(MapToViewModel)];
+
+        var pineconeGuids = blobs.Select(b => b.PineconeGuid).Distinct().ToList();
+        var pinecones = await _dbContext.Pinecone
+            .Where(p => pineconeGuids.Contains(p.Guid))
+            .Select(p => new { p.Guid, p.Title })
+            .ToDictionaryAsync(p => p.Guid, p => p.Title);
+
+        return [.. blobs.Select(blob => new UserBlobViewModel
+        {
+            Id = blob.Id,
+            BlobUrl = GenerateBlobUrl(blob.UserName, blob.BlobName),
+            FileName = blob.BlobName,
+            SizeInBytes = blob.SizeInBytes,
+            ContentType = blob.ContentType,
+            PineconeGuid = blob.PineconeGuid,
+            PineconeTitle = pinecones.TryGetValue(blob.PineconeGuid, out var title) ? title : "",
+            UploadedAt = blob.UploadedAt
+        })];
     }
 }
