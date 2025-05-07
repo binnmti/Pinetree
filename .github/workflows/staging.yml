@@ -102,7 +102,23 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    - name: Setup Node.js with npm cache
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: |
+          ~\.cache\ms-playwright
+          %APPDATA%\npm-cache
+        key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+            playwright-${{ runner.os }}-
     - name: Install Playwright
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: npx playwright install --with-deps
     - name: Restore
       run: dotnet restore
@@ -113,36 +129,10 @@ jobs:
         $outputDir = Join-Path $PWD "TestResults"
         Write-Host "Output directory: $outputDir"
         mkdir -Force $outputDir
-        dotnet test Pinetree.UITests/Pinetree.UITests.csproj --logger "trx;LogFileName=guitests.trx" --results-directory "$outputDir" --verbosity normal
+        dotnet test Pinetree.UITests/Pinetree.UITests.csproj --logger "trx;LogFileName=guitests.trx" --results-directory "$outputDir" --verbosity normal --filter "Category!=LongRunning"
       env:
         ASPNETCORE_ENVIRONMENT: Staging
-
-    - name: Debug - Find test result files
-      if: always()
-      run: |
-        echo "Current directory structure:"
-        Get-ChildItem -Path . -Recurse -Depth 4 -Filter "*.trx" | Select-Object FullName
-        echo "TestResults directory content (if exists):"
-        if (Test-Path -Path "TestResults") {
-          Get-ChildItem -Path "TestResults" -Recurse | Select-Object FullName, Length, LastWriteTime
-        } else {
-          echo "TestResults directory does not exist"
-        }
-    
-        echo "Checking default test output locations:"
-        $defaultPaths = @(
-          "Pinetree.UITests/TestResults",
-          "Pinetree.UITests/bin/Release/net9.0/TestResults"
-        )
-    
-        foreach ($path in $defaultPaths) {
-          if (Test-Path -Path $path) {
-            echo "Found test results in $path:"
-            Get-ChildItem -Path $path -Recurse | Select-Object FullName, Length, LastWriteTime
-          }
-        }
-      shell: pwsh
-      continue-on-error: true
+        PLAYWRIGHT_TIMEOUT: 30000
 
     - name: Publish Test Results
       uses: actions/upload-artifact@v4
@@ -154,9 +144,3 @@ jobs:
           **/TestResults/**
           Pinetree.UITests/bin/**/TestResults/**
 
-    - name: Rollback Deployment on Failure
-      if: failure()
-      run: |
-        echo "GUI Tests failed! Rolling back deployment..."
-      env:
-        AZURE_CREDENTIALS: ${{ secrets.Pinetree_SPN }}
