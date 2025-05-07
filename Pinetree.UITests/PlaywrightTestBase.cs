@@ -13,7 +13,7 @@ namespace Pinetree.UITests
         protected IPage Page { get; private set; } = null!;
         private IPlaywright Playwright { get; set; } = null!;
         protected IHostEnvironment Environment { get; private set; } = null!;
-        public TestContext TestContext { get; set; }
+        public TestContext TestContext { get; set; } = null!;
 
         public PlaywrightTestBase()
         {

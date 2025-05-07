@@ -109,7 +109,7 @@ jobs:
     - name: Build Tests
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Run GUI Tests
-      run: dotnet test Pinetree.UITests/Pinetree.UITests.csproj --logger "trx;LogFileName=guitests.trx"  
+      run: dotnet test Pinetree.UITests/Pinetree.UITests.csproj --logger "trx;LogFileName=guitests.trx" --results-directory TestResults 
       env:
         ASPNETCORE_ENVIRONMENT: Staging
     - name: Publish Test Results
@@ -117,7 +117,7 @@ jobs:
       if: always()
       with:
         name: gui-test-results
-        path: '**/*.trx'
+        path: 'TestResults/**/*.trx'
     - name: Rollback Deployment on Failure
       if: failure()
       run: |
