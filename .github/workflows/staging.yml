@@ -117,9 +117,14 @@ jobs:
       if: always()
       run: |
         echo "Current directory structure:"
-        dir /s /b TestResults
-        echo "All TRX files in workspace:"
-        dir /s /b *.trx
+        Get-ChildItem -Path . -Recurse -Filter "*.trx" | Select-Object FullName
+        echo "TestResults directory content (if exists):"
+        if (Test-Path -Path "TestResults") {
+          Get-ChildItem -Path "TestResults" -Recurse | Select-Object FullName
+        } else {
+          echo "TestResults directory does not exist"
+        }
+      shell: pwsh
       continue-on-error: true
 
     - name: Publish Test Results
@@ -130,6 +135,8 @@ jobs:
         path: |
           TestResults/**/*.trx
           **/TestResults/**/*.trx
+          Pinetree.UITests/bin/**/*.trx
+
     - name: Rollback Deployment on Failure
       if: failure()
       run: |
