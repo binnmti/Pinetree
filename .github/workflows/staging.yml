@@ -111,11 +111,9 @@ jobs:
       id: playwright-cache
       with:
         path: |
-          ~\.cache\ms-playwright
+          %USERPROFILE%\.cache\ms-playwright
           %APPDATA%\npm-cache
-        key: playwright-${{ runner.os }}-${{ github.sha }}
-        restore-keys: |
-            playwright-${{ runner.os }}-
+        key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json', '**/Pinetree.UITests.csproj') }}
     - name: Install Playwright
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: npx playwright install --with-deps
