@@ -94,6 +94,7 @@ namespace Pinetree.UITests
                         Path = screenshotPath,
                         FullPage = true
                     });
+                    TestContext.AddResultFile(screenshotPath);
                     Console.WriteLine($"Screenshot saved to: {screenshotPath}");
                 }
                 catch (Exception ex)
