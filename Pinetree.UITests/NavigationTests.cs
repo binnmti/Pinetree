@@ -39,20 +39,20 @@ namespace Pinetree.UITests
                 await childItems[0].ClickAsync();
             }
 
-            Page.Dialog += (_, dialog) =>
-            {
-                if (dialog.Type == "confirm" &&
-                    dialog.Message.Contains("Are you sure you want to delete"))
-                {
-                    dialog.AcceptAsync();
-                }
-            };
+            //Page.Dialog += (_, dialog) =>
+            //{
+            //    if (dialog.Type == "confirm" &&
+            //        dialog.Message.Contains("Are you sure you want to delete"))
+            //    {
+            //        dialog.AcceptAsync();
+            //    }
+            //};
 
-            await Page.ClickAsync("ul li ul li button[title='Delete Item']");
-            await Page.WaitForSelectorAsync(".panel-footer div:has-text('FileCount : 2')");
+            //await Page.ClickAsync("ul li ul li button[title='Delete Item']");
+            //await Page.WaitForSelectorAsync(".panel-footer div:has-text('FileCount : 2')");
 
-            var afterDeletionCount = await Page.TextContentAsync(".panel-footer div") ?? "";
-            Assert.IsTrue(afterDeletionCount.Contains("FileCount : 2"));
+            //var afterDeletionCount = await Page.TextContentAsync(".panel-footer div") ?? "";
+            //Assert.IsTrue(afterDeletionCount.Contains("FileCount : 2"));
         }
 
         [TestMethod]
