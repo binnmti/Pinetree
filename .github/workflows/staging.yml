@@ -107,16 +107,29 @@ jobs:
       uses: actions/cache@v3
       id: playwright-cache
       with:
-        path: ${{ runner.temp }}\ms-playwright
+        path: ${{ runner.temp }}/ms-playwright
         key: playwright-${{ runner.os }}-${{ hashFiles('Pinetree.UITests/*.csproj') }}
         restore-keys: |
           playwright-${{ runner.os }}-
 
-    - name: Install Playwright browsers
+    - name: Debug environment
+      run: |
+        Write-Host "Runner temp directory: ${{ runner.temp }}"
+        Write-Host "Cache hit: ${{ steps.playwright-cache.outputs.cache-hit }}"
+
+    - name: Install Playwright CLI
       if: steps.playwright-cache.outputs.cache-hit != 'true'
+      run: dotnet tool install --global Microsoft.Playwright.CLI
+
+    - name: Install Playwright browsers
       env:
-        PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}\ms-playwright
-      run: npx playwright install   
+        PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ms-playwright
+      run: |
+        if ("${{ steps.playwright-cache.outputs.cache-hit }}" -ne "true") {
+          playwright install --with-deps chromium
+        }
+        # ŠÂ‹«•Ï”‚ðÝ’è
+        echo "PLAYWRIGHT_BROWSERS_PATH=${{ runner.temp }}/ms-playwright" >> $GITHUB_ENV
 
     - name: Restore
       run: dotnet restore
