@@ -114,9 +114,10 @@ jobs:
 
     - name: Install Playwright browsers
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-      run: |
-        dotnet build -t:InstallPlaywrightBrowsers Pinetree.UITests/Pinetree.UITests.csproj
-   
+      env:
+        PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}\ms-playwright
+      run: npx playwright install   
+
     - name: Restore
       run: dotnet restore
 
