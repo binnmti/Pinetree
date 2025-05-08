@@ -129,7 +129,7 @@ jobs:
           playwright install --with-deps chromium
         }
         # ŠÂ‹«•Ï”‚ðÝ’è
-        echo "PLAYWRIGHT_BROWSERS_PATH=${{ runner.temp }}/ms-playwright" >> $GITHUB_ENV
+        echo "PLAYWRIGHT_BROWSERS_PATH=${{ runner.temp }}/ms-playwright" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Restore
       run: dotnet restore
