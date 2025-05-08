@@ -103,19 +103,19 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
 
-    # Playwrightブラウザバイナリのキャッシュ
     - name: Cache Playwright browsers
       uses: actions/cache@v3
       id: playwright-cache
       with:
-        path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: playwright-${{ runner.os }}-
-    
-    # キャッシュがヒットしなかった場合のみインストール実行
-    - name: Install Playwright
+        path: ${{ runner.temp }}\ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('Pinetree.UITests/*.csproj') }}
+        restore-keys: |
+          playwright-${{ runner.os }}-
+
+    - name: Install Playwright browsers
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-      run: npx playwright install
+      run: |
+        dotnet build -t:InstallPlaywrightBrowsers Pinetree.UITests/Pinetree.UITests.csproj
    
     - name: Restore
       run: dotnet restore
