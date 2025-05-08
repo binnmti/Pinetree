@@ -107,42 +107,42 @@ jobs:
       uses: actions/cache@v3
       id: playwright-cache
       with:
-        path: ${{ runner.temp }}/ms-playwright
-        key: playwright-${{ runner.os }}-${{ hashFiles('Pinetree.UITests/*.csproj') }}
+        path: D:\a\_temp\ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('Pinetree.UITests/Pinetree.UITests.csproj') }}
         restore-keys: |
           playwright-${{ runner.os }}-
 
     - name: Debug environment
       run: |
-        Write-Host "Runner temp directory: ${{ runner.temp }}"
-        Write-Host "Cache hit: ${{ steps.playwright-cache.outputs.cache-hit }}"
+        Write-Host "Runner temp directory: $env:RUNNER_TEMP"
+        Write-Host "Cache hit value: '${{ steps.playwright-cache.outputs.cache-hit }}'"
+        Write-Host "Absolute path for cache: D:\a\_temp\ms-playwright"
 
-    - name: Install Playwright CLI
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
-      run: dotnet tool install --global Microsoft.Playwright.CLI
-
-    - name: Install Playwright browsers
-      env:
-        PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ms-playwright
-      run: |
-        if ("${{ steps.playwright-cache.outputs.cache-hit }}" -ne "true") {
-          playwright install --with-deps chromium
-        }
-        echo "PLAYWRIGHT_BROWSERS_PATH=${{ runner.temp }}/ms-playwright" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-    - name: Restore
+    - name: Restore project dependencies
       run: dotnet restore
+
     - name: Build Tests
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
+
+    - name: Install Playwright browsers if cache missed
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      run: |
+        Write-Host "Cache miss detected, installing browsers..."
+        cd Pinetree.UITests/bin/${{ env.CONFIGURATION }}/net9.0
+        .\playwright.ps1 install --with-deps chromium
+      env:
+        PLAYWRIGHT_BROWSERS_PATH: D:\a\_temp\ms-playwright
+
     - name: Run GUI Tests
       run: |
         $outputDir = Join-Path $PWD "TestResults"
         Write-Host "Output directory: $outputDir"
         mkdir -Force $outputDir
-        dotnet test Pinetree.UITests/Pinetree.UITests.csproj --logger "trx;LogFileName=guitests.trx" --results-directory "$outputDir" --verbosity normal --filter "Category!=LongRunning"
+        dotnet test Pinetree.UITests/Pinetree.UITests.csproj --logger "trx;LogFileName=guitests.trx" --results-directory "$outputDir" --verbosity normal --filter "Category!=LongRunning" --no-build
       env:
         ASPNETCORE_ENVIRONMENT: Staging
         PLAYWRIGHT_TIMEOUT: 30000
+        PLAYWRIGHT_BROWSERS_PATH: D:\a\_temp\ms-playwright
 
     - name: Publish Test Results
       uses: actions/upload-artifact@v4
