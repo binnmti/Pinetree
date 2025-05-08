@@ -103,24 +103,13 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
 
-    - name: Cache Playwright browsers
-      uses: actions/cache@v3
-      id: playwright-cache
-      with:
-        path: ${{ runner.temp }}/ms-playwright
-        key: playwright-${{ runner.os }}-${{ hashFiles('Pinetree.UITests/*.csproj') }}
-        restore-keys: playwright-${{ runner.os }}-
-
     - name: Restore and build
       run: |
         dotnet restore
         dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
 
-    - name: Install Playwright browsers if needed
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
-      run: |
-        cd Pinetree.UITests/bin/${{ env.CONFIGURATION }}/net9.0
-        .\playwright.ps1 install --with-deps chromium
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
 
     - name: Run GUI Tests
       run: |
@@ -137,5 +126,3 @@ jobs:
           TestResults/**
           **/TestResults/**
           Pinetree.UITests/bin/**/TestResults/**
-
-
