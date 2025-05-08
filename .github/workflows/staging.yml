@@ -128,7 +128,6 @@ jobs:
         if ("${{ steps.playwright-cache.outputs.cache-hit }}" -ne "true") {
           playwright install --with-deps chromium
         }
-        # ŠÂ‹«•Ï”‚ğİ’è
         echo "PLAYWRIGHT_BROWSERS_PATH=${{ runner.temp }}/ms-playwright" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Restore
