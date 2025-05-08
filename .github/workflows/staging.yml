@@ -102,21 +102,24 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
-    - name: Setup Node.js with npm cache
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+
+    # Playwrightブラウザバイナリのキャッシュ
     - name: Cache Playwright browsers
-      uses: actions/cache@v4
+      uses: actions/cache@v3
       id: playwright-cache
       with:
-        path: |
-          %USERPROFILE%\.cache\ms-playwright
-          %APPDATA%\npm-cache
-        key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json', '**/Pinetree.UITests.csproj') }}
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: playwright-${{ runner.os }}-
+    
+    # キャッシュがヒットしなかった場合のみインストール実行
     - name: Install Playwright
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-      run: npx playwright install --with-deps
+      run: npx playwright install
+   
+    - name: Restore
+      run: dotnet restore
+
     - name: Restore
       run: dotnet restore
     - name: Build Tests
