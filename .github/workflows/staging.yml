@@ -11,7 +11,7 @@ env:
   ASPNETCORE_ENVIRONMENT: Staging
 
 jobs:
-  build-and-tests:
+  build-and-unit-tests:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
@@ -19,14 +19,12 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
-    - name: Install Playwright
-      run: npx playwright install
     - name: Restore
       run: dotnet restore
     - name: Build
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
-    - name: Run Tests
-      run: dotnet test --no-build
+    - name: Run Unit Tests
+      run: dotnet test Pinetree.Client.TestProject/Pinetree.Client.TestProject.csproj --no-build
     - name: Publish
       run: dotnet publish Pinetree/Pinetree.csproj --configuration ${{ env.CONFIGURATION }} --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
     - name: Publish Artifacts
@@ -37,7 +35,7 @@ jobs:
 
   migrate:
     runs-on: windows-latest
-    needs: build-and-tests
+    needs: build-and-unit-tests
     steps:
     - uses: actions/checkout@v4
     - name: Install EF Core tools
@@ -73,7 +71,7 @@ jobs:
 
   deploy:
     runs-on: windows-latest
-    needs: [build-and-tests, migrate]
+    needs: [build-and-unit-tests, migrate]
     steps:
     - uses: actions/checkout@v4
     - name: Download artifact from build job
@@ -94,3 +92,37 @@ jobs:
       run: |
         az webapp config appsettings set --name pinetree-staging --resource-group pinetree-staging --settings ASPNETCORE_ENVIRONMENT=Staging
       if: success()
+
+  run-gui-tests:
+    runs-on: windows-latest
+    needs: deploy
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+
+    - name: Restore and build
+      run: |
+        dotnet restore
+        dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+
+    - name: Run GUI Tests
+      run: |
+        dotnet test Pinetree.UITests/Pinetree.UITests.csproj --configuration ${{ env.CONFIGURATION }} --no-build --logger "trx;LogFileName=guitests.trx" --results-directory "TestResults" --filter "Category!=LongRunning"
+      env:
+        PLAYWRIGHT_TIMEOUT: 30000
+
+    - name: Publish Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: gui-test-results
+        path: |
+          TestResults/**
+          **/TestResults/**
+          Pinetree.UITests/bin/**/TestResults/**

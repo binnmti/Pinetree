@@ -5,6 +5,8 @@ namespace Pinetree.UITests
     [TestClass]
     public class NavigationTests : PlaywrightTestBase
     {
+        const int Timeout = 2000;
+
         [TestMethod]
         public async Task ShouldNavigateToTryitAndAddChildElements()
         {
@@ -13,8 +15,8 @@ namespace Pinetree.UITests
 
             await Page.ClickAsync("a[href='/Tryit']");
             await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
-            await Page.WaitForTimeoutAsync(500);
-            await Page.WaitForSelectorAsync(".panel-footer div:has-text('FileCount : 1')");
+            await Page.WaitForTimeoutAsync(Timeout);
+            await Page.WaitForSelectorAsync(".panel-footer div", new() { Timeout = Timeout });
 
             StringAssert.Contains(await Page.TitleAsync(), "Tryit");
 
@@ -22,13 +24,15 @@ namespace Pinetree.UITests
             Assert.IsTrue(initialFileCount.Contains("FileCount : 1"));
 
             await Page.ClickAsync("button[title='Add Child Item']");
-            await Page.WaitForSelectorAsync(".panel-footer div:has-text('FileCount : 2')");
+            await Page.WaitForTimeoutAsync(Timeout);
+            await Page.WaitForSelectorAsync(".panel-footer div:has-text('FileCount : 2')", new() { Timeout = Timeout });
 
             var updatedFileCount = await Page.TextContentAsync(".panel-footer div") ?? "";
             Assert.IsTrue(updatedFileCount.Contains("FileCount : 2"));
 
             await Page.ClickAsync("button[title='Add Child Item']");
-            await Page.WaitForSelectorAsync(".panel-footer div:has-text('FileCount : 3')");
+            await Page.WaitForTimeoutAsync(Timeout);
+            await Page.WaitForSelectorAsync(".panel-footer div:has-text('FileCount : 3')", new() { Timeout = Timeout });
 
             var finalFileCount = await Page.TextContentAsync(".panel-footer div") ?? "";
             Assert.IsTrue(finalFileCount.Contains("FileCount : 3"));
@@ -49,7 +53,8 @@ namespace Pinetree.UITests
             };
 
             await Page.ClickAsync("ul li ul li button[title='Delete Item']");
-            await Page.WaitForSelectorAsync(".panel-footer div:has-text('FileCount : 2')");
+            await Page.WaitForTimeoutAsync(Timeout);
+            await Page.WaitForSelectorAsync(".panel-footer div:has-text('FileCount : 2')", new() { Timeout = Timeout });
 
             var afterDeletionCount = await Page.TextContentAsync(".panel-footer div") ?? "";
             Assert.IsTrue(afterDeletionCount.Contains("FileCount : 2"));

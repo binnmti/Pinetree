@@ -195,12 +195,12 @@
     private List<UserBlobViewModel>? files;
     private UserFiles? storageUsage;
 
-    private void SetActiveTab(int tabIndex)
+    private async Task SetActiveTab(int tabIndex)
     {
         activeTab = tabIndex;
         if (activeTab == 0)
         {
-            LoadPage(CurrentPage);
+            await LoadPage(CurrentPage);
         }
         else if (activeTab == 1)
         {

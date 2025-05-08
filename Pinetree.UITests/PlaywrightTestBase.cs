@@ -13,6 +13,7 @@ namespace Pinetree.UITests
         protected IPage Page { get; private set; } = null!;
         private IPlaywright Playwright { get; set; } = null!;
         protected IHostEnvironment Environment { get; private set; } = null!;
+        public TestContext TestContext { get; set; } = null!;
 
         public PlaywrightTestBase()
         {
@@ -24,6 +25,9 @@ namespace Pinetree.UITests
             };
 
             TargetUrl = DetermineTargetUrl();
+            Directory.CreateDirectory("TestResults/Videos");
+            Directory.CreateDirectory("TestResults/Traces");
+            Directory.CreateDirectory("TestResults/Screenshots");
         }
 
         private string DetermineTargetUrl()
@@ -49,12 +53,21 @@ namespace Pinetree.UITests
 
             Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
-                Headless = !Environment.IsDevelopment(),
+                Headless = false,
+                //Headless = !Environment.IsDevelopment(),
             });
 
             Context = await Browser.NewContextAsync(new BrowserNewContextOptions
             {
-                ViewportSize = new ViewportSize { Width = 1280, Height = 720 }
+                ViewportSize = new ViewportSize { Width = 1280, Height = 720 },
+                RecordVideoDir = "TestResults/Videos"
+            });
+
+            await Context.Tracing.StartAsync(new TracingStartOptions
+            {
+                Screenshots = true,
+                Snapshots = true,
+                Sources = true
             });
 
             Page = await Context.NewPageAsync();
@@ -65,6 +78,44 @@ namespace Pinetree.UITests
         [TestCleanup]
         public async Task TestCleanup()
         {
+            string testName = TestContext.TestName ?? "UnknownTest";
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+            Directory.CreateDirectory("TestResults/Traces");
+            Directory.CreateDirectory("TestResults/Screenshots");
+
+            var testOutcome = TestContext.CurrentTestOutcome;
+            if (testOutcome != UnitTestOutcome.Passed && Page != null)
+            {
+                try
+                {
+                    string screenshotPath = Path.Combine("TestResults/Screenshots", $"{testName}_{timestamp}.png");
+                    await Page.ScreenshotAsync(new PageScreenshotOptions
+                    {
+                        Path = screenshotPath,
+                        FullPage = true
+                    });
+                    TestContext.AddResultFile(screenshotPath);
+                    Console.WriteLine($"Screenshot saved to: {screenshotPath}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to take screenshot: {ex.Message}");
+                }
+            }
+
+            try
+            {
+                await Context.Tracing.StopAsync(new TracingStopOptions
+                {
+                    Path = Path.Combine("TestResults/Traces", $"{testName}_{timestamp}.zip")
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to save trace: {ex.Message}");
+            }
+
             await Context.CloseAsync();
             await Browser.CloseAsync();
             Playwright?.Dispose();
