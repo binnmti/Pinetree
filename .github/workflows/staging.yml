@@ -133,9 +133,6 @@ jobs:
 
     - name: Restore
       run: dotnet restore
-
-    - name: Restore
-      run: dotnet restore
     - name: Build Tests
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Run GUI Tests
