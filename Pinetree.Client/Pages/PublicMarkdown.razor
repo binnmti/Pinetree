@@ -1,0 +1,45 @@
+@page "/public/{User}/{Guid:guid}"
+@using Pinetree.Client.VModel
+@using Pinetree.Client.Services
+@using Pinetree.Client.Pages.Components
+@using Pinetree.Shared.Model
+
+@rendermode InteractiveAuto
+
+@if (Pinetree != null)
+{
+    <Markdown Pinetree="@(Pinetree)" Guid="@(Guid)" IsTry=false IsProfessional=false FileCount=@FileCount IsPublicView=true />
+}
+
+@code {
+    [Parameter]
+    public string User { get; set; } = "";
+
+    [Parameter]
+    public Guid Guid { get; set; }
+
+    private PinetreeView? Pinetree { get; set; }
+    private int FileCount { get; set; }
+
+    [Inject]
+    public required NavigationManager NavigationManager { get; set; }
+    [Inject]
+    public required HttpClient HttpClient { get; set; }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var response = await HttpClient.GetFromJsonAsync<Pinecone>($"/api/Pinecones/get-include-child/{Guid}/{User}");
+            if (response == null)
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
+            
+            (Pinetree, FileCount) = response.ToPinetreeIncludeChild();
+            StateHasChanged();
+        }
+    }
+}

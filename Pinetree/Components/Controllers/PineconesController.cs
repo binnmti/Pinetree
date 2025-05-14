@@ -104,10 +104,10 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         await DbContext.SaveChangesAsync();
     }
 
-    [HttpGet("get-include-child/{guid}")]
-    public async Task<Pinecone> GetIncludeChild(Guid guid)
+    [HttpGet("get-include-child/{guid}/{userName}")]
+    public async Task<Pinecone> GetIncludeChild(Guid guid, string? userName)
     {
-        var userName = User.Identity?.Name ?? "";
+        userName ??= User.Identity?.Name ?? "";
         var pinecone = await GetPineconeAndVerifyOwnership(guid, userName);
 
         try

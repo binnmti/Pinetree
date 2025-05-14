@@ -2,7 +2,7 @@
 @using Pinetree.Client.Services
 @using Pinetree.Shared.Model
 
-@if (IsRoot)
+@if (IsRoot && !IsPublicView)
 {
     <div class="toolbar p-2 bg-light border-bottom d-flex justify-content-start align-items-center mb-2">
         <div class="btn-toolbar" role="toolbar" aria-label="Tree actions toolbar">
@@ -59,21 +59,24 @@
                 {
                     <div class="title px-1 flex-grow-1" @onclick="ActivePinetree">@Pinetree.Title</div>
                 }
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-dark btn-sm" title="Add Child Item" @onclick="AddChild">
-                        <i class="bi bi-file-earmark-plus"></i>
-                    </button>
-                    <button class="btn btn-outline-dark btn-sm" title="Delete Item" @onclick="() => DeleteCurrentItem(Pinetree)" disabled="@(!CanDeleteItem(Pinetree))">
-                        <i class="bi bi-trash2"></i>
-                    </button>
-                </div>
+                @if (!IsPublicView)
+                {
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-dark btn-sm" title="Add Child Item" @onclick="AddChild">
+                            <i class="bi bi-file-earmark-plus"></i>
+                        </button>
+                        <button class="btn btn-outline-dark btn-sm" title="Delete Item" @onclick="() => DeleteCurrentItem(Pinetree)" disabled="@(!CanDeleteItem(Pinetree))">
+                            <i class="bi bi-trash2"></i>
+                        </button>
+                    </div>
+                }
             </div>
             @if (Pinetree.IsExpanded)
             {
                 @foreach (var tree in Pinetree.Children)
                 {
                     <TreeView Pinetree="@(tree)" Guid="@(Guid)" IsTry=@IsTry IsProfessional=@IsProfessional
-                              OnChildEvent="OnChildEvent" RootNode="RootNode ?? Pinetree" IsRoot="false" />
+                              OnChildEvent="OnChildEvent" RootNode="RootNode ?? Pinetree" IsRoot="false" IsPublicView="IsPublicView" />
                 }
             }
         </li>
@@ -101,6 +104,9 @@
 
     [Parameter]
     public bool IsRoot { get; set; } = true;
+
+    [Parameter]
+    public bool IsPublicView { get; set; } = false;
 
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
