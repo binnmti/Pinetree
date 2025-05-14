@@ -17,6 +17,7 @@ public class Pinecone
     public required string Title { get; set; }
     public required string Content { get; set; }
     public required int Order { get; set; }
+    public required bool IsPublic { get; set; }
 
     [MaxLength(256)]
     public required string UserName { get; set; }

@@ -5,7 +5,7 @@ namespace Pinetree.Client.VModel;
 public static class PineconeConvert
 {
     public static PinetreeView ToPinetree(this Pinecone pinecone, PinetreeView? parent)
-        => new(pinecone.Guid, pinecone.Title, pinecone.Content, parent, pinecone.GroupGuid);
+        => new(pinecone.Guid, pinecone.Title, pinecone.Content, parent, pinecone.GroupGuid, pinecone.IsPublic);
 
     public static (PinetreeView, int) ToPinetreeIncludeChild(this Pinecone pinecone)
     {

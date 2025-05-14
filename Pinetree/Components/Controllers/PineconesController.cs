@@ -59,6 +59,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
             Order = maxOrder,
             UserName = userName,
             Guid = guid,
+            IsPublic = false,
             Create = DateTime.UtcNow,
             Update = DateTime.UtcNow,
         };
@@ -136,6 +137,30 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
     {
         var userName = User.Identity?.Name ?? "";
         return await GetUserTopList(userName).CountAsync();
+    }
+
+    [HttpPut("toggle-visibility/{guid}")]
+    public async Task<IActionResult> ToggleVisibility(Guid guid, [FromBody] VisibilityUpdateRequest request)
+    {
+        var userName = User.Identity?.Name ?? "";
+        var pinecone = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Guid == guid)
+            ?? throw new KeyNotFoundException($"Pinecone with ID {guid} not found.");
+
+        if (pinecone.UserName != userName)
+        {
+            return Unauthorized("You do not own this document.");
+        }
+
+        pinecone.IsPublic = request.IsPublic;
+        pinecone.Update = DateTime.UtcNow;
+        await DbContext.SaveChangesAsync();
+
+        return Ok();
+    }
+
+    public class VisibilityUpdateRequest
+    {
+        public bool IsPublic { get; set; }
     }
 
     private async Task RebuildTreeAsync(Guid rootId, List<PineconeDto> nodes, string userName)
@@ -257,6 +282,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
                 Order = nodeDto.Order,
                 UserName = userName,
                 Guid = nodeDto.Guid != Guid.Empty ? nodeDto.Guid : Guid.NewGuid(),
+                IsPublic = false,
                 Create = DateTime.UtcNow,
                 Update = DateTime.UtcNow,
             };

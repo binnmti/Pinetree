@@ -57,7 +57,13 @@
                                                     <i class="bi bi-file-earmark-text"></i>
                                                     @pinecone.Title
                                                 </strong>
-                                                <i @onclick="() => ConfirmDelete(pinecone.Guid)" class="bi bi-trash2 border px-1" style="cursor:pointer"></i>
+                                                <div>
+                                                    <i class="bi @(pinecone.IsPublic ? "bi-globe" : "bi-lock") border px-1"
+                                                       @onclick="() => ToggleVisibility(pinecone.Guid, !pinecone.IsPublic)"
+                                                       title="@(pinecone.IsPublic ? "Public" : "Private")"
+                                                       style="cursor:pointer"></i>
+                                                    <i @onclick="() => ConfirmDelete(pinecone.Guid)" class="bi bi-trash2 border px-1" style="cursor:pointer"></i>
+                                                </div>
                                             </div>
                                             <p class="card-text flex-grow-1" @onclick="() => OpenFile(pinecone.Guid)" style="cursor:pointer">@((MarkupString)GetContent(pinecone.Content))</p>
                                         </div>
@@ -259,6 +265,33 @@
     {
         var url = $"/Edit/{guid}";
         NavigationManager.NavigateTo(url);
+    }
+
+    private async Task ToggleVisibility(Guid guid, bool isPublic)
+    {
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"/api/Pinecones/toggle-visibility/{guid}", new { IsPublic = isPublic });
+            if (response.IsSuccessStatusCode)
+            {
+                // Update the local collection after successful API call
+                var item = PinetreeViews.FirstOrDefault(p => p.Guid == guid);
+                if (item != null)
+                {
+                    item.IsPublic = isPublic;
+                    StateHasChanged();
+                }
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await JSRuntime.InvokeVoidAsync("alert", $"Failed to update visibility: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error updating visibility: {ex.Message}");
+        }
     }
 
     private async Task ConfirmDelete(Guid guid)
