@@ -615,12 +615,13 @@
         MarkdownText = MarkdownService.ToHtml(Content);
         StateHasChanged();
     }
-
     private async Task ExtractToChildFile()
     {
         try
         {
-            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+            if (editor == null) return;
+            
+            var selection = await JS.InvokeAsync<SelectionRange>("monacoInterop.getTextAreaSelection", editor.EditorId);
             if (string.IsNullOrEmpty(selection.Text)) return;
 
             var defaultChildTitle = MarkdownUtil.GetChildTitle(selection.Text);
@@ -628,8 +629,8 @@
             if (string.IsNullOrWhiteSpace(childTitle)) return;
             var childId = await MarkdownUtil.AddChildAsync(Current, childTitle, selection.Text, JS, HttpClient, IsTry, IsProfessional);
             var linkText = $"[{childTitle}](//{childId})";
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, linkText);
-            Current.Content = await JS.GetTextAreaValueAsync();
+            await JS.InvokeVoidAsync("monacoInterop.replaceTextAreaSelection", editor.EditorId, linkText);
+            Current.Content = await JS.InvokeAsync<string>("monacoInterop.getValue", editor.EditorId);
             SetCurrent(Guid);
             StateHasChanged();
         }
@@ -661,11 +662,11 @@
         await JS.InvokeVoidAsync("monacoInterop.setCaretPosition", editor.EditorId, selection.Start + prefix.Length);
         var content = await JS.InvokeAsync<string>("monacoInterop.getValue", editor.EditorId);
         UpdateContent(content);
-    }
-
+    }    
+    
     private async Task InsertList(string prefix)
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+        var selection = await JS.InvokeAsync<SelectionRange>("monacoInterop.getTextAreaSelection", editor.EditorId);
         string result;
         var lines = selection.Text.Split('\n');
         if (selection.Text.Length > 0)
@@ -676,59 +677,61 @@
         {
             result = $"{prefix}";
         }
-        await _jsInterop.ReplaceSelectionAsync(TextAreaRef, result);
+        await JS.InvokeVoidAsync("monacoInterop.replaceTextAreaSelection", editor.EditorId, result);
         var newCaretPosition = selection.End + prefix.Length * lines.Length;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, newCaretPosition, newCaretPosition);
+        await JS.InvokeVoidAsync("monacoInterop.setCaretPosition", editor.EditorId, newCaretPosition);
 
-        var content = await JS.GetTextAreaValueAsync();
+        var content = await JS.InvokeAsync<string>("monacoInterop.getValue", editor.EditorId);
         UpdateContent(content);
     }
-
+    
     private async Task InsertLink()
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+        var selection = await JS.InvokeAsync<SelectionRange>("monacoInterop.getTextAreaSelection", editor.EditorId);
         if (selection.Text.Length > 0)
         {
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"[{selection.Text}](https://)");
+            await JS.InvokeVoidAsync("monacoInterop.replaceTextAreaSelection", editor.EditorId, $"[{selection.Text}](https://)");
         }
         else
         {
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"[](https://)");
+            await JS.InvokeVoidAsync("monacoInterop.replaceTextAreaSelection", editor.EditorId, $"[](https://)");
         }
         int start = selection.Start;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + 1, start + 1);
-        var content = await JS.GetTextAreaValueAsync();
+        await JS.InvokeVoidAsync("monacoInterop.setCaretPosition", editor.EditorId, start + 1);
+        var content = await JS.InvokeAsync<string>("monacoInterop.getValue", editor.EditorId);
         UpdateContent(content);
     }
-
+    
     private async Task InsertImage()
     {
         try
         {
-            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+            if (editor == null) return;
+            
+            var selection = await JS.InvokeAsync<SelectionRange>("monacoInterop.getTextAreaSelection", editor.EditorId);
             var result = await _jsInterop.OpenFileDialogAndGetBlobUrlAsync();
             if (!string.IsNullOrEmpty(result.BlobUrl))
             {
-                await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![{result.FileName}]({result.BlobUrl})");
+                await JS.InvokeVoidAsync("monacoInterop.replaceTextAreaSelection", editor.EditorId, $"![{result.FileName}]({result.BlobUrl})");
 
                 int start = selection.Start;
-                await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + 2, start + 2 + result.FileName.Length);
+                await JS.InvokeVoidAsync("monacoInterop.setCaretPosition", editor.EditorId, start + 2);
             }
             else
             {
                 if (selection.Text.Length > 0)
                 {
-                    await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![{selection.Text}](https://)");
+                    await JS.InvokeVoidAsync("monacoInterop.replaceTextAreaSelection", editor.EditorId, $"![{selection.Text}](https://)");
                 }
                 else
                 {
-                    await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![](https://)");
+                    await JS.InvokeVoidAsync("monacoInterop.replaceTextAreaSelection", editor.EditorId, $"![](https://)");
                 }
 
                 int start = selection.Start;
-                await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + 2, start + 2);
+                await JS.InvokeVoidAsync("monacoInterop.setCaretPosition", editor.EditorId, start + 2);
             }
-            var content = await JS.GetTextAreaValueAsync();
+            var content = await JS.InvokeAsync<string>("monacoInterop.getValue", editor.EditorId);
             UpdateContent(content);
         }
         catch (Exception ex)
@@ -736,46 +739,54 @@
             Console.Error.WriteLine(ex.Message);
         }
     }
-
+    
     private async Task InsertGrid()
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
-        await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{selection.Text}\n| Column 1 | Column 2 | Column 3 |\n| --- | --- | --- |\n| text | text | text |\n");
+        if (editor == null) return;
+        
+        var selection = await JS.InvokeAsync<SelectionRange>("monacoInterop.getTextAreaSelection", editor.EditorId);
+        await JS.InvokeVoidAsync("monacoInterop.replaceTextAreaSelection", editor.EditorId, $"{selection.Text}\n| Column 1 | Column 2 | Column 3 |\n| --- | --- | --- |\n| text | text | text |\n");
         int end = selection.End;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, end, end);
-        var content = await JS.GetTextAreaValueAsync();
+        await JS.InvokeVoidAsync("monacoInterop.setCaretPosition", editor.EditorId, end);
+        var content = await JS.InvokeAsync<string>("monacoInterop.getValue", editor.EditorId);
         UpdateContent(content);
     }
-
+    
     private async Task InsertLine()
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
-        await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{selection.Text}\n---\n");
+        if (editor == null) return;
+        
+        var selection = await JS.InvokeAsync<SelectionRange>("monacoInterop.getTextAreaSelection", editor.EditorId);
+        await JS.InvokeVoidAsync("monacoInterop.replaceTextAreaSelection", editor.EditorId, $"{selection.Text}\n---\n");
         int end = selection.End;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, end, end);
-        var content = await JS.GetTextAreaValueAsync();
+        await JS.InvokeVoidAsync("monacoInterop.setCaretPosition", editor.EditorId, end);
+        var content = await JS.InvokeAsync<string>("monacoInterop.getValue", editor.EditorId);
         UpdateContent(content);
     }
-
+    
     private async Task UndoAsync()
     {
+        if (editor == null) return;
+        
         string? newContent = Current.Undo();
         if (newContent == null) return;
 
         Content = newContent;
         MarkdownText = MarkdownService.ToHtml(Content);
-        await _jsInterop.SetTextAreaValueAsync(TextAreaRef, Content, true);
+        await JS.InvokeVoidAsync("monacoInterop.setValue", editor.EditorId, Content);
         StateHasChanged();
     }
-
+    
     private async Task RedoAsync()
     {
+        if (editor == null) return;
+        
         string? newContent = Current.Redo();
         if (newContent == null) return;
 
         Content = newContent;
         MarkdownText = MarkdownService.ToHtml(Content);
-        await _jsInterop.SetTextAreaValueAsync(TextAreaRef, Content, true);
+        await JS.InvokeVoidAsync("monacoInterop.setValue", editor.EditorId, Content);
         StateHasChanged();
     }
 
