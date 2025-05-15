@@ -557,7 +557,8 @@
      * イメージのドロップイベントを処理する
      * @param {string} editorId - エディタID 
      * @param {object} dotNetHelper - .NETメソッド呼び出し用のヘルパーオブジェクト
-     */    setupImageDropHandler: function(editorId, dotNetHelper) {
+     */
+    setupImageDropHandler: function (editorId, dotNetHelper) {
         const editorElement = document.getElementById(editorId);
         if (!editorElement) {
             console.error(`Editor element with ID "${editorId}" not found.`);
@@ -865,7 +866,56 @@
             characterData: true
         });
         
-        console.log('Scroll sync setup complete between editor and preview');    }
+        console.log('Scroll sync setup complete between editor and preview');
+    },
+
+    /**
+     * ファイルダイアログを開いて画像を選択し、ブロブURLを取得する
+     * @param {number} maxSizeMB - 最大サイズ（MB）
+     * @returns {Promise<object>} 画像情報（ブロブURLとファイル名）
+     */
+    openFileDialogAndGetBlobUrl: function (maxSizeMB = 5) {
+        return new Promise((resolve, reject) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+
+            input.onchange = async (e) => {
+                const files = input.files;
+                if (files && files.length > 0) {
+                    const file = files[0];
+
+                    const maxSizeBytes = maxSizeMB * 1024 * 1024;
+                    if (file.size > maxSizeBytes) {
+                        alert(`Image size is too large. Please select an image under ${maxSizeMB}MB.`);
+                        resolve(null);
+                        return;
+                    }
+
+                    try {
+                        const imageId = await saveFileToIndexedDB(file);
+                        const blobUrl = await getImageBlobUrl(imageId);
+
+                        resolve({
+                            blobUrl: blobUrl,
+                            fileName: file.name
+                        });
+                    } catch (error) {
+                        console.error("Error handling file:", error);
+                        reject(error);
+                    }
+                } else {
+                    resolve(null);
+                }
+            };
+
+            input.onclick = () => {
+                input.oncancel = () => resolve(null);
+            };
+
+            input.click();
+        });
+    }
 }
 
 // IndexedDB functions for image handling (from Markdown.razor.ts)
@@ -1089,54 +1139,6 @@ function clearAllImagesFromIndexedDB() {
                 reject('Error clearing images: ' + error);
             }
         };
-    });
-}
-
-/**
- * ファイルダイアログを開いて画像を選択し、ブロブURLを取得する
- * @param {number} maxSizeMB - 最大サイズ（MB）
- * @returns {Promise<object>} 画像情報（ブロブURLとファイル名）
- */
-function openFileDialogAndGetBlobUrl(maxSizeMB = 5) {
-    return new Promise((resolve, reject) => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-
-        input.onchange = async (e) => {
-            const files = input.files;
-            if (files && files.length > 0) {
-                const file = files[0];
-
-                const maxSizeBytes = maxSizeMB * 1024 * 1024;
-                if (file.size > maxSizeBytes) {
-                    alert(`Image size is too large. Please select an image under ${maxSizeMB}MB.`);
-                    resolve(null);
-                    return;
-                }
-
-                try {
-                    const imageId = await saveFileToIndexedDB(file);
-                    const blobUrl = await getImageBlobUrl(imageId);
-                    
-                    resolve({
-                        blobUrl: blobUrl,
-                        fileName: file.name
-                    });
-                } catch (error) {
-                    console.error("Error handling file:", error);
-                    reject(error);
-                }
-            } else {
-                resolve(null);
-            }
-        };
-
-        input.onclick = () => {
-            input.oncancel = () => resolve(null);
-        };
-
-        input.click();
     });
 }
 
