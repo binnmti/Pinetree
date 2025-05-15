@@ -1,19 +1,43 @@
 ﻿@inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
-<div id="@EditorId" class="no-resize" style="width: 100%; height: 100%; border: 1px solid #ccc;"></div>
+<div id="@EditorId" class="monaco-editor-container no-resize" style="width: 100%; height: 100%; border: 1px solid #ccc;">
+    <style>
+        .monaco-editor-container {
+            position: relative;
+        }
+        .monaco-editor.drag-over {
+            box-shadow: inset 0 0 0 2px #0078d7 !important;
+            position: relative;
+        }
+        .monaco-editor.drag-over::after {
+            content: "Drop image here";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 120, 215, 0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
+</div>
 
 @code {
     [Parameter] public string EditorId { get; set; } = "monaco-editor-container";
     [Parameter] public string Value { get; set; } = "";
     [Parameter] public EventCallback<string> OnChange { get; set; }
+    [Parameter] public EventCallback<(string BlobUrl, string FileName)> OnImageDropped { get; set; }
+    [Parameter] public EventCallback<string> OnMarkdownLinkClick { get; set; }
 
     private string Language { get; set; } = "markdown";
     private string Theme { get; set; } = "vs";
     private DotNetObjectReference<MonacoEditor>? objRef;
     private bool isInitialized = false;
-    private IJSObjectReference? module;
-
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -27,17 +51,42 @@
             await JSRuntime.InvokeVoidAsync("monacoInterop.setValue", EditorId, Value);
         }
     }
-
+    
     private async Task InitializeEditorAsync()
     {
-        await JSRuntime.InvokeVoidAsync("monacoInterop.initialize",
-            EditorId,
-            Language,
-            Theme,
-            Value,
-            objRef);
+        Console.WriteLine($"Initializing Monaco Editor with ID: {EditorId}");
+        try
+        {
+            // Check if monacoInterop is available
+            bool isMonacoAvailable = await JSRuntime.InvokeAsync<bool>("eval", "typeof window.monacoInterop !== 'undefined'");
+            
+            if (!isMonacoAvailable)
+            {
+                Console.Error.WriteLine("Monaco Interop object is not available. Waiting 1 second and trying again...");
+                await Task.Delay(1000); // Wait a second and try again
+                await InitializeEditorAsync();
+                return;
+            }
+            
+            await JSRuntime.InvokeVoidAsync("monacoInterop.initialize",
+                EditorId,
+                Language,
+                Theme,
+                Value,
+                objRef);
 
-        isInitialized = true;
+            isInitialized = true;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error initializing Monaco Editor: {ex.Message}");
+            // If there's an error, try again after a short delay (up to 3 times)
+            if (!isInitialized)
+            {
+                await Task.Delay(500);
+                await InitializeEditorAsync();
+            }
+        }
     }
 
     [JSInvokable]
@@ -56,20 +105,197 @@
         }
     }
 
-    // public async Task SetValueAsync(string value)
-    // {
-    //     Value = value;
-    //     if (isInitialized)
-    //     {
-    //         await JSRuntime.InvokeVoidAsync("monacoInterop.setValue", EditorId, value);
-    //     }
-    // }
-
+    public async Task SetValueAsync(string value)
+    {
+        Value = value;
+        if (isInitialized)
+        {
+            await JSRuntime.InvokeVoidAsync("monacoInterop.setValue", EditorId, value);
+        }
+    }
+    
     public async Task FocusAsync()
     {
         if (isInitialized)
         {
             await JSRuntime.InvokeVoidAsync("monacoInterop.focus", EditorId);
         }
+    }
+    
+    [JSInvokable]
+    public async Task<string> HandleDroppedFile(object data)
+    {
+        Console.WriteLine($"HandleDroppedFile called in MonacoEditor.razor");
+        try
+        {
+            // データの型を確認して適切に処理
+            if (data is System.Text.Json.JsonElement jsonElement)
+            {
+                string? blobUrl = null;
+                string? fileName = null;
+
+                if (jsonElement.TryGetProperty("blobUrl", out var blobUrlElement) && 
+                    blobUrlElement.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    blobUrl = blobUrlElement.GetString();
+                }
+
+                if (jsonElement.TryGetProperty("fileName", out var fileNameElement) && 
+                    fileNameElement.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    fileName = fileNameElement.GetString();
+                }
+
+                if (!string.IsNullOrEmpty(blobUrl) && !string.IsNullOrEmpty(fileName))
+                {
+                    Console.WriteLine($"Image drop processed: {fileName}, URL: {blobUrl?.Substring(0, Math.Min(50, blobUrl.Length))}...");
+                    
+                    // 画像URLとファイル名を親コンポーネントに通知
+                    await OnImageDropped.InvokeAsync((blobUrl!, fileName));
+                    
+                    // マークダウン形式の画像挿入
+                    var markdownText = $"![{fileName}]({blobUrl})\n\n";
+                    
+                    try {
+                        // エディタにフォーカスを当てる
+                        await JSRuntime.InvokeVoidAsync("monacoInterop.focus", EditorId);
+                        
+                        // 現在の選択範囲を取得し、適切に挿入する
+                        var selection = await JSRuntime.InvokeAsync<SelectionRange>("monacoInterop.getTextAreaSelection", EditorId);
+                        
+                        // 選択範囲を使用して直接JSでテキストを挿入する
+                        var insertResult = await JSRuntime.InvokeAsync<bool>("monacoInterop.replaceTextAreaSelection", EditorId, markdownText);
+                        
+                        if (!insertResult) {
+                            // フォールバック: エディタの値を取得して手動でテキストを挿入
+                            var currentValue = await JSRuntime.InvokeAsync<string>("monacoInterop.getValue", EditorId);
+                            var newValue = currentValue + "\n" + markdownText;
+                            await JSRuntime.InvokeVoidAsync("monacoInterop.setValue", EditorId, newValue);
+                            
+                            // 値が変更されたことを通知
+                            await OnContentChanged(newValue);
+                        }
+                        
+                        return "Success";
+                    }
+                    catch (Exception ex) {
+                        Console.WriteLine($"Error inserting markdown text: {ex.Message}");
+                        return $"Error inserting text: {ex.Message}";
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Invalid image data received");
+                    return "Error: Invalid image data";
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Unexpected data type: {data?.GetType().Name ?? "null"}");
+                return "Error: Unexpected data format";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in HandleDroppedFile: {ex.Message}");
+            return $"Error: {ex.Message}";
+        }
+    }
+    
+    [JSInvokable]
+    public Task HandleEditorInitialized()
+    {
+        Console.WriteLine("Monaco Editor initialized");
+        // 必要に応じて初期化後の追加処理をここに実装
+        return Task.CompletedTask;
+    }
+    
+    [JSInvokable]
+    public async Task HandleUndoShortcut()
+    {
+        // Undoロジックは親コンポーネントに通知
+        Console.WriteLine("Undo shortcut triggered");
+        await JSRuntime.InvokeVoidAsync("console.log", "Undo shortcut triggered in C#");
+        // ここでUndoイベントを発生させることも可能
+    }
+
+    [JSInvokable]
+    public async Task HandleRedoShortcut()
+    {
+        // Redoロジックは親コンポーネントに通知
+        Console.WriteLine("Redo shortcut triggered");
+        await JSRuntime.InvokeVoidAsync("console.log", "Redo shortcut triggered in C#");
+        // ここでRedoイベントを発生させることも可能
+    }
+
+    [JSInvokable]
+    public async Task HandleMarkdownLinkClick(string id)
+    {
+        Console.WriteLine($"Markdown link clicked: {id}");
+        if (OnMarkdownLinkClick.HasDelegate)
+        {
+            await OnMarkdownLinkClick.InvokeAsync(id);
+        }
+    }
+    
+    // 選択範囲を操作するためのヘルパーメソッド
+    public async Task<SelectionRange> GetSelectionAsync()
+    {
+        return await JSRuntime.InvokeAsync<SelectionRange>("monacoInterop.getTextAreaSelection", EditorId);
+    }
+    
+    public async Task<bool> ReplaceSelectionAsync(string text)
+    {
+        return await JSRuntime.InvokeAsync<bool>("monacoInterop.replaceTextAreaSelection", EditorId, text);
+    }
+    
+    public async Task SetCaretPositionAsync(int start, int end = -1)
+    {
+        await JSRuntime.InvokeVoidAsync("monacoInterop.setCaretPosition", EditorId, start, end < 0 ? start : end);
+    }
+    
+    public async Task FormatTextAsync(string prefix, string suffix)
+    {
+        await JSRuntime.InvokeVoidAsync("monacoInterop.formatText", EditorId, prefix, suffix);
+    }
+    
+    public async Task<string> GetValueAsync()
+    {
+        return await JSRuntime.InvokeAsync<string>("monacoInterop.getValue", EditorId);
+    }
+    
+    // スクロール同期のためのヘルパーメソッド
+    public async Task SetupScrollSyncAsync(ElementReference previewElement)
+    {
+        await JSRuntime.InvokeVoidAsync("monacoInterop.setupScrollSync", EditorId, previewElement);
+    }
+      // 画像ハンドリングのためのヘルパーメソッド
+    public async Task<string> ReplaceBlobUrlsInContentAsync(string content)
+    {
+        return await JSRuntime.InvokeAsync<string>("replaceBlobUrlsInContent", content);
+    }
+    
+    public async Task<ImageUploadResult> OpenFileDialogAndGetBlobUrlAsync()
+    {
+        return await JSRuntime.InvokeAsync<ImageUploadResult>("openFileDialogAndGetBlobUrl");
+    }
+    
+    public async Task<string> ClearAllImagesFromIndexedDBAsync()
+    {
+        return await JSRuntime.InvokeAsync<string>("clearAllImagesFromIndexedDB");
+    }
+      // テキストエリアのカーソル位置の選択範囲情報を表すクラス
+    public class SelectionRange
+    {
+        public string Text { get; set; } = "";
+        public int Start { get; set; }
+        public int End { get; set; }
+    }
+    
+    // 画像アップロード結果を表すクラス
+    public class ImageUploadResult
+    {
+        public string BlobUrl { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
     }
 }

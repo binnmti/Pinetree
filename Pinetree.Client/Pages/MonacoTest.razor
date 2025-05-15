@@ -7,22 +7,59 @@
 <div class="row mb-3">
     <div class="col">
         <button class="btn btn-primary" @onclick="SaveContent">保存</button>
+        <button class="btn btn-info ms-2" @onclick="ClearEditor">クリア</button>
     </div>
 </div>
 
+<div class="alert alert-info mb-3">
+    <strong>使い方：</strong> 下のエディタに画像ファイルをドラッグ＆ドロップしてください。画像はMarkdown形式で挿入されます。
+</div>
+
 <div class="row">
-    <div class="col" style="width:800px; height:800px;">
-        <MonacoEditor @ref="editor"
-                      EditorId="my-editor"
-                      Value="@editorContent"
-                      OnChange="@HandleEditorChange" />
+    <div class="col-md-8" style="height:600px;">
+        <div class="card h-100">
+            <div class="card-header">
+                Monaco エディタ
+            </div>
+            <div class="card-body p-0" style="height:calc(100% - 40px);">
+                <MonacoEditor @ref="editor"
+                          EditorId="my-editor"
+                          Value="@editorContent"
+                          OnChange="@HandleEditorChange"
+                          OnImageDropped="@HandleImageDropped" />
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">画像情報</div>
+            <div class="card-body">
+                <ul class="list-group">
+                    @foreach (var image in droppedImages)
+                    {
+                        <li class="list-group-item">
+                            <strong>@image.FileName</strong><br />
+                            <small class="text-muted">@image.Time.ToString("HH:mm:ss")</small>
+                        </li>
+                    }
+                </ul>
+                @if (droppedImages.Count == 0)
+                {
+                    <div class="text-center text-muted p-3">
+                        <i class="bi bi-images" style="font-size: 2rem;"></i>
+                        <p class="mt-2">画像をドロップするとここに表示されます</p>
+                    </div>
+                }
+            </div>
+        </div>
     </div>
 </div>
 
 
 @code {
     private MonacoEditor? editor;
-    private string editorContent = "// ここにテキストを入力してください\n\nこれはプレーンテキストエディタのテストです。";
+    private string editorContent = "# Monaco Editor テスト\n\n## 画像のドラッグ＆ドロップ\nこのエリアに画像ファイルをドラッグ＆ドロップしてみてください。\n\n## その他のテスト\nこれはMarkdown形式のテキストエディタのテストです。";
+    private List<DroppedImage> droppedImages = new List<DroppedImage>();
 
     private void HandleEditorChange(string newContent)
     {
@@ -35,12 +72,38 @@
         await Task.Delay(100); // ダミー処理
         Console.WriteLine("Content saved!");
     }
+    
+    private void ClearEditor()
+    {
+        editorContent = "# Monaco Editor テスト\n\n画像をこのエディタにドラッグ＆ドロップしてください。";
+        droppedImages.Clear();
+    }
+    
+    private void HandleImageDropped((string BlobUrl, string FileName) imageInfo)
+    {
+        Console.WriteLine($"Image dropped: {imageInfo.FileName}");
+        Console.WriteLine($"Blob URL: {imageInfo.BlobUrl.Substring(0, Math.Min(50, imageInfo.BlobUrl.Length))}...");
+        
+        droppedImages.Add(new DroppedImage
+        {
+            FileName = imageInfo.FileName,
+            BlobUrl = imageInfo.BlobUrl,
+            Time = DateTime.Now
+        });
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // if (firstRender && editor != null)
-        // {
-        //     await editor.FocusAsync();
-        // }
+        if (firstRender && editor != null)
+        {
+            await editor.FocusAsync();
+        }
+    }
+    
+    private class DroppedImage
+    {
+        public string FileName { get; set; } = "";
+        public string BlobUrl { get; set; } = "";
+        public DateTime Time { get; set; }
     }
 }
