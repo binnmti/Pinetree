@@ -148,9 +148,9 @@
                         // カーソル位置の行のコンテンツを取得
                         const lineContent = model.getLineContent(currentLineNumber);
                         console.log('Enter key pressed at line:', currentLineNumber, 'content:', lineContent);
-                        
+
                         // チェックボックスパターンと箇条書きパターンの検出
-                        const checkboxPattern = /^(\s*)(-\s+\[[ x]?\])\s+/;
+                        const checkboxPattern = /^(\s*)(- \[[ x]?\])\s*/;  // 修正箇所
                         const bulletPattern = /^(\s*)([-+*]|(\d+)\.|\>)\s+/;
                         
                         const checkboxMatch = lineContent.match(checkboxPattern);
