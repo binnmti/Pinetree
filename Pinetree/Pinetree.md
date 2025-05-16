@@ -2,6 +2,7 @@
 - User Image List
 - Paid Membership
 - monaco-editor
+  - [bug](https://github.com/dotnet/aspnetcore/issues/57100#issuecomment-2260533045)
 - Drag＆Drop
   - TreeView File
   - TreeView→Markdown
