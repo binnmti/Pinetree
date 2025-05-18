@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Pinetree.Shared.Model;
 
@@ -26,7 +25,22 @@ public class Pinecone
 
     public required DateTime Create { get; set; } = DateTime.UtcNow;
     public required DateTime Update { get; set; } = DateTime.UtcNow;
+
+    public static readonly Pinecone None = new()
+    {
+        Title = null!,
+        Content = null!,
+        GroupGuid = default,
+        ParentGuid = null,
+        Order = default,
+        UserName = null!,
+        Guid = default,
+        IsPublic = default,
+        Create = default,
+        Update = default,
+    };
 }
+
 public class PineconeDto
 {
     public Guid Guid { get; set; }

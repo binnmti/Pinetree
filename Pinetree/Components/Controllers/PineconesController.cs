@@ -18,7 +18,7 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
     public async Task<IActionResult> UpdateTree([FromBody] TreeUpdateRequest request)
     {
         var userName = User.Identity?.Name ?? "";
-        await GetPineconeAndVerifyOwnership(request.RootId, userName);
+        await GetPineconeAndVerifyOwnership(request.RootId);
         if (request.HasStructuralChanges)
         {
             await RebuildTreeAsync(request.RootId, request.Nodes, userName);
@@ -104,21 +104,24 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         await DbContext.SaveChangesAsync();
     }
 
-    [HttpGet("get-include-child/{guid}/{userName}")]
-    public async Task<Pinecone> GetIncludeChild(Guid guid, string? userName)
+    [HttpGet("get-include-child/{guid}")]
+    public async Task<Pinecone> GetIncludeChild(Guid guid)
     {
-        userName ??= User.Identity?.Name ?? "";
-        var pinecone = await GetPineconeAndVerifyOwnership(guid, userName);
+        var pinecone = await GetPineconeAndVerifyOwnership(guid);
+        var rootPinecone = await GetPineconeAndVerifyOwnership(pinecone?.GroupGuid ?? Guid.Empty);
+        if (rootPinecone == null) return Pinecone.None;
+        return await LoadChildrenRecursively(rootPinecone);
+    }
 
-        try
-        {
-            var rootPinecone = await GetPineconeAndVerifyOwnership(pinecone.GroupGuid, userName);
-            return await LoadChildrenRecursively(rootPinecone);
-        }
-        catch (KeyNotFoundException)
-        {
-            return await LoadChildrenRecursively(pinecone);
-        }
+    [HttpGet("get-view-include-child/{guid}")]
+    [AllowAnonymous]
+    public async Task<Pinecone?> GetViewIncludeChild(Guid guid)
+    {
+        var pinecone = await GetPineconeAndVerifyOwnership(guid);
+        if (pinecone == null || !pinecone.IsPublic) return Pinecone.None;
+        var rootPinecone = await GetPineconeAndVerifyOwnership(pinecone.GroupGuid);
+        if (rootPinecone == null) return Pinecone.None;
+        return await LoadChildrenRecursively(rootPinecone);
     }
 
     [HttpGet("get-user-top-list")]
@@ -355,14 +358,6 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
         return parent;
     }
 
-    private async Task<Pinecone> GetPineconeAndVerifyOwnership(Guid guid, string userName)
-    {
-        var pinecone = await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Guid == guid)
-            ?? throw new KeyNotFoundException($"Pinecone with ID {guid} not found.");
-        if (pinecone.UserName != userName)
-        {
-            throw new UnauthorizedAccessException("You do not own this Pinecone.");
-        }
-        return pinecone;
-    }
+    private async Task<Pinecone?> GetPineconeAndVerifyOwnership(Guid guid) 
+        => await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Guid == guid);
 }

@@ -1,4 +1,4 @@
-@page "/public/{User}/{Guid:guid}"
+@page "/view/{User}/{Guid:guid}"
 @using Pinetree.Client.VModel
 @using Pinetree.Client.Services
 @using Pinetree.Client.Pages.Components
@@ -31,8 +31,8 @@
     {
         if (firstRender)
         {
-            var response = await HttpClient.GetFromJsonAsync<Pinecone>($"/api/Pinecones/get-include-child/{Guid}/{User}");
-            if (response == null)
+            var response = await HttpClient.GetFromJsonAsync<Pinecone>($"/api/Pinecones/get-view-include-child/{Guid}");
+            if (response.Guid == Guid.Empty)
             {
                 NavigationManager.NavigateTo("/");
                 return;
