@@ -1,7 +1,6 @@
-- One User Image File Check
-- User Image List
-
+# TODO
 - Publish to the web
+- 
 - Update Log
 - Paid Membership
 - monaco-editor
@@ -11,33 +10,18 @@
 - Multilingualization, or rather Japaneseization
 - Layout CSS 100% Check
 - Toolbar Refactor
+- Move Controll Folder
+- Share Folder Refactor
 - Top Page Image
+  - notebook LM
 
+# Bug
+- Browther Back Bug
 
-# TODO
+# tunnel
 - localhost
 https://ngrok.com/
 dev tunnel
 
-# Staging
-- Resource group
-  - WebAppStaging
-  - DataBase
-  - ApplicationIn
-
-
-# IaC
-- bicep arms
-- Terraform
-- Pulumi
-
-tag Release branch.
-
 # Production
-- Resource group (separate subscriptions if you like. Billing)
-  - WebAppStaging
-  - DataBase
-
-- Standby slot (to reduce downtime to 0)
-- approve
-- Deployment slot
+- **approve**

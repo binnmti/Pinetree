@@ -35,7 +35,7 @@ internal static class MarkdownUtil
 
         PinetreeView pinetree;
         var uniqueId = current.GetUniqueId();
-        pinetree = new PinetreeView(uniqueId, title, content, current, default);
+        pinetree = new PinetreeView(uniqueId, title, content, current, default, false);
         // If you don't save it, the ID won't be decided.
         current.IsExpanded = true;
         current.Children.Add(pinetree);

@@ -63,6 +63,12 @@ public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
         return await module.InvokeAsync<string>("replaceBlobUrlsInContent", content, pineconeGuid.ToString(), contentRef);
     }
 
+    public async ValueTask SetupMarkdownClickListenerAsync<T>(ElementReference container, DotNetObjectReference<T> dotNetRef) where T : class
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("setupMarkdownClickListener", container, dotNetRef);
+    }
+
     public async ValueTask SetupAllEventListenersAsync<T>(ElementReference container, ElementReference textArea, DotNetObjectReference<T> dotNetRef) where T : class
     {
         var module = await _moduleTask.Value;

@@ -138,14 +138,6 @@
     overflow: hidden;
 }
 
-.common-header {
-    color: white;
-    padding: 1px;
-    text-align: center;
-    flex-shrink: 0;
-    z-index: 5;
-}
-
 .right-panels-container {
     display: flex;
     flex: 1;

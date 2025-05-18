@@ -1,6 +1,6 @@
 ﻿namespace Pinetree.Client.VModel;
 
-public class PinetreeView(Guid guid, string title, string content, PinetreeView? parent, Guid groupId) : IEquatable<PinetreeView>
+public class PinetreeView(Guid guid, string title, string content, PinetreeView? parent, Guid groupId, bool isPublic) : IEquatable<PinetreeView>
 {
     public Guid Guid { get; } = guid;
     public string Title { get; set; } = title;
@@ -9,13 +9,15 @@ public class PinetreeView(Guid guid, string title, string content, PinetreeView?
     public Guid GroupGuid { get; } = groupId;
     public bool IsCurrent { get; set; }
     public bool IsExpanded { get; set; }
+    public bool IsPublic { get; set; } = isPublic;
+
     public List<PinetreeView> Children { get; } = [];
     public Stack<string> UndoStack { get; } = new();
     public Stack<string> RedoStack { get; } = new();
     public bool CanUndo => UndoStack.Count != 0;
     public bool CanRedo => RedoStack.Count != 0;
 
-    public static PinetreeView Nothing => new(default, "", "", null, default);
+    public static PinetreeView Nothing => new(default, "", "", null, default, false);
 
     public void SaveContentToHistory(string previousContent)
     {
@@ -45,7 +47,7 @@ public class PinetreeView(Guid guid, string title, string content, PinetreeView?
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
-        if (Title != other.Title || Content != other.Content || Guid != other.Guid || GroupGuid != other.GroupGuid)
+        if (Title != other.Title || Content != other.Content || Guid != other.Guid || GroupGuid != other.GroupGuid || IsPublic != other.IsPublic)
         {
             return false;
         }
@@ -73,6 +75,7 @@ public class PinetreeView(Guid guid, string title, string content, PinetreeView?
         hash.Add(Parent?.Guid ?? default);
         hash.Add(GroupGuid);
         hash.Add(Guid);
+        hash.Add(IsPublic);
         foreach (var child in Children)
         {
             hash.Add(child.Guid);
@@ -91,7 +94,7 @@ public class PinetreeView(Guid guid, string title, string content, PinetreeView?
 
     public PinetreeView DeepClone()
     {
-        var clone = new PinetreeView(Guid, Title, Content, Parent, GroupGuid)
+        var clone = new PinetreeView(Guid, Title, Content, Parent, GroupGuid, IsPublic)
         {
             IsCurrent = IsCurrent,
             IsExpanded = IsExpanded

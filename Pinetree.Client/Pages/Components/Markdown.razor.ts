@@ -106,6 +106,12 @@ export async function clearAllImagesFromIndexedDB(): Promise<void> {
     });
 }
 
+export function setupMarkdownClickListener(container: HTMLElement, dotNetHelper: DotNetObject): void {
+    // This function is specifically for read-only view mode
+    // It only sets up link handling for markdown internal links
+    setupLinkInterceptor(container, dotNetHelper);
+}
+
 export function setupAllEventListeners(
     container: HTMLElement,
     textArea: HTMLTextAreaElement,

@@ -92,6 +92,11 @@ export async function clearAllImagesFromIndexedDB() {
         };
     });
 }
+export function setupMarkdownClickListener(container, dotNetHelper) {
+    // This function is specifically for read-only view mode
+    // It only sets up link handling for markdown internal links
+    setupLinkInterceptor(container, dotNetHelper);
+}
 export function setupAllEventListeners(container, textArea, dotNetHelper) {
     initializeIndexedDB();
     setupLinkInterceptor(container, dotNetHelper);

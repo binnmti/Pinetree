@@ -10,18 +10,18 @@ public class PinetreeViewTests
         var guid = Guid.NewGuid();
 
         // Root
-        var root = new PinetreeView(guid, "Root", "Root Content", null, guid);
+        var root = new PinetreeView(guid, "Root", "Root Content", null, guid, false);
 
         // Parent
-        var parent = new PinetreeView(Guid.NewGuid(), "Parent", "Parent Content", root, guid);
+        var parent = new PinetreeView(Guid.NewGuid(), "Parent", "Parent Content", root, guid, false);
         root.Children.Add(parent);
 
         // Child 1
-        var child1 = new PinetreeView(Guid.NewGuid(), "Child 1", "Child 1 Content", parent, guid);
+        var child1 = new PinetreeView(Guid.NewGuid(), "Child 1", "Child 1 Content", parent, guid, false);
         parent.Children.Add(child1);
 
         // Child 2
-        var child2 = new PinetreeView(Guid.NewGuid(), "Child 2", "Child 2 Content", parent, guid);
+        var child2 = new PinetreeView(Guid.NewGuid(), "Child 2", "Child 2 Content", parent, guid, false);
         parent.Children.Add(child2);
 
         return root;
