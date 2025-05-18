@@ -47,7 +47,7 @@ public class PinetreeView(Guid guid, string title, string content, PinetreeView?
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
-        if (Title != other.Title || Content != other.Content || Guid != other.Guid || GroupGuid != other.GroupGuid)
+        if (Title != other.Title || Content != other.Content || Guid != other.Guid || GroupGuid != other.GroupGuid || IsPublic != other.IsPublic)
         {
             return false;
         }
@@ -75,6 +75,7 @@ public class PinetreeView(Guid guid, string title, string content, PinetreeView?
         hash.Add(Parent?.Guid ?? default);
         hash.Add(GroupGuid);
         hash.Add(Guid);
+        hash.Add(IsPublic);
         foreach (var child in Children)
         {
             hash.Add(child.Guid);
