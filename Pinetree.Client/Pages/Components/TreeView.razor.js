@@ -1,22 +1,22 @@
-// デバッグモード (true に設定すると詳細なログが表示されます)
+// Debug mode (set to true to display detailed logs)
 const DEBUG = false;
-// ドラッグアンドドロップの状態を管理するグローバル変数
+// Global variables for managing drag and drop state
 let draggedItemId = null;
-let draggedItemTitle = null; // アイテムのタイトルも保存
+let draggedItemTitle = null; // Also store the item's title
 let dropTargetId = null;
 let currentDropTarget = null;
 let dotNetHelper = null;
-// ドロップ位置の定数
+// Drop position constants
 const DROP_POSITION = {
     BEFORE: 'before',
     AFTER: 'after',
     INTO: 'into'
 };
-// ドロップ位置のUIテキスト
+// Drop position UI text
 const DROP_POSITION_TEXT = {
-    [DROP_POSITION.BEFORE]: '上に移動',
-    [DROP_POSITION.AFTER]: '下に移動',
-    [DROP_POSITION.INTO]: '子として追加'
+    [DROP_POSITION.BEFORE]: 'Move above',
+    [DROP_POSITION.AFTER]: 'Move below',
+    [DROP_POSITION.INTO]: 'Add as child'
 };
 /**
  * Initializes the drag and drop functionality for the TreeView component
@@ -27,11 +27,11 @@ export function setupTreeViewDragDrop(container, helper) {
     if (!container)
         return;
     dotNetHelper = helper;
-    // 既存のツリーアイテムにドラッグイベントを設定
+    // Set up drag events for existing tree items
     setupDragEvents(container);
-    // テキストエリアへのドラッグ&ドロップをサポート
+    // Support drag & drop to text areas
     setupExternalDropTargets();
-    // 新しい要素が追加されたときに監視する (ツリーが展開された場合など)
+    // Monitor when new elements are added (e.g., when tree is expanded)
     const observer = new MutationObserver(() => {
         setupDragEvents(container);
     });
@@ -47,8 +47,8 @@ export function setupTreeViewDragDrop(container, helper) {
  * setupDropZone function to avoid duplicate handlers.
  */
 function setupExternalDropTargets() {
-    // Markdownエディタでの処理はMarkdown.razor.tsの方で行い、
-    // 二重に処理されないようにここでは最小限のコードのみを維持します
+    // The processing in the Markdown editor is done in Markdown.razor.ts
+    // Only maintain minimal code here to avoid duplicate processing
     const textAreas = document.querySelectorAll('textarea');
     textAreas.forEach(textArea => {
         textArea.addEventListener('dragover', (e) => {
@@ -57,25 +57,25 @@ function setupExternalDropTargets() {
                 e.dataTransfer.dropEffect = 'copy';
             }
         });
-        // ドロップイベント処理はMarkdown.razor.tsに移動しました
+        // Drop event handling has been moved to Markdown.razor.ts
     });
 }
 /**
  * Sets up drag events for all tree items in the container
  */
 function setupDragEvents(container) {
-    // タイトル要素（ツリーアイテムを表す）をすべて検索
+    // Find all title elements (representing tree items)
     const treeItems = container.querySelectorAll('.title');
     treeItems.forEach(item => {
         if (item instanceof HTMLElement) {
-            // 既に設定済みならスキップ
+            // Skip if already initialized
             if (item.dataset.dragInitialized === 'true')
                 return;
-            // 初期化済みとマーク
+            // Mark as initialized
             item.dataset.dragInitialized = 'true';
-            // ドラッグ可能に設定
+            // Set as draggable
             item.setAttribute('draggable', 'true');
-            // ドラッグイベントを追加
+            // Add drag events
             item.addEventListener('dragstart', e => handleDragStart(e, item));
             item.addEventListener('dragover', e => handleDragOver(e));
             item.addEventListener('dragenter', e => handleDragEnter(e, item));
@@ -91,20 +91,20 @@ function setupDragEvents(container) {
 function handleDragStart(e, item) {
     if (!e.dataTransfer)
         return;
-    // data-guid属性を持つ親li要素を検索
+    // Find parent li element with data-guid attribute
     const parentItem = findParentWithGuid(item);
     if (!parentItem)
         return;
-    // data-guid属性からGUIDを取得
+    // Get GUID from data-guid attribute
     draggedItemId = parentItem.dataset.guid || null;
-    // アイテムのタイトルを取得
+    // Get the item's title
     draggedItemTitle = item.textContent?.trim() || '';
     if (draggedItemId) {
-        // ドラッグエフェクトを設定（コピーも許可）
+        // Set drag effect (allow copy too)
         e.dataTransfer.effectAllowed = 'copyMove';
-        // 複数のデータフォーマットを設定
+        // Set multiple data formats
         e.dataTransfer.setData('text/plain', draggedItemId);
-        // テキストエリアへのドロップ用にMarkdownリンク形式でデータも設定
+        // Also set data in Markdown link format for dropping into text areas
         const markdownLink = `[${draggedItemTitle}](//${draggedItemId})`;
         e.dataTransfer.setData('text/markdown', markdownLink);
         e.dataTransfer.setData('application/x-pinetree-link', JSON.stringify({
@@ -112,7 +112,7 @@ function handleDragStart(e, item) {
             title: draggedItemTitle,
             markdownLink: markdownLink
         }));
-        // スタイルを追加（キャンセルを避けるために次のティックで）
+        // Add style (in next tick to avoid cancellation)
         setTimeout(() => {
             if (item)
                 item.classList.add('dragging');
@@ -125,10 +125,10 @@ function handleDragStart(e, item) {
  * Handles the drag over event - must be present to allow drops
  */
 function handleDragOver(e) {
-    // ドロップを許可するためにデフォルト動作を防止
+    // Prevent default to allow drop
     e.preventDefault();
     if (e.dataTransfer) {
-        // ツリー内での移動の場合はmove、外部要素へのドロップの場合はcopy
+        // Use move effect for moves within the tree, copy for drops to external elements
         const isTreeItem = e.target?.closest('.title') !== null;
         e.dataTransfer.dropEffect = isTreeItem ? 'move' : 'copy';
     }
@@ -137,23 +137,23 @@ function handleDragOver(e) {
  * Handles the drag enter event - sets up drop targeting
  */
 function handleDragEnter(e, item) {
-    // data-guid属性を持つ親li要素を検索
+    // Find parent li element with data-guid attribute
     const parentItem = findParentWithGuid(item);
     if (parentItem) {
         dropTargetId = parentItem.dataset.guid || null;
     }
-    // 他の要素からドラッグインジケータをクリア
+    // Clear drag indicators from other elements
     document.querySelectorAll('.title').forEach(el => {
         if (el instanceof HTMLElement && el !== item) {
             el.classList.remove('drag-over', 'drag-before', 'drag-after', 'drag-into');
         }
     });
-    // ドロップターゲットを示すスタイルを追加
+    // Add style to indicate drop target
     item.classList.add('drag-over');
-    // 現在のターゲットを保存し、ビジュアルを更新
+    // Save current target and update visuals
     currentDropTarget = item;
     updateDropFeedback(e, item);
-    // 一貫したドラッグフィードバックのためのグローバルトラッキングを設定
+    // Set up global tracking for consistent drag feedback
     document.removeEventListener('dragover', handleGlobalDragOver);
     document.addEventListener('dragover', handleGlobalDragOver);
     if (DEBUG)
@@ -163,68 +163,68 @@ function handleDragEnter(e, item) {
  * Handles the drag leave event
  */
 function handleDragLeave(e, item) {
-    // 子要素に入った場合は無視（バブリングによる誤動作を防止）
+    // Ignore if entered a child element (prevent issues due to bubbling)
     const relatedTarget = e.relatedTarget;
     if (relatedTarget && item.contains(relatedTarget)) {
         return;
     }
-    // 本当に離れる場合のみ、このアイテムからスタイリングを削除
+    // Only remove styling from this item if actually leaving
     item.classList.remove('drag-over', 'drag-before', 'drag-after', 'drag-into');
-    // グローバルdragoverハンドラはdragendまで維持
+    // Global dragover handler is maintained until dragend
 }
 /**
  * Updates visual feedback for the drop target based on determined drop position
  */
 function updateDropFeedback(e, item) {
-    // 以前の位置クラスを削除
+    // Remove previous position classes
     item.classList.remove('drag-before', 'drag-after', 'drag-into');
-    // ドロップ位置を決定して適切なクラスを追加
+    // Determine drop position and add appropriate class
     const dropPosition = determineDropPosition(e, item);
-    // ドロップ位置に基づいてクラスを追加
+    // Add class based on drop position
     item.classList.add(`drag-${dropPosition}`);
     if (DEBUG) {
         const eventType = e instanceof DragEvent ? 'DragEvent' : 'MouseEvent';
-        console.log(`${eventType} - ドロップ位置: ${DROP_POSITION_TEXT[dropPosition]}`, e.clientY);
+        console.log(`${eventType} - Drop position: ${DROP_POSITION_TEXT[dropPosition]}`, e.clientY);
     }
 }
 /**
  * Global handler for dragover events to update visual feedback
  */
 function handleGlobalDragOver(e) {
-    e.preventDefault(); // ドロップを機能させるためにデフォルト動作を防止
+    e.preventDefault(); // Prevent default to allow drop
     if (!currentDropTarget)
         return;
-    // 現在のマウス位置に基づいて、保存されたターゲットのフィードバックを更新
+    // Update feedback for the saved target based on current mouse position
     updateDropFeedback(e, currentDropTarget);
 }
 /**
  * Handles the drop event
  */
 function handleDrop(e, item) {
-    // デフォルト動作を防止
+    // Prevent default action
     e.preventDefault();
-    // スタイリングを削除
+    // Remove styling
     item.classList.remove('drag-over', 'drag-before', 'drag-after', 'drag-into');
-    // data-guid属性を持つ親li要素を検索
+    // Find parent li element with data-guid attribute
     const parentItem = findParentWithGuid(item);
     if (!parentItem)
         return;
-    // ドロップターゲットのGUIDを取得
+    // Get the GUID of the drop target
     dropTargetId = parentItem.dataset.guid || null;
-    // ソースとターゲットの両方があり、それらが異なる場合
+    // If both source and target exist and are different
     if (draggedItemId && dropTargetId && draggedItemId !== dropTargetId) {
-        // ドロップターゲットの位置を取得
+        // Get the drop position
         const dropPosition = determineDropPosition(e, item);
-        // 親li要素を検索
+        // Find parent li element
         const targetParentLi = parentItem.closest('li');
         const targetParentId = targetParentLi?.parentElement?.closest('li')?.dataset.guid || null;
         if (DEBUG) {
-            console.log(`ドロップ実行: ${draggedItemId} を ${dropTargetId} の ${DROP_POSITION_TEXT[dropPosition]} 位置に配置します`);
+            console.log(`Drop execution: Placing ${draggedItemId} at ${DROP_POSITION_TEXT[dropPosition]} position of ${dropTargetId}`);
         }
-        // .NETメソッドを呼び出して移動を処理
+        // Call .NET method to handle the move
         dotNetHelper?.invokeMethodAsync('HandleItemDrop', draggedItemId, dropTargetId, dropPosition, targetParentId)
             .then(() => {
-            // ドラッグ状態をクリア
+            // Clear drag state
             cleanupDragState();
         })
             .catch(error => {
@@ -241,37 +241,37 @@ function handleDrop(e, item) {
  * @returns 'into' for dropping as child, 'before' for dropping before, 'after' for dropping after
  */
 function determineDropPosition(e, item) {
-    // アイテムの境界矩形を取得
+    // Get the item's bounding rectangle
     const rect = item.getBoundingClientRect();
     const mouseY = e.clientY;
     const mouseX = e.clientX;
-    // コントロール領域（右側のボタン）にある場合は、into位置は使用しない
-    const controlAreaWidth = 40; // コントロールは約40pxの幅と仮定
+    // If in control area (buttons on the right), don't use into position
+    const controlAreaWidth = 40; // Assume controls are about 40px wide
     const isOverControlArea = mouseX > (rect.right - controlAreaWidth);
     if (isOverControlArea) {
         return mouseY < rect.top + rect.height / 2 ? DROP_POSITION.BEFORE : DROP_POSITION.AFTER;
     }
-    // マウス位置と要素の相対的な位置を計算（0〜1の範囲）
+    // Calculate relative position of mouse to the element (0-1 range)
     const relativeY = (mouseY - rect.top) / rect.height;
     if (DEBUG) {
         const eventType = e instanceof DragEvent ? 'DragEvent' : 'MouseEvent';
         console.log(`${eventType} - Mouse Y: ${mouseY}, Item top: ${rect.top}, Item bottom: ${rect.bottom}, Height: ${rect.height}`);
         console.log(`${eventType} - Relative Y position: ${relativeY.toFixed(2)}`);
     }
-    // 相対位置による判定：上部15%、中央70%、下部15%
+    // Determine by relative position: top 15%, middle 70%, bottom 15%
     if (relativeY < 0.15) {
         if (DEBUG)
-            console.log(`判定: ${DROP_POSITION.BEFORE} (上部15%)`);
+            console.log(`Determination: ${DROP_POSITION.BEFORE} (top 15%)`);
         return DROP_POSITION.BEFORE;
     }
     else if (relativeY > 0.85) {
         if (DEBUG)
-            console.log(`判定: ${DROP_POSITION.AFTER} (下部15%)`);
+            console.log(`Determination: ${DROP_POSITION.AFTER} (bottom 15%)`);
         return DROP_POSITION.AFTER;
     }
     else {
         if (DEBUG)
-            console.log(`判定: ${DROP_POSITION.INTO} (中央70%)`);
+            console.log(`Determination: ${DROP_POSITION.INTO} (middle 70%)`);
         return DROP_POSITION.INTO;
     }
 }
@@ -279,9 +279,9 @@ function determineDropPosition(e, item) {
  * Cleans up all drag state
  */
 function cleanupDragState() {
-    // グローバルイベントリスナーを削除
+    // Remove global event listener
     document.removeEventListener('dragover', handleGlobalDragOver);
-    // ドラッグ状態をクリア
+    // Clear drag state
     draggedItemId = null;
     draggedItemTitle = null;
     dropTargetId = null;
@@ -291,13 +291,13 @@ function cleanupDragState() {
  * Handles the drag end event
  */
 function handleDragEnd(e) {
-    // すべてのドラッグスタイリングを削除
+    // Remove all drag styling
     document.querySelectorAll('.title').forEach(item => {
         if (item instanceof HTMLElement) {
             item.classList.remove('dragging', 'drag-over', 'drag-before', 'drag-after', 'drag-into');
         }
     });
-    // ドラッグ状態をクリア
+    // Clear drag state
     cleanupDragState();
 }
 /**
@@ -317,7 +317,7 @@ function findParentWithGuid(element) {
  * Gets the hierarchical level of a tree node
  */
 function getNodeLevel(element) {
-    // レベルを決定するために祖先ULの数をカウント
+    // Count number of ancestor ULs to determine level
     let level = 0;
     let parent = element.parentElement;
     while (parent) {

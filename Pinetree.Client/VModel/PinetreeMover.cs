@@ -56,18 +56,17 @@ public static class PinetreeMoverExtention
         // Need a left sibling
         if (index <= 0) return false;
 
-        var newParent = parent.Children[index - 1];
-        parent.Children.RemoveAt(index);
+        var newParent = parent.Children[index - 1];        parent.Children.RemoveAt(index);
         currentItem.Parent = newParent;
         newParent.Children.Add(currentItem);
         return true;
     }
 
-    // ドラッグアンドドロップ操作のための追加メソッド
+    // Additional methods for drag and drop operations
     
     /// <summary>
-    /// sourceItemをtargetItemの前に移動します。
-    /// 同じ親を持つ場合は、上ボタンと同様に位置を交換します。
+    /// Moves the sourceItem before the targetItem.
+    /// If they have the same parent, it swaps positions similar to the up button.
     /// </summary>
     public static bool MoveItemBefore(this PinetreeView sourceItem, PinetreeView targetItem)
     {
@@ -79,36 +78,34 @@ public static class PinetreeMoverExtention
 
         var targetParent = targetItem.Parent;
         var targetIndex = targetParent.Children.IndexOf(targetItem);
-        
-        if (targetIndex < 0)
+          if (targetIndex < 0)
             return false;
 
-        // 同じ親を持つ場合は、位置を交換（MoveItemUpのような動作）
+        // If they have the same parent, swap positions (similar to MoveItemUp)
         if (sourceItem.Parent == targetParent)
-        {
-            int sourceIndex = targetParent.Children.IndexOf(sourceItem);
+        {            int sourceIndex = targetParent.Children.IndexOf(sourceItem);
             
-            // 既に隣接している場合は何もしない
+            // Do nothing if already adjacent
             if (sourceIndex == targetIndex - 1)
                 return true;
                 
-            // MoveItemUpと同様の動作
+            // Behavior similar to MoveItemUp
             if (sourceIndex > targetIndex)
             {
-                // sourceがtargetより後ろにある場合
+                // If source is after target
                 targetParent.Children.RemoveAt(sourceIndex);
                 targetParent.Children.Insert(targetIndex, sourceItem);
             }
             else
             {
-                // sourceがtargetより前にある場合
+                // If source is before target
                 targetParent.Children.RemoveAt(sourceIndex);
                 targetParent.Children.Insert(targetIndex - 1, sourceItem);
             }
         }
         else
         {
-            // 異なる親からの移動
+            // Moving from a different parent
             if (sourceItem.Parent != null)
             {
                 sourceItem.Parent.Children.Remove(sourceItem);
@@ -120,10 +117,9 @@ public static class PinetreeMoverExtention
         
         return true;
     }
-    
-    /// <summary>
-    /// sourceItemをtargetItemの後ろに移動します。
-    /// 同じ親を持つ場合は、下ボタンと同様に位置を交換します。
+      /// <summary>
+    /// Moves the sourceItem after the targetItem.
+    /// If they have the same parent, it swaps positions similar to the down button.
     /// </summary>
     public static bool MoveItemAfter(this PinetreeView sourceItem, PinetreeView targetItem)
     {
@@ -139,32 +135,32 @@ public static class PinetreeMoverExtention
         if (targetIndex < 0)
             return false;
 
-        // 同じ親を持つ場合は、位置を交換（MoveItemDownのような動作）
+        // If they have the same parent, swap positions (similar to MoveItemDown)
         if (sourceItem.Parent == targetParent)
         {
             int sourceIndex = targetParent.Children.IndexOf(sourceItem);
             
-            // 既に隣接している場合は何もしない
+            // Do nothing if already adjacent
             if (sourceIndex == targetIndex + 1)
                 return true;
                 
-            // MoveItemDownと同様の動作
+            // Behavior similar to MoveItemDown
             if (sourceIndex > targetIndex)
             {
-                // sourceがtargetより後ろにある場合
+                // If source is after target
                 targetParent.Children.RemoveAt(sourceIndex);
                 targetParent.Children.Insert(targetIndex + 1, sourceItem);
             }
             else
             {
-                // sourceがtargetより前にある場合
+                // If source is before target
                 targetParent.Children.RemoveAt(sourceIndex);
                 targetParent.Children.Insert(targetIndex, sourceItem);
             }
         }
         else
         {
-            // 異なる親からの移動
+            // Moving from a different parent
             if (sourceItem.Parent != null)
             {
                 sourceItem.Parent.Children.Remove(sourceItem);
@@ -176,9 +172,8 @@ public static class PinetreeMoverExtention
         
         return true;
     }
-    
-    /// <summary>
-    /// sourceItemをtargetItemの子として移動します（右ボタンと同様）。
+      /// <summary>
+    /// Moves the sourceItem as a child of targetItem (similar to the right button).
     /// </summary>
     public static bool MoveItemAsChildOf(this PinetreeView sourceItem, PinetreeView targetItem)
     {
@@ -188,17 +183,17 @@ public static class PinetreeMoverExtention
         if (sourceItem == targetItem)
             return false;
             
-        // 循環参照を防ぐ
+        // Prevent circular references
         if (IsDescendantOf(targetItem, sourceItem))
             return false;
 
-        // 古い親から削除
+        // Remove from old parent
         if (sourceItem.Parent != null)
         {
             sourceItem.Parent.Children.Remove(sourceItem);
         }
         
-        // ターゲットの子として追加
+        // Add as child of target
         sourceItem.Parent = targetItem;
         targetItem.Children.Add(sourceItem);
         

@@ -28,14 +28,14 @@
 }
 
 .drag-over.drag-into::before {
-    background-color: rgba(40, 167, 69, 0.2); /* より薄い緑色の背景 */
-    border: 2px solid #28a745; /* シンプルな実線ボーダー */
+    background-color: rgba(40, 167, 69, 0.2); /* Lighter green background */
+    border: 2px solid #28a745; /* Simple solid border */
     z-index: -1;
 }
 
-/* シンプルな矢印表示 */
+/* Simple arrow display */
 .drag-over.drag-into::after {
-    content: '↳'; /* シンプルな矢印 */
+    content: '↳'; /* Simple arrow */
     position: absolute;
     right: 20px; 
     top: 50%;
@@ -60,9 +60,9 @@
     border: none;
 }
 
-/* より簡潔な矢印アイコン */
+/* More concise arrow icons */
 .drag-over.drag-before::after {
-    content: '\F129'; /* Bootstrap Iconの上矢印 */
+    content: '\F129'; /* Bootstrap Icon up arrow */
     font-family: bootstrap-icons !important;
     position: absolute;
     left: -15px;
@@ -73,7 +73,7 @@
 }
 
 .drag-over.drag-after::after {
-    content: '\F12C'; /* Bootstrap Iconの下矢印 */
+    content: '\F12C'; /* Bootstrap Icon down arrow */
     font-family: bootstrap-icons !important;
     position: absolute;
     left: -15px;

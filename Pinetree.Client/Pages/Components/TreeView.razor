@@ -186,11 +186,11 @@
                         if (success) targetItem.IsExpanded = true;
                         break;
                     case "before":
-                        // 同じ親の子どもたちの間のドラッグアンドドロップを正しく処理する
+                        // Properly handle drag and drop between children of the same parent
                         success = sourceItem.MoveItemBefore(targetItem);
                         break;
                     case "after":
-                        // 同じ親の子どもたちの間のドラッグアンドドロップを正しく処理する
+                        // Properly handle drag and drop between children of the same parent
                         success = sourceItem.MoveItemAfter(targetItem);
                         break;
                 }
