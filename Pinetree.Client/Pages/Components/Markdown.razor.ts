@@ -502,6 +502,11 @@ function setupDropZone(
         e.preventDefault();
         e.stopPropagation();
         dropZoneElement.classList.add('drag-over');
+        
+        // Set copy effect for TreeView items
+        if (e.dataTransfer?.types.includes('application/x-pinetree-link')) {
+            e.dataTransfer.dropEffect = 'copy';
+        }
     });
 
     dropZoneElement.addEventListener('dragleave', () => {
@@ -513,6 +518,7 @@ function setupDropZone(
         e.stopPropagation();
         dropZoneElement.classList.remove('drag-over');
 
+        // Handle dropped files (existing functionality)
         if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
             const file = e.dataTransfer.files[0];
 
@@ -533,6 +539,33 @@ function setupDropZone(
                 });
             } catch (error) {
                 console.error("Error handling file:", error);
+            }
+        }
+        // Handle dropped TreeView items
+        else if (e.dataTransfer?.types.includes('application/x-pinetree-link')) {
+            // Get the Markdown link format from the dataTransfer
+            const markdownLink = e.dataTransfer.getData('text/markdown');
+            if (markdownLink && dropZoneElement instanceof HTMLTextAreaElement) {
+                // Insert the markdown link at the cursor position
+                const textArea = dropZoneElement;
+                const start = textArea.selectionStart;
+                const end = textArea.selectionEnd;
+                const value = textArea.value;
+                const newValue = value.substring(0, start) + markdownLink + value.substring(end);
+                textArea.value = newValue;
+                
+                // Trigger input event to detect changes
+                const inputEvent = new InputEvent('input', {
+                    bubbles: true,
+                    cancelable: true,
+                    inputType: 'insertText',
+                    data: markdownLink
+                });
+                textArea.dispatchEvent(inputEvent);
+                
+                // Update cursor position
+                textArea.selectionStart = textArea.selectionEnd = start + markdownLink.length;
+                textArea.focus();
             }
         }
     });

@@ -1,6 +1,9 @@
 ﻿@using Pinetree.Client.VModel
 @using Pinetree.Client.Services
 @using Pinetree.Shared.Model
+@using Microsoft.JSInterop
+
+@implements IAsyncDisposable
 
 @if (IsRoot && !IsPublicView)
 {
@@ -30,8 +33,8 @@
 
 @if (Pinetree != null)
 {
-    <ul class="list-unstyled" style="padding-left: 0.75rem;">
-        <li style="">
+    <ul class="list-unstyled" style="padding-left: 0.75rem;" @ref="treeViewContainer">
+        <li style="" data-guid="@Pinetree.Guid">
             <div class="d-flex justify-content-between list-group-item-action">
                 <div class="d-flex align-items-center">
                     @if (Pinetree.Children.Count != 0)
@@ -114,6 +117,9 @@
     public required HttpClient HttpClient { get; set; }
     [Inject]
     public required IJSRuntime JS { get; set; }
+    private ElementReference treeViewContainer;
+    private DotNetObjectReference<TreeView>? objRef;
+    private IJSObjectReference? jsModule;
 
     protected override void OnInitialized()
     {
@@ -121,6 +127,194 @@
         {
             RootNode = Pinetree;
         }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && IsRoot && !IsPublicView)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            try
+            {
+                jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/Pages/Components/TreeView.razor.js");
+                await jsModule.InvokeVoidAsync("setupTreeViewDragDrop", treeViewContainer, objRef);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error initializing drag and drop: {ex.Message}");
+            }
+        }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (jsModule != null)
+        {
+            await jsModule.DisposeAsync();
+        }
+        
+        objRef?.Dispose();
+    }
+    
+    [JSInvokable]
+    public async Task HandleItemDrop(string sourceId, string targetId, string position, string? targetParentId = null)
+    {
+        if (Guid.TryParse(sourceId, out var sourceGuid) && Guid.TryParse(targetId, out var targetGuid))
+        {
+            var rootNode = RootNode ?? Pinetree;
+            var sourceItem = GetNodeById(rootNode, sourceGuid);
+            var targetItem = GetNodeById(rootNode, targetGuid);
+
+            if (sourceItem != null && targetItem != null)
+            {
+                // Prevent dropping on itself or its descendants
+                if (IsDescendantOf(targetItem, sourceItem))
+                {
+                    await JS.AlertAsync("Cannot move an item into its own descendant");
+                    return;
+                }
+
+                bool success = false;
+
+                // Handle different drop positions using the PinetreeMover extension methods
+                switch (position)
+                {
+                    case "into":
+                        // Move as a child of the target (like right arrow button)
+                        success = sourceItem.MoveItemAsChildOf(targetItem);
+                        // Ensure the parent is expanded so the user can see the moved item
+                        if (success) targetItem.IsExpanded = true;
+                        break;
+                    case "before":
+                        // Properly handle drag and drop between children of the same parent
+                        success = sourceItem.MoveItemBefore(targetItem);
+                        break;
+                    case "after":
+                        // Properly handle drag and drop between children of the same parent
+                        success = sourceItem.MoveItemAfter(targetItem);
+                        break;
+                }
+
+                if (success)
+                {
+                    await OnChildEvent.InvokeAsync(sourceItem.Guid);
+                    StateHasChanged();
+                }
+            }
+        }
+    }
+
+    private bool IsDescendantOf(PinetreeView descendant, PinetreeView ancestor)
+    {
+        var parent = descendant.Parent;
+        while (parent != null)
+        {
+            if (parent == ancestor)
+                return true;
+            parent = parent.Parent;
+        }
+        return false;
+    }
+    
+    private bool MoveNodeBefore(PinetreeView sourceNode, PinetreeView targetNode)
+    {
+        if (targetNode.Parent == null)
+            return false;
+
+        var targetParent = targetNode.Parent;
+        var targetIndex = targetParent.Children.IndexOf(targetNode);
+
+        if (targetIndex < 0)
+            return false;
+
+        // If source and target have different parents, we need to ensure the hierarchy is maintained
+        bool differentParents = sourceNode.Parent != targetParent;
+
+        // Remove from old parent
+        if (sourceNode.Parent != null)
+        {
+            // If source is already in the same parent and before the target, adjust the target index
+            if (!differentParents && sourceNode.Parent.Children.IndexOf(sourceNode) < targetIndex)
+            {
+                targetIndex--;
+            }
+            
+            sourceNode.Parent.Children.Remove(sourceNode);
+        }
+
+        // Add to the target's parent at the correct position
+        sourceNode.Parent = targetParent;
+        targetParent.Children.Insert(targetIndex, sourceNode);
+
+        return true;
+    }
+
+    private bool MoveNodeAfter(PinetreeView sourceNode, PinetreeView targetNode)
+    {
+        if (targetNode.Parent == null)
+            return false;
+
+        var targetParent = targetNode.Parent;
+        var targetIndex = targetParent.Children.IndexOf(targetNode);
+
+        if (targetIndex < 0)
+            return false;
+
+        // If source and target have different parents, ensure hierarchy is maintained
+        bool differentParents = sourceNode.Parent != targetParent;
+
+        // Remove from old parent
+        if (sourceNode.Parent != null)
+        {
+            // If source is already in the same parent and before the target, no need to adjust index
+            // If source is after the target, adjust the index
+            if (!differentParents && sourceNode.Parent.Children.IndexOf(sourceNode) <= targetIndex)
+            {
+                targetIndex--;
+            }
+            
+            sourceNode.Parent.Children.Remove(sourceNode);
+        }
+
+        // Add to the target's parent at the correct position
+        sourceNode.Parent = targetParent;
+        targetParent.Children.Insert(targetIndex + 1, sourceNode);
+
+        return true;
+    }
+
+    private bool MoveNodeInto(PinetreeView sourceNode, PinetreeView targetNode)
+    {
+        // Cannot move if it would create a cycle
+        if (sourceNode == targetNode)
+            return false;
+
+        // Remove from old parent
+        if (sourceNode.Parent != null)
+        {
+            sourceNode.Parent.Children.Remove(sourceNode);
+        }
+
+        // Add as child of target
+        sourceNode.Parent = targetNode;
+        targetNode.Children.Add(sourceNode);
+
+        return true;
+    }
+
+    private PinetreeView? GetNodeById(PinetreeView node, Guid id)
+    {
+        if (node.Guid == id)
+            return node;
+
+        foreach (var child in node.Children)
+        {
+            var result = GetNodeById(child, id);
+            if (result != null)
+                return result;
+        }
+
+        return null;
     }
 
     private void OnClickExpanded()
