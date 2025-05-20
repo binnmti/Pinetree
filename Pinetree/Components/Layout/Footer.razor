@@ -1,9 +1,9 @@
-<footer class="footer @(IsMarkdownPage() ? "footer-markdown" : "")">
+<footer class="footer @GetFooterClass()">
     <div class="container">
         <div class="d-flex flex-column align-items-center">
             <div class="footer-links my-1">
-                <a href="/view/pinetree/4723b61f-5279-4094-b1a7-f76ce112548a" class="mx-2">Changelog</a>
-                <a href="/Terms" class="mx-2">Terms</a>
+                <a href="/changelog" class="mx-2">Changelog</a>
+                <a href="/terms" class="mx-2">Terms</a>
                 <a href="/privacy" class="mx-2">Privacy</a>
             </div>
             <div class="footer-copyright my-1 text-center">
@@ -16,13 +16,17 @@
 
 <style>
     .footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
         width: 100%;
         background-color: #f5f5f5;
         padding: 10px 0;
         border-top: 1px solid #ddd;
+        margin-top: 20px;
+    }
+
+    .footer-fixed {
+        position: fixed;
+        bottom: 0;
+        left: 0;
         z-index: 1000;
     }
 
@@ -49,12 +53,20 @@
 
     private string AppVersion => Configuration["AppVersion"] ?? "1.0.0";
 
-    private bool IsMarkdownPage()
+    private string GetFooterClass()
     {
         var path = NavigationManager.ToBaseRelativePath(NavigationManager.Uri).ToLowerInvariant();
-        return path.StartsWith("tryit") ||
-               path.StartsWith("edit/") ||
-               path.StartsWith("view/");
+
+        if (path.StartsWith("tryit") ||
+            path.StartsWith("edit/") ||
+            path.StartsWith("view/") ||
+            path.StartsWith("terms") ||
+            path.StartsWith("privacy"))
+        {
+            return "";
+        }
+
+        return "footer-fixed";
     }
 
     protected override void OnInitialized()

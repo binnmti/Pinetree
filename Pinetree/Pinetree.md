@@ -1,5 +1,4 @@
 # TODO
-- Update Log
 - Paid Membership
 - monaco-editor
 - Multilingualization, or rather Japaneseization
