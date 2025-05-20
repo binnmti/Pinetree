@@ -7,17 +7,42 @@
         <NavMenu />
     </div>
     <main>
-       <article class="content px-4">
+        <article class="content px-4">
             @Body
         </article>
     </main>
 </div>
+
+@if (!IsMarkdownPage())
+{
+    <div class="footer-container">
+        <Footer />
+    </div>
+}
+else
+{
+    <div class="markdown-footer-spacer"></div>
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+<style>
+    .footer-container {
+        margin-top: 20px;
+    }
+
+    .markdown-footer-spacer {
+        height: 20px;
+    }
+
+    :global(body) {
+        margin-bottom: 60px;
+    }
+</style>
 
 @code {
     private string? currentUrl;
@@ -32,6 +57,17 @@
     {
         currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
         StateHasChanged();
+    }
+
+    private bool IsMarkdownPage()
+    {
+        if (string.IsNullOrEmpty(currentUrl))
+            return false;
+
+        var loweredPath = currentUrl.ToLowerInvariant();
+        return loweredPath.StartsWith("tryit") ||
+               loweredPath.StartsWith("edit/") ||
+               loweredPath.StartsWith("view/");
     }
 
     public void Dispose()
