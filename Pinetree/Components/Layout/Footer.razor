@@ -30,6 +30,10 @@
         z-index: 1000;
     }
 
+    .footer-hidden {
+        display: none;
+    }
+
     .footer-links {
         font-size: 0.9rem;
     }
@@ -59,9 +63,14 @@
 
         if (path.StartsWith("tryit") ||
             path.StartsWith("edit/") ||
-            path.StartsWith("view/") ||
-            path.StartsWith("terms") ||
-            path.StartsWith("privacy"))
+            path.StartsWith("view/"))
+        {
+            return "footer-hidden";
+        }
+
+        if (path.StartsWith("terms") ||
+            path.StartsWith("privacy") ||
+            path.StartsWith("changelog"))
         {
             return "";
         }
