@@ -22,12 +22,31 @@ else
             <p>
                 @foreach (var provider in externalLogins)
                 {
-                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
+                    if (provider.Name.Contains("Google"))
+                    {
+                        <button type="submit" class="btn google-btn" name="provider" value="@provider.Name">
+                            <img src="branding_guideline_sample_lt_sq_lg.svg" alt="Google logo" width="200" height="40" />
+                        </button>
+                    }
+                    else if (provider.Name.Contains("Microsoft"))
+                    {
+                        <button type="submit" class="btn microsoft-btn" name="provider" value="@provider.Name">
+                            <img src="ms-symbollockup_signin_light.svg" alt="Microsoft logo" width="200" height="40" />
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
+                    }
                 }
             </p>
         </div>
     </form>
 }
+
+
+
+<script src="https://accounts.google.com/gsi/client" async></script>
 
 @code {
     private AuthenticationScheme[] externalLogins = [];

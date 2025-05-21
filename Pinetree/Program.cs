@@ -1,13 +1,15 @@
+using Azure.Identity;
+using Google.Apis.Auth.AspNetCore3;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Pinetree.Components;
 using Pinetree.Components.Account;
-using Pinetree.Data;
-using Azure.Identity;
-using Pinetree.Shared;
 using Pinetree.Components.Account.Services;
+using Pinetree.Data;
 using Pinetree.Services;
+using Pinetree.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +19,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents()
     .AddAuthenticationStateSerialization();
 
-builder.Services.AddServerSideBlazor().AddHubOptions(options => {
+builder.Services.AddServerSideBlazor().AddHubOptions(options =>
+{
     options.MaximumReceiveMessageSize = 102400;
 });
 
@@ -33,6 +36,25 @@ builder.Services.AddAuthorization();
 builder.Services.AddHttpClient();
 builder.Services.AddControllers();
 
+builder.Services
+    .AddAuthentication(o =>
+    {
+        o.DefaultChallengeScheme = GoogleOpenIdConnectDefaults.AuthenticationScheme;
+        o.DefaultForbidScheme = GoogleOpenIdConnectDefaults.AuthenticationScheme;
+        o.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    })
+    .AddCookie()
+    .AddGoogleOpenIdConnect(options =>
+    {
+        options.ClientId = builder.Configuration.GetConnectionString("GoogleClientId");
+        options.ClientSecret = builder.Configuration.GetConnectionString("GoogleClientSecret");
+    })
+    .AddMicrosoftAccount(microsoftOptions =>
+    {
+        microsoftOptions.ClientId = builder.Configuration.GetConnectionString("MicrosoftClientId");
+        microsoftOptions.ClientSecret = builder.Configuration.GetConnectionString("MicrosoftClientSecret");
+    });
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
@@ -46,6 +68,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = true;
     options.Password.RequireLowercase = true;
+
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
@@ -59,7 +85,7 @@ builder.Services.AddControllers()
     });
 builder.Services.Configure<Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration>(config =>
 {
-config.SetAzureTokenCredential(new DefaultAzureCredential());
+    config.SetAzureTokenCredential(new DefaultAzureCredential());
 });
 
 if (!string.IsNullOrEmpty(builder.Configuration.GetConnectionString("APPLICATIONINSIGHTS_CONNECTION_STRING")))
