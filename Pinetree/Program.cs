@@ -53,11 +53,11 @@ builder.Services
         options.ClientId = builder.Configuration.GetConnectionString("GoogleClientId");
         options.ClientSecret = builder.Configuration.GetConnectionString("GoogleClientSecret");
     })
-    //.AddMicrosoftAccount(microsoftOptions =>
-    //{
-    //    microsoftOptions.ClientId = builder.Configuration.GetConnectionString("MicrosoftClientId") ?? "";
-    //    microsoftOptions.ClientSecret = builder.Configuration.GetConnectionString("MicrosoftClientSecret") ?? "";
-    //})
+    .AddMicrosoftAccount(microsoftOptions =>
+    {
+        microsoftOptions.ClientId = builder.Configuration.GetConnectionString("MicrosoftClientId") ?? "";
+        microsoftOptions.ClientSecret = builder.Configuration.GetConnectionString("MicrosoftClientSecret") ?? "";
+    })
     .AddFacebook(facebookOptions =>
     {
         facebookOptions.AppId = builder.Configuration.GetConnectionString("FacebookClientId") ?? "";
