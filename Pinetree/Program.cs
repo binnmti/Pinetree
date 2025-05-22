@@ -1,6 +1,8 @@
 using Azure.Identity;
 using Google.Apis.Auth.AspNetCore3;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +12,8 @@ using Pinetree.Components.Account.Services;
 using Pinetree.Data;
 using Pinetree.Services;
 using Pinetree.Shared;
+using System.Security.Claims;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,13 +53,54 @@ builder.Services
         options.ClientId = builder.Configuration.GetConnectionString("GoogleClientId");
         options.ClientSecret = builder.Configuration.GetConnectionString("GoogleClientSecret");
     })
-    .AddMicrosoftAccount(microsoftOptions =>
+    //.AddMicrosoftAccount(microsoftOptions =>
+    //{
+    //    microsoftOptions.ClientId = builder.Configuration.GetConnectionString("MicrosoftClientId") ?? "";
+    //    microsoftOptions.ClientSecret = builder.Configuration.GetConnectionString("MicrosoftClientSecret") ?? "";
+    //})
+    .AddFacebook(facebookOptions =>
     {
-        microsoftOptions.ClientId = builder.Configuration.GetConnectionString("MicrosoftClientId");
-        microsoftOptions.ClientSecret = builder.Configuration.GetConnectionString("MicrosoftClientSecret");
-    });
+        facebookOptions.AppId = builder.Configuration.GetConnectionString("FacebookClientId") ?? "";
+        facebookOptions.AppSecret = builder.Configuration.GetConnectionString("FacebookClientSecret") ?? "";
+        facebookOptions.SaveTokens = true;
+    })
+    .AddOAuth("GitHub", options =>
+     {
+         options.ClientId = builder.Configuration.GetConnectionString("GitHubClientId") ?? "";
+         options.ClientSecret = builder.Configuration.GetConnectionString("GitHubClientSecret") ?? "";
+         options.CallbackPath = new PathString("/signin-github");
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+         options.AuthorizationEndpoint = "https://github.com/login/oauth/authorize";
+         options.TokenEndpoint = "https://github.com/login/oauth/access_token";
+         options.UserInformationEndpoint = "https://api.github.com/user";
+
+         options.SaveTokens = true;
+
+         options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
+         options.ClaimActions.MapJsonKey(ClaimTypes.Name, "login");
+         options.ClaimActions.MapJsonKey("urn:github:name", "name");
+         options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
+         options.ClaimActions.MapJsonKey("urn:github:url", "html_url");
+
+         options.Events = new OAuthEvents
+         {
+             OnCreatingTicket = async context =>
+             {
+                 var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
+                 request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
+
+                 var response = await context.Backchannel.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted);
+                 response.EnsureSuccessStatusCode();
+
+                 var user = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+                 context.RunClaimActions(user);
+             }
+         };
+     });
+
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
