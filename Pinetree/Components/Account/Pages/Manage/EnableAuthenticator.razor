@@ -6,6 +6,9 @@
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Pinetree.Data
+@using QRCoder
+@using System.Drawing
+@using System.IO
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IdentityUserAccessor UserAccessor
@@ -38,9 +41,16 @@ else
             </li>
             <li>
                 <p>Scan the QR Code or enter this key <kbd>@sharedKey</kbd> into your two factor authenticator app. Spaces and casing do not matter.</p>
-                <div class="alert alert-info">Learn how to <a href="https://go.microsoft.com/fwlink/?Linkid=852423">enable QR code generation</a>.</div>
-                <div></div>
-                <div data-url="@authenticatorUri"></div>
+                @if (qrCodeImageUrl != null)
+                {
+                    <div class="qrcode">
+                        <img src="@qrCodeImageUrl" alt="QR Code for authenticator app" />
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">QR code is being generated...</div>
+                }
             </li>
             <li>
                 <p>
@@ -66,6 +76,20 @@ else
     </div>
 }
 
+<style>
+    .qrcode {
+        margin: 20px 0;
+        text-align: left;
+    }
+
+        .qrcode img {
+            border: 1px solid #ddd;
+            padding: 10px;
+            max-width: 200px;
+            max-height: 200px;
+        }
+</style>
+
 @code {
     private const string AuthenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
 
@@ -73,6 +97,7 @@ else
     private ApplicationUser user = default!;
     private string? sharedKey;
     private string? authenticatorUri;
+    private string? qrCodeImageUrl;
     private IEnumerable<string>? recoveryCodes;
 
     [CascadingParameter]
@@ -86,6 +111,22 @@ else
         user = await UserAccessor.GetRequiredUserAsync(HttpContext);
 
         await LoadSharedKeyAndQrCodeUriAsync(user);
+        GenerateQrCodeImage();
+    }
+
+    private void GenerateQrCodeImage()
+    {
+        if (string.IsNullOrEmpty(authenticatorUri))
+            return;
+
+        // Generate QR code
+        QRCodeGenerator qrGenerator = new QRCodeGenerator();
+        QRCodeData qrCodeData = qrGenerator.CreateQrCode(authenticatorUri, QRCodeGenerator.ECCLevel.Q);
+        PngByteQRCode qrCode = new PngByteQRCode(qrCodeData);
+        byte[] qrCodeBytes = qrCode.GetGraphic(20);
+
+        // Convert to base64 for image display
+        qrCodeImageUrl = $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
     }
 
     private async Task OnValidSubmitAsync()
