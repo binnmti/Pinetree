@@ -52,6 +52,7 @@ builder.Services
     {
         options.ClientId = builder.Configuration.GetConnectionString("GoogleClientId");
         options.ClientSecret = builder.Configuration.GetConnectionString("GoogleClientSecret");
+        options.CallbackPath = new PathString("/signin-google");
     })
     .AddMicrosoftAccount(microsoftOptions =>
     {
