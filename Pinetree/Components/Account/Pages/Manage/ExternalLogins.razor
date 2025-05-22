@@ -50,18 +50,20 @@
     <hr />
     <form class="form-horizontal" action="Account/Manage/LinkExternalLogin" method="post">
         <AntiforgeryToken />
-        <div>
-            <p>
-                @foreach (var provider in otherLogins)
-                {
-                    <button type="submit" class="btn btn-primary" name="Provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">
-                        @provider.DisplayName
-                    </button>
-                }
-            </p>
+        <div class="auth-container">
+            @foreach (var provider in otherLogins)
+            {
+                <ExternalLoginButton 
+                    Provider="provider" 
+                    ProviderParameterName="Provider" 
+                    ButtonTitle="@($"Log in using your {provider.DisplayName} account")"
+                    IsManagePage="true" />
+            }
         </div>
     </form>
 }
+
+<ExternalLoginStyles />
 
 @code {
     public const string LinkLoginCallbackAction = "LinkLoginCallback";
