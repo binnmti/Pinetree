@@ -66,20 +66,6 @@ builder.Services
         microsoftOptions.Scope.Add("email");
         microsoftOptions.Scope.Add("https://graph.microsoft.com/User.Read");
         microsoftOptions.SaveTokens = true;
-        microsoftOptions.Events = new OAuthEvents
-        {
-            OnTicketReceived = context =>
-            {
-                context.ReturnUri = "/";
-                return Task.CompletedTask;
-            },
-            OnRemoteFailure = context =>
-            {
-                context.Response.Redirect("/");
-                context.HandleResponse();
-                return Task.CompletedTask;
-            }
-        };
     })
     .AddFacebook(facebookOptions =>
     {
