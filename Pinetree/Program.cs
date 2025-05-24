@@ -57,8 +57,7 @@ builder.Services
         var tenantId = builder.Configuration.GetConnectionString("MicrosoftTenantId") ?? "";
         microsoftOptions.ClientId = builder.Configuration.GetConnectionString("MicrosoftClientId") ?? "";
         microsoftOptions.ClientSecret = builder.Configuration.GetConnectionString("MicrosoftClientSecret") ?? "";
-        //microsoftOptions.CallbackPath = new PathString("/signin-microsoft");
-        microsoftOptions.CallbackPath = new PathString("/Account/ExternalLogin");
+        microsoftOptions.CallbackPath = new PathString("/signin-microsoft");
         microsoftOptions.AuthorizationEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/authorize";
         microsoftOptions.TokenEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token";
         microsoftOptions.Scope.Clear();
@@ -67,6 +66,21 @@ builder.Services
         microsoftOptions.Scope.Add("email");
         microsoftOptions.Scope.Add("https://graph.microsoft.com/User.Read");
         microsoftOptions.SaveTokens = true;
+
+        microsoftOptions.Events = new OAuthEvents
+        {
+            OnTicketReceived = context =>
+            {
+                context.ReturnUri = "/Account/ExternalLogin";
+                return Task.CompletedTask;
+            },
+            OnRemoteFailure = context =>
+            {
+                context.Response.Redirect("/");
+                context.HandleResponse();
+                return Task.CompletedTask;
+            }
+        };
     })
     .AddFacebook(facebookOptions =>
     {
