@@ -62,9 +62,12 @@ builder.Services
         microsoftOptions.CallbackPath = new PathString("/signin-microsoft");
         microsoftOptions.AuthorizationEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/authorize";
         microsoftOptions.TokenEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token";
-        microsoftOptions.Scope.Add("User.Read");
+        microsoftOptions.Scope.Clear();
+        microsoftOptions.Scope.Add("openid");
         microsoftOptions.Scope.Add("profile");
         microsoftOptions.Scope.Add("email");
+        microsoftOptions.Scope.Add("https://graph.microsoft.com/User.Read");
+        microsoftOptions.SaveTokens = true;
     })
     .AddFacebook(facebookOptions =>
     {
