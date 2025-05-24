@@ -52,78 +52,62 @@ builder.Services
         options.ClientSecret = builder.Configuration.GetConnectionString("GoogleClientSecret");
         options.CallbackPath = new PathString("/signin-google");
     })
-    .AddMicrosoftAccount(microsoftOptions =>
-    {
-        var tenantId = builder.Configuration.GetConnectionString("MicrosoftTenantId") ?? "";
-        microsoftOptions.ClientId = builder.Configuration.GetConnectionString("MicrosoftClientId") ?? "";
-        microsoftOptions.ClientSecret = builder.Configuration.GetConnectionString("MicrosoftClientSecret") ?? "";
-        microsoftOptions.CallbackPath = new PathString("/signin-microsoft");
-        microsoftOptions.AuthorizationEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/authorize";
-        microsoftOptions.TokenEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token";
-        microsoftOptions.Scope.Clear();
-        microsoftOptions.Scope.Add("openid");
-        microsoftOptions.Scope.Add("profile");
-        microsoftOptions.Scope.Add("email");
-        microsoftOptions.Scope.Add("https://graph.microsoft.com/User.Read");
-        microsoftOptions.SaveTokens = true;
-
-        microsoftOptions.Events = new OAuthEvents
-        {
-            OnTicketReceived = context =>
-            {
-                context.ReturnUri = "/Account/ExternalLogin";
-                return Task.CompletedTask;
-            },
-            OnRemoteFailure = context =>
-            {
-                context.Response.Redirect("/");
-                context.HandleResponse();
-                return Task.CompletedTask;
-            }
-        };
-    })
     .AddFacebook(facebookOptions =>
     {
         facebookOptions.AppId = builder.Configuration.GetConnectionString("FacebookClientId") ?? "";
         facebookOptions.AppSecret = builder.Configuration.GetConnectionString("FacebookClientSecret") ?? "";
         facebookOptions.SaveTokens = true;
         facebookOptions.CallbackPath = new PathString("/signin-facebook");
-    })
-    .AddOAuth("GitHub", options =>
-     {
-         options.ClientId = builder.Configuration.GetConnectionString("GitHubClientId") ?? "";
-         options.ClientSecret = builder.Configuration.GetConnectionString("GitHubClientSecret") ?? "";
-         options.CallbackPath = new PathString("/signin-github");
+        facebookOptions.Scope.Add("public_profile");
+        facebookOptions.Scope.Add("email");
+    });
+    //.AddMicrosoftAccount(microsoftOptions =>
+    //{
+    //    var tenantId = builder.Configuration.GetConnectionString("MicrosoftTenantId") ?? "";
+    //    microsoftOptions.ClientId = builder.Configuration.GetConnectionString("MicrosoftClientId") ?? "";
+    //    microsoftOptions.ClientSecret = builder.Configuration.GetConnectionString("MicrosoftClientSecret") ?? "";
+    //    microsoftOptions.CallbackPath = new PathString("/signin-microsoft");
+    //    microsoftOptions.AuthorizationEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/authorize";
+    //    microsoftOptions.TokenEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token";
+    //    microsoftOptions.Scope.Add("openid");
+    //    microsoftOptions.Scope.Add("profile");
+    //    microsoftOptions.Scope.Add("email");
+    //})
+    //.AddOAuth("GitHub", options =>
+    // {
+    //     options.ClientId = builder.Configuration.GetConnectionString("GitHubClientId") ?? "";
+    //     options.ClientSecret = builder.Configuration.GetConnectionString("GitHubClientSecret") ?? "";
+    //     options.CallbackPath = new PathString("/signin-github");
 
-         options.AuthorizationEndpoint = "https://github.com/login/oauth/authorize";
-         options.TokenEndpoint = "https://github.com/login/oauth/access_token";
-         options.UserInformationEndpoint = "https://api.github.com/user";
+    //     options.AuthorizationEndpoint = "https://github.com/login/oauth/authorize";
+    //     options.TokenEndpoint = "https://github.com/login/oauth/access_token";
+    //     options.UserInformationEndpoint = "https://api.github.com/user";
 
-         options.SaveTokens = true;
+    //     options.SaveTokens = true;
 
-         options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
-         options.ClaimActions.MapJsonKey(ClaimTypes.Name, "login");
-         options.ClaimActions.MapJsonKey("urn:github:name", "name");
-         options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
-         options.ClaimActions.MapJsonKey("urn:github:url", "html_url");
+    //     options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
+    //     options.ClaimActions.MapJsonKey(ClaimTypes.Name, "login");
+    //     options.ClaimActions.MapJsonKey("urn:github:name", "name");
+    //     options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
+    //     options.ClaimActions.MapJsonKey("urn:github:url", "html_url");
 
-         options.Events = new OAuthEvents
-         {
-             OnCreatingTicket = async context =>
-             {
-                 var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
-                 request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
+    //     options.Events = new OAuthEvents
+    //     {
+    //         OnCreatingTicket = async context =>
+    //         {
+    //             var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
+    //             request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+    //             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
 
-                 var response = await context.Backchannel.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted);
-                 response.EnsureSuccessStatusCode();
+    //             var response = await context.Backchannel.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted);
+    //             response.EnsureSuccessStatusCode();
 
-                 var user = await response.Content.ReadFromJsonAsync<JsonElement>();
+    //             var user = await response.Content.ReadFromJsonAsync<JsonElement>();
 
-                 context.RunClaimActions(user);
-             }
-         };
-     });
+    //             context.RunClaimActions(user);
+    //         }
+    //     };
+    // });
 
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
