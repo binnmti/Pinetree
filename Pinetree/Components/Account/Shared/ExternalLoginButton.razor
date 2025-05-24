@@ -1,0 +1,72 @@
+@using Microsoft.AspNetCore.Authentication
+
+<button type="submit" class="@GetButtonClass(Provider.Name)" name="@ProviderParameterName" value="@Provider.Name" title="@ButtonTitle">
+    <div class="auth-button-content">
+        @if (ShouldShowIcon(Provider.Name))
+        {
+            <img src="@GetIconPath(Provider.Name)" alt="@Provider.DisplayName logo" class="auth-icon" />
+        }
+        <span class="auth-text">@GetButtonText(Provider.Name, Provider.DisplayName)</span>
+    </div>
+</button>
+
+@code {
+    [Parameter, EditorRequired]
+    public AuthenticationScheme Provider { get; set; } = default!;
+
+    [Parameter]
+    public string ProviderParameterName { get; set; } = "provider";
+
+    [Parameter]
+    public string ButtonTitle { get; set; } = "";
+
+    [Parameter]
+    public bool IsManagePage { get; set; } = false;
+
+    [Parameter]
+    public string ButtonStyle { get; set; } = "auth-button";
+
+    private string GetButtonClass(string providerName)
+    {
+        string baseClass = ButtonStyle;
+        
+        string providerClass = providerName.Contains("Google") ? "google-button" :
+               providerName.Contains("Facebook") ? "facebook-button" :
+               providerName.Contains("GitHub") ? "github-button" :
+               providerName.Contains("Microsoft") ? "microsoft-button" :
+               "default-button";
+               
+        return $"{baseClass} {providerClass}";
+    }
+
+    private bool ShouldShowIcon(string providerName)
+    {
+        return providerName.Contains("Google") || 
+               providerName.Contains("Facebook") || 
+               providerName.Contains("GitHub") || 
+               providerName.Contains("Microsoft");
+    }
+
+    private string GetIconPath(string providerName)
+    {
+        return providerName.Contains("Google") ? "google.svg" :
+               providerName.Contains("Facebook") ? "facebook.png" :
+               providerName.Contains("GitHub") ? "github.png" :
+               providerName.Contains("Microsoft") ? "microsoft.png" :
+               "";
+    }
+
+    private string GetButtonText(string providerName, string displayName)
+    {
+        if (IsManagePage)
+        {
+            return displayName;
+        }
+
+        return providerName.Contains("Google") ? "Sign in with Google" :
+               providerName.Contains("Facebook") ? "Continue with Facebook" :
+               providerName.Contains("GitHub") ? "Sign in with GitHub" :
+               providerName.Contains("Microsoft") ? "Sign in with Microsoft" :
+               displayName;
+    }
+}

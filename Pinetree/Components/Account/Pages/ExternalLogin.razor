@@ -4,6 +4,7 @@
 @using System.Security.Claims
 @using System.Text
 @using System.Text.Encodings.Web
+@using System.Text.RegularExpressions
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using Pinetree.Data
@@ -23,9 +24,9 @@
 <h2>Associate your @ProviderDisplayName account.</h2>
 <hr />
 
-<div  class="alert alert-info">
+<div class="alert alert-info">
     You've successfully authenticated with <strong>@ProviderDisplayName</strong>.
-    Please enter an email address for this site below and click the Register button to finish
+    Please enter an email address and username for this site below and click the Register button to finish
     logging in.
 </div>
 
@@ -38,6 +39,12 @@
                 <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="email" placeholder="Please enter your email." />
                 <label for="Input.Email" class="form-label">Email</label>
                 <ValidationMessage For="() => Input.Email" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.UserName" id="Input.UserName" class="form-control" autocomplete="username" placeholder="Please enter your username." />
+                <label for="Input.UserName" class="form-label">Username</label>
+                <ValidationMessage For="() => Input.UserName" />
+                <div class="form-text">Username may only contain alphanumeric characters or single hyphens, and cannot begin or end with a hyphen.</div>
             </div>
             <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
         </EditForm>
@@ -127,6 +134,22 @@
         if (externalLoginInfo.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
         {
             Input.Email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
+
+            // Try to extract a suggested username from the email or provider information
+            string suggestedUsername = Input.Email.Split('@')[0];
+
+            // Check if there's a name claim that we could use
+            if (externalLoginInfo.Principal.HasClaim(c => c.Type == ClaimTypes.Name))
+            {
+                var name = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Name);
+                if (!string.IsNullOrEmpty(name))
+                {
+                    // Remove spaces and special characters to make a valid username
+                    suggestedUsername = Regex.Replace(name, @"[^a-zA-Z0-9]", "");
+                }
+            }
+
+            Input.UserName = suggestedUsername;
         }
     }
 
@@ -137,10 +160,35 @@
             RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information during confirmation.", HttpContext);
         }
 
+        // Username validation - alphanumeric with single hyphens, not at start/end
+        var usernameRegex = new Regex("^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}[a-zA-Z0-9]$");
+        if (!usernameRegex.IsMatch(Input.UserName))
+        {
+            message = "Error: Username may only contain alphanumeric characters or single hyphens, and cannot begin or end with a hyphen.";
+            return;
+        }
+
+        // Check if username already exists
+        var existingUser = await UserManager.FindByNameAsync(Input.UserName);
+        if (existingUser != null)
+        {
+            message = "Error: Username is already taken.";
+            return;
+        }
+
+        // Check if email already exists
+        var existingEmailUser = await UserManager.FindByEmailAsync(Input.Email);
+        if (existingEmailUser != null)
+        {
+            message = "Error: Email is already taken.";
+            return;
+        }
+
         var emailStore = GetEmailStore();
         var user = CreateUser();
+        user.EmailConfirmed = true;
 
-        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+        await UserStore.SetUserNameAsync(user, Input.UserName, CancellationToken.None);
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
 
         var result = await UserManager.CreateAsync(user);
@@ -201,5 +249,9 @@
         [Required]
         [EmailAddress]
         public string Email { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Username")]
+        public string UserName { get; set; } = "";
     }
 }

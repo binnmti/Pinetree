@@ -19,15 +19,20 @@ else
         <div>
             <AntiforgeryToken />
             <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
-            <p>
+            <div class="auth-container">
                 @foreach (var provider in externalLogins)
                 {
-                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
+                    <ExternalLoginButton 
+                        Provider="provider" 
+                        ProviderParameterName="provider" 
+                        ButtonTitle="@($"Log in using your {provider.DisplayName} account")" />
                 }
-            </p>
+            </div>
         </div>
     </form>
 }
+
+<ExternalLoginStyles />
 
 @code {
     private AuthenticationScheme[] externalLogins = [];
