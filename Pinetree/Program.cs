@@ -56,9 +56,15 @@ builder.Services
     })
     .AddMicrosoftAccount(microsoftOptions =>
     {
+        var tenantId = builder.Configuration.GetConnectionString("MicrosoftTenantId") ?? "";
         microsoftOptions.ClientId = builder.Configuration.GetConnectionString("MicrosoftClientId") ?? "";
         microsoftOptions.ClientSecret = builder.Configuration.GetConnectionString("MicrosoftClientSecret") ?? "";
         microsoftOptions.CallbackPath = new PathString("/signin-microsoft");
+        microsoftOptions.AuthorizationEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/authorize";
+        microsoftOptions.TokenEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token";
+        microsoftOptions.Scope.Add("User.Read");
+        microsoftOptions.Scope.Add("profile");
+        microsoftOptions.Scope.Add("email");
     })
     .AddFacebook(facebookOptions =>
     {
