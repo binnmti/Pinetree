@@ -58,12 +58,14 @@ builder.Services
     {
         microsoftOptions.ClientId = builder.Configuration.GetConnectionString("MicrosoftClientId") ?? "";
         microsoftOptions.ClientSecret = builder.Configuration.GetConnectionString("MicrosoftClientSecret") ?? "";
+        microsoftOptions.CallbackPath = new PathString("/signin-microsoft");
     })
     .AddFacebook(facebookOptions =>
     {
         facebookOptions.AppId = builder.Configuration.GetConnectionString("FacebookClientId") ?? "";
         facebookOptions.AppSecret = builder.Configuration.GetConnectionString("FacebookClientSecret") ?? "";
         facebookOptions.SaveTokens = true;
+        facebookOptions.CallbackPath = new PathString("/signin-facebook");
     })
     .AddOAuth("GitHub", options =>
      {
