@@ -6,23 +6,12 @@ namespace Pinetree.Client.Services;
 public static class LimitCheckService
 {
     private const int FreeMaxDepth = 3;
-    private const int FreeMaxFileCount = 33;
-    private const int FreeMaxCharacter = 33333;
-    private const int ProMaxDepth = 9;
-    private const int ProMaxFileCount = 99;
-    private const int ProMaxCharacter = 99999;
+    private const int FreeMaxChildFileCount = 33;
+    // TODO:At this point, I would be grateful if you could create a file full of files.
+    //private const int FreeMaxFileCount = 333;
+    private const int FreeMaxCharacter = 3333;
 
-    public static  int GetMaxCharacter(bool isProfessional)
-    {
-        if (isProfessional)
-        {
-            return ProMaxCharacter;
-        }
-        else
-        {
-            return FreeMaxCharacter;
-        }
-    }
+    private const int ProMaxDepth = 9;
 
     public static async Task<bool> CheckDepthAsync(this IJSRuntime jsRuntime, PinetreeView pineTree, bool isProfessional)
     {
@@ -49,19 +38,11 @@ public static class LimitCheckService
     public static async Task<bool> CheckFileCountAsync(this IJSRuntime jsRuntime, PinetreeView pineTree, bool isProfessional)
     {
         var fileCount = pineTree.GetTotalFileCount() + 1;
-        if (isProfessional)
+        if (!isProfessional)
         {
-            if (fileCount >= ProMaxFileCount)
+            if (fileCount > FreeMaxChildFileCount)
             {
-                await jsRuntime.AlertAsync($"You cannot add more than {ProMaxFileCount} files in the professional version.");
-                return true;
-            }
-        }
-        else
-        {
-            if (fileCount > FreeMaxFileCount)
-            {
-                await jsRuntime.AlertAsync($"You cannot add more than {FreeMaxFileCount} files in the free version.");
+                await jsRuntime.AlertAsync($"You cannot add more than {FreeMaxChildFileCount} files in the free version.");
                 return true;
             }
         }
@@ -70,15 +51,7 @@ public static class LimitCheckService
 
     public static async Task<bool> CheckCharacterAsync(this IJSRuntime jsRuntime, string character, bool isProfessional)
     {
-        if (isProfessional)
-        {
-            if (character.Length >= ProMaxCharacter)
-            {
-                await jsRuntime.AlertAsync($"You cannot write more than {ProMaxCharacter} characters in the professional version.");
-                return true;
-            }
-        }
-        else
+        if (!isProfessional)
         {
             if (character.Length >= FreeMaxCharacter)
             {

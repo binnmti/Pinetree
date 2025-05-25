@@ -13,7 +13,7 @@ public class BlobStorageService
     private readonly BlobServiceClient _blobServiceClient;
     private readonly string _containerName = "images";
     private readonly ApplicationDbContext _dbContext;
-    private const int DefaultQuotaInBytes = 1024 * 1024 * 100;
+    private const int DefaultQuotaInBytes = 1024 * 1024 * 3;
 
     public BlobStorageService(IConfiguration configuration, ApplicationDbContext dbContext)
     {
