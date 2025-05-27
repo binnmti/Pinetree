@@ -6,6 +6,7 @@
 @using Pinetree.Shared
 
 @inject IdentityUserAccessor UserAccessor
+@inject SignInManager<ApplicationUser> SignInManager
 
 <PageTitle>Manage Plan</PageTitle>
 
@@ -22,11 +23,13 @@
             </div>
             @if (IsFree)
             {
-                <button type="submit" class="w-100 btn btn-lg btn-primary">Update Pro Plan</button>
+                <button type="submit" class="w-100 btn btn-lg btn-primary">
+                    @(IsReturningCustomer ? "Reactivate Pro Plan" : "Update Pro Plan")
+                </button>
             }
             else
             {
-                <button type="submit" class="w-100 btn btn-lg btn-primary">Check Stripe Page</button>
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Manage Subscription</button>
             }
         </form>
     </div>
@@ -45,7 +48,7 @@
     private string message = "";
     private string? role;
     private bool IsFree;
-
+    private bool IsReturningCustomer;
     protected override async Task OnInitializedAsync()
     {
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
@@ -61,30 +64,40 @@
                 message = "There was an error processing your payment. Please try again later.";
             }
         }
-        var user = await UserAccessor.GetRequiredUserAsync(HttpContext);
-        var roles = await UserManager.GetRolesAsync(user);
+
+        var currentUser = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        var roles = await UserManager.GetRolesAsync(currentUser);
         Debug.Assert(roles.Count <= 1, "User has more than one role assigned");
         role = roles.FirstOrDefault() ?? "Free";
         IsFree = role == null ? true : Roles.IsFree(role);
+        IsReturningCustomer = IsFree && !string.IsNullOrEmpty(currentUser.StripeCustomerId);
     }
 
-#if DEBUG
+    private void RefreshPage()
+    {
+        NavigationManager.NavigateTo("/Account/Manage/Plan", forceLoad: true);
+    }
+
     private async Task OnSubmit()
     {
+        string url;
+
         if (IsFree)
         {
-            var url = await PaymentService.CreateCheckoutSessionAsync();
-            NavigationManager.NavigateTo(url);
+            if (IsReturningCustomer)
+            {
+                url = await PaymentService.CreatePortalSession();
+            }
+            else
+            {
+                url = await PaymentService.CreateCheckoutSessionAsync();
+            }
         }
         else
         {
-            var url = await PaymentService.CreatePortalSession();
-            NavigationManager.NavigateTo(url);
+            url = await PaymentService.CreatePortalSession();
         }
+
+        NavigationManager.NavigateTo(url);
     }
-#else
-    private void OnSubmit()
-    {
-    }
-#endif
 }

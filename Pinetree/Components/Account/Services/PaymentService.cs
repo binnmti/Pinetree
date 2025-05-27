@@ -32,8 +32,8 @@ public class PaymentService
 
         var requestScheme = httpContext.Request.Scheme;
         var requestHost = httpContext.Request.Host.Value;
-        var successUrl = $"{requestScheme}://{requestHost}/Account/Manage/Plan?payment=success";
-        var cancelUrl = $"{requestScheme}://{requestHost}/Account/Manage/Plan?payment=cancel";
+        var successUrl = $"{requestScheme}://{requestHost}/Account/Manage/Plan?payment=success&session_id={{CHECKOUT_SESSION_ID}}";
+        var cancelUrl = $"{requestScheme}://{requestHost}/Account/Manage/Plan?payment=cancel&session_id={{CHECKOUT_SESSION_ID}}";
         var options = new SessionCreateOptions
         {
             PaymentMethodTypes = ["card"],
