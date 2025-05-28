@@ -54,7 +54,7 @@ public class PaymentService
             },
             Discounts =
             [
-                 new() { Coupon = "NA7KNXO4" }
+                new() { Coupon = "wHlKiH8K" }
             ],
         };
         var service = new SessionService();
