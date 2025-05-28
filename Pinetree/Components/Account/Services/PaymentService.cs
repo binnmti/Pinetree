@@ -52,6 +52,10 @@ public class PaymentService
             {
                 { "UserId", userId }
             },
+            Discounts =
+            [
+                 new() { Coupon = "NA7KNXO4" }
+            ],
         };
         var service = new SessionService();
         var session = await service.CreateAsync(options);
