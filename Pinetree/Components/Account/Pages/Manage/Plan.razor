@@ -1,8 +1,8 @@
 ﻿@page "/Account/Manage/Plan"
-@using Microsoft.AspNetCore.Identity
-@using Pinetree.Components.Account.Services
-@using Pinetree.Data
 @using System.Diagnostics
+@using Microsoft.AspNetCore.Identity
+@using Pinetree.Data
+@using Pinetree.Services
 @using Pinetree.Shared
 
 @inject IdentityUserAccessor UserAccessor
@@ -68,7 +68,7 @@
             }
             else if (paymentStatus == "cancel")
             {
-                message = "There was an error processing your payment. Please try again later.";
+                message = "Error: There was an error processing your payment. Please try again later.";
             }
         }
 

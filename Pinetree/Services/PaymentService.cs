@@ -4,7 +4,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Pinetree.Data;
 
-namespace Pinetree.Components.Account.Services;
+namespace Pinetree.Services;
 
 public class PaymentService
 {
@@ -54,7 +54,7 @@ public class PaymentService
             },
             Discounts =
             [
-                new() { Coupon = "wHlKiH8K" }
+                new() { Coupon = "KeIGwcPl" }
             ],
         };
         var service = new SessionService();
