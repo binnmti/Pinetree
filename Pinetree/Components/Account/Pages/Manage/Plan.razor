@@ -24,13 +24,13 @@
             @if (IsFree)
             {
                 <button type="submit" class="w-100 btn btn-lg btn-primary">
-                    @(IsReturningCustomer ? "Reactivate Pro Plan" : "Update Pro Plan")(In Testing)
+                    @(IsReturningCustomer ? "Reactivate Pro Plan" : "Update Pro Plan") (In Testing)
                 </button>
             }
             else
             {
                 <div>
-                    <button type="submit" class="w-100 btn btn-lg btn-primary">Manage Billing & Invoices(In Testing)</button>
+                    <button type="submit" class="w-100 btn btn-lg btn-primary">Manage Billing & Invoices (In Testing)</button>
                     <div class="text-center mt-2">
                         <small class="text-muted">
                             Opens Stripe secure billing portal in a new window
