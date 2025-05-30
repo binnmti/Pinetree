@@ -4,7 +4,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Pinetree.Data;
 
-namespace Pinetree.Components.Account.Services;
+namespace Pinetree.Services;
 
 public class PaymentService
 {
@@ -32,8 +32,8 @@ public class PaymentService
 
         var requestScheme = httpContext.Request.Scheme;
         var requestHost = httpContext.Request.Host.Value;
-        var successUrl = $"{requestScheme}://{requestHost}/Account/Manage/Plan?payment=success";
-        var cancelUrl = $"{requestScheme}://{requestHost}/Account/Manage/Plan?payment=cancel";
+        var successUrl = $"{requestScheme}://{requestHost}/Account/Manage/Plan?payment=success&session_id={{CHECKOUT_SESSION_ID}}";
+        var cancelUrl = $"{requestScheme}://{requestHost}/Account/Manage/Plan?payment=cancel&session_id={{CHECKOUT_SESSION_ID}}";
         var options = new SessionCreateOptions
         {
             PaymentMethodTypes = ["card"],
@@ -52,6 +52,10 @@ public class PaymentService
             {
                 { "UserId", userId }
             },
+            Discounts =
+            [
+                new() { Coupon = "KeIGwcPl" }
+            ],
         };
         var service = new SessionService();
         var session = await service.CreateAsync(options);

@@ -371,19 +371,11 @@
         StateHasChanged();
     }
 
-    private async Task OnInputChange(ChangeEventArgs e)
+    private void OnInputChange(ChangeEventArgs e)
     {
         var previousContent = Content;
         var content = e.Value?.ToString() ?? "";
-        if (await JS.CheckCharacterAsync(content, IsProfessional))
-        {
-            var maxCharacter = LimitCheckService.GetMaxCharacter(IsProfessional);
-            Content = content[0..maxCharacter];
-        }
-        else
-        {
-            Content = content;
-        }
+        Content = content;
         if (previousContent != Content)
         {
             Current.SaveContentToHistory(previousContent);
@@ -422,6 +414,7 @@
     private async Task SaveChanges()
     {
         if (IsTry) return;
+        if (await JS.CheckCharacterAsync(Content, IsProfessional)) return;
 
         try
         {
