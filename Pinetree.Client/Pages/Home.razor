@@ -11,29 +11,86 @@
     <meta property="og:url" content="https://pinetree.azurewebsites.net/" />
 </HeadContent>
 
-<div style="display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; flex-direction: column;">
-    <h1 style="font-size: 4em; margin-bottom: 0.5em;">Welcome to Pinetree</h1>
-    <p style="font-size: 2em; margin-bottom: 1em;">
-        A hierarchical Markdown editor for your needs
-    </p>
-    <blockquote>
-        This service is a Markdown editor that allows files to be managed in a hierarchical structure.<br>
-        Building on the "OnePager" concept, we place concise key points at the top and structure the details hierarchically.<br>
-        By organizing brief explanations and details in a layered format, it enables a clearer, more concise, and visually structured way of writing.<br>
-    </blockquote>
-
-    <img src="Pinetree.png" alt="Pinetree Image" />
-    <div class="mt-4">
-        <a class="btn btn-outline-primary btn-lg m-2" href="/Tryit"><i class="bi bi-tools"></i>Try it now</a>
-        <a class="btn btn-outline-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>Register</a>
-        <p class="mt-3 text-muted">
-            We're currently in a phase where we want as many users as possible to try our service. <br>
-            Please start with <a href="/Tryit">Try it now</a> and we'd appreciate your <a href="/Feedback">feedback</a> afterwards. <br>
-            Users who provide valuable feedback will receive a permanent free pass! <br>
-            We're also offering a free 1-year premium membership campaign limited to 33 users for our <a href="/Pricing">paid plans</a>!<br>
+<div class="position-relative">
+    <!-- Main Content - Centered -->
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; flex-direction: column;">
+        <h1 style="font-size: 4em; margin-bottom: 0.5em;">Welcome to Pinetree</h1>
+        <p style="font-size: 2em; margin-bottom: 1em;">
+            A hierarchical Markdown editor for your needs
         </p>
+        <blockquote>
+            This service is a Markdown editor that allows files to be managed in a hierarchical structure.<br>
+            Building on the "OnePager" concept, we place concise key points at the top and structure the details hierarchically.<br>
+            By organizing brief explanations and details in a layered format, it enables a clearer, more concise, and visually structured way of writing.<br>
+        </blockquote>
+
+        <img src="Pinetree.png" alt="Pinetree Image" />
+        <div class="mt-4">
+            <a class="btn btn-outline-primary btn-lg m-2" href="/Tryit"><i class="bi bi-tools"></i>Try it now</a>
+            <a class="btn btn-outline-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>Register</a>
+            <p class="mt-3 text-muted">
+                We're currently in a phase where we want as many users as possible to try our service. <br>
+                Please start with <a href="/Tryit">Try it now</a> and we'd appreciate your <a href="/Feedback">feedback</a> afterwards. <br>
+                Users who provide valuable feedback will receive a permanent free pass! <br>
+                We're also offering a free 1-year premium membership campaign limited to 33 users for our <a href="/Pricing">paid plans</a>!<br>
+            </p>
+        </div>
+    </div>
+
+    <!-- Advertisement Section - Right Side -->
+    <div class="ad-sidebar">
+        <div class="ad-container mb-4">
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5747031166901717"
+                    crossorigin="anonymous"></script>
+            <!-- pinetree -->
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-5747031166901717"
+                 data-ad-slot="1174804653"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+
+        <div class="ad-container mb-4">
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5747031166901717"
+                    crossorigin="anonymous"></script>
+            <!-- pinetree-vertical -->
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-5747031166901717"
+                 data-ad-slot="1174804653"
+                 data-ad-format="vertical"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
     </div>
 </div>
+
+<style>
+    .ad-sidebar {
+        position: fixed;
+        top: 50px;
+        right: 20px;
+        width: 300px;
+        z-index: 100;
+    }
+    .ad-container {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    @@media (max-width: 1200px) 
+    {
+        .ad-sidebar
+        {
+            display: none;
+        }
+    }
+</style>
 
 @code {
     [Inject]
