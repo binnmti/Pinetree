@@ -1,9 +1,12 @@
 # TODO
+- A lot of File Paging
+
 - Paid Membership
+  - 33User
+  - stripe
 - Advertisement
 - Top Page Image
   - Ignite
-- A lot of File Paging
 
 - monaco-editor
 - Multilingualization, or rather Japaneseization
@@ -14,5 +17,3 @@
 - Output
 - Browther Back
 
-# Production
-- **approve**
