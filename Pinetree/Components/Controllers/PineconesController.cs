@@ -360,4 +360,79 @@ public class PineconesController(ApplicationDbContext context) : ControllerBase
 
     private async Task<Pinecone?> GetPineconeById(Guid guid) 
         => await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Guid == guid);
+
+    [HttpGet("get-user-documents")]
+    public async Task<UserDocumentsResponse> GetUserDocuments([FromQuery] UserDocumentsRequest request)
+    {
+        var userName = User.Identity?.Name ?? "";
+        var query = GetUserTopList(userName);
+
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            query = query.Where(p => 
+                EF.Functions.Like(p.Title, $"%{request.Search}%") ||
+                EF.Functions.Like(p.Content, $"%{request.Search}%"));
+        }
+
+        // Apply public-only filter
+        if (request.PublicOnly)
+        {
+            query = query.Where(p => p.IsPublic);
+        }
+
+        // Apply sorting
+        query = request.SortBy?.ToLower() switch
+        {
+            "title" => request.SortDescending 
+                ? query.OrderByDescending(p => p.Title) 
+                : query.OrderBy(p => p.Title),
+            "createdat" => request.SortDescending 
+                ? query.OrderByDescending(p => p.Create) 
+                : query.OrderBy(p => p.Create),
+            "updatedat" => request.SortDescending 
+                ? query.OrderByDescending(p => p.Update) 
+                : query.OrderBy(p => p.Update),
+            _ => request.SortDescending 
+                ? query.OrderByDescending(p => p.Update) 
+                : query.OrderBy(p => p.Update)
+        };
+
+        // Get total count before pagination
+        var totalRecords = await query.CountAsync();
+
+        // Apply pagination
+        var documents = await query
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToListAsync();
+
+        return new UserDocumentsResponse
+        {
+            Documents = documents,
+            TotalRecords = totalRecords,
+            TotalPages = (int)Math.Ceiling(totalRecords / (double)request.PageSize),
+            CurrentPage = request.PageNumber,
+            PageSize = request.PageSize
+        };
+    }
+
+    public class UserDocumentsRequest
+    {
+        public string Search { get; set; } = "";
+        public bool PublicOnly { get; set; } = false;
+        public string SortBy { get; set; } = "updatedat";
+        public bool SortDescending { get; set; } = true;
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+    }
+
+    public class UserDocumentsResponse
+    {
+        public List<Pinecone> Documents { get; set; } = new();
+        public int TotalRecords { get; set; }
+        public int TotalPages { get; set; }
+        public int CurrentPage { get; set; }
+        public int PageSize { get; set; }
+    }
 }
