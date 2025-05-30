@@ -1,10 +1,8 @@
 # TODO
-- A lot of File Paging
-
+- Advertisement
 - Paid Membership
   - 33User
   - stripe
-- Advertisement
 - Top Page Image
   - Ignite
 
