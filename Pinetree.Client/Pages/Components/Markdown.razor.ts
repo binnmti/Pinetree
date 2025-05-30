@@ -198,22 +198,23 @@ function setupBeforeUnloadWarning(dotNetHelper: DotNetObject): void {
         }
     }, true);
 
-    const pageUrl = window.location.href;
-    window.history.pushState({ page: 1 }, '', pageUrl);
-    window.addEventListener('popstate', async function (e) {
-        window.history.pushState({ page: 1 }, '', pageUrl);
-        try {
-            const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
-            if (hasPendingChanges) {
-                const confirmed = confirm('Your changes have not been saved. Are you sure you want to leave this page?');
-                if (confirmed) {
-                    window.location.href = document.referrer || '/';
-                }
-            }
-        } catch (error) {
-            console.error('Error checking for pending changes:', error);
-        }
-    });
+// TODO: When you press the back button on the browser, a warning will be displayed, but you will be forced to go back whether you press yes or no. The current workaround causes various problems with the back button on the browser, so turn off the function for now.
+//    const pageUrl = window.location.href;
+//    window.history.pushState({ page: 1 }, '', pageUrl);
+//    window.addEventListener('popstate', async function (e) {
+//        window.history.pushState({ page: 1 }, '', pageUrl);
+//        try {
+//            const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
+//            if (hasPendingChanges) {
+//                const confirmed = confirm('Your changes have not been saved. Are you sure you want to leave this page?');
+//                if (confirmed) {
+//                    window.location.href = document.referrer || '/';
+//                }
+//            }
+//        } catch (error) {
+//            console.error('Error checking for pending changes:', error);
+//        }
+//    });
 }
 
 export function setupKeyboardShortcuts(element: HTMLTextAreaElement, dotNetHelper: DotNetObject) {

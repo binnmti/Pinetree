@@ -1,6 +1,6 @@
 # TODO
-- Feedback Page
 - Paid Membership
+- A lot of File Paging
 - monaco-editor
 - Multilingualization, or rather Japaneseization
 - Layout CSS 100% Check
