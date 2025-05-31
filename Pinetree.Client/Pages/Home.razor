@@ -13,27 +13,73 @@
 
 <div class="position-relative">
     <!-- Main Content - Centered -->
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; flex-direction: column;">
-        <h1 style="font-size: 4em; margin-bottom: 0.5em;">Welcome to Pinetree</h1>
-        <p style="font-size: 2em; margin-bottom: 1em;">
-            A hierarchical Markdown editor for your needs
-        </p>
-        <blockquote>
-            This service is a Markdown editor that allows files to be managed in a hierarchical structure.<br>
-            Building on the "OnePager" concept, we place concise key points at the top and structure the details hierarchically.<br>
-            By organizing brief explanations and details in a layered format, it enables a clearer, more concise, and visually structured way of writing.<br>
-        </blockquote>
-
-        <img src="Pinetree.png" alt="Pinetree Image" />
+    <div style="display: flex; justify-content: center; align-items: center; text-align: center; flex-direction: column;">
+        <h1 style="font-size: 4em; margin-top: 50px;">Browser-based hierarchical markdown editor</h1>
         <div class="mt-4">
             <a class="btn btn-outline-primary btn-lg m-2" href="/Tryit"><i class="bi bi-tools"></i>Try it now</a>
             <a class="btn btn-outline-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>Register</a>
-            <p class="mt-3 text-muted">
+        </div>
+        <img src="Pinetree.png" alt="Pinetree Image" class="mt-4" />
+
+        <!-- Added space below the image -->
+        <div class="my-5">
+            <p class="text-muted">
                 We're currently in a phase where we want as many users as possible to try our service. <br>
                 Please start with <a href="/Tryit">Try it now</a> and we'd appreciate your <a href="/Feedback">feedback</a> afterwards. <br>
                 Users who provide valuable feedback will receive a permanent free pass! <br>
                 We're also offering a free 1-year premium membership campaign limited to 33 users for our <a href="/Pricing">paid plans</a>!<br>
             </p>
+        </div>
+
+        <!-- Video section -->
+        <div class="video-container my-5">
+            <h2>See Pinetree in Action</h2>
+            <video controls width="800" class="mt-3 mb-4">
+                <source src="/PlayPinetree.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <p class="video-description">
+                Watch how Pinetree helps you organize your thoughts hierarchically and efficiently.
+                This short demonstration shows the key features of our markdown editor in action.
+            </p>
+        </div>
+
+        <!-- Feature explanation -->
+        <div class="feature-section my-5">
+            <h2>Hierarchical Structure Explained</h2>
+            <blockquote class="my-4">
+                This service is a Markdown editor that allows files to be managed in a hierarchical structure.<br>
+                Building on the "OnePager" concept, we place concise key points at the top and structure the details hierarchically.<br>
+                By organizing brief explanations and details in a layered format, it enables a clearer, more concise, and visually structured way of writing.<br>
+            </blockquote>
+
+            <div class="features-grid mt-5">
+                <div class="feature-item">
+                    <i class="bi bi-layers fs-1"></i>
+                    <h3>Hierarchical Organization</h3>
+                    <p>Organize your content in nested layers for better readability and navigation</p>
+                </div>
+                <div class="feature-item">
+                    <i class="bi bi-markdown fs-1"></i>
+                    <h3>Markdown Support</h3>
+                    <p>Use the power of markdown for formatting while maintaining a structured document</p>
+                </div>
+                <div class="feature-item">
+                    <i class="bi bi-cloud fs-1"></i>
+                    <h3>Cloud Storage</h3>
+                    <p>Access your documents from anywhere with secure cloud storage</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Call to action -->
+        <div class="cta-section my-5">
+            <h2>Ready to get started?</h2>
+            <p>Join our community of organized writers and thinkers today!</p>
+            <div class="mt-4 mb-5">
+                <a class="btn btn-primary btn-lg m-2" href="/Tryit"><i class="bi bi-tools"></i>Try it now</a>
+                <a class="btn btn-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>Register</a>
+            </div>
         </div>
     </div>
 
@@ -79,15 +125,66 @@
         width: 300px;
         z-index: 100;
     }
+
     .ad-container {
         width: 100%;
         margin-bottom: 20px;
     }
-    @@media (max-width: 1200px) 
-    {
-        .ad-sidebar
-        {
+
+    @@media (max-width: 1200px) {
+        .ad-sidebar {
             display: none;
+        }
+    }
+
+    /* Added styles for new sections */
+    .video-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .video-description {
+        font-size: 1.1rem;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 30px;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .feature-item {
+        padding: 20px;
+        border-radius: 8px;
+        background-color: rgba(0,0,0,0.02);
+        transition: transform 0.3s ease;
+    }
+
+        .feature-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+    .cta-section {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 30px;
+        border-radius: 8px;
+        background-color: rgba(0,0,0,0.03);
+    }
+
+    /* Make layout more mobile friendly */
+    @@media (max-width: 768px) {
+        .features-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .video-container video {
+            width: 100%;
         }
     }
 </style>
