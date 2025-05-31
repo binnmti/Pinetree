@@ -1,18 +1,14 @@
 using Azure.Identity;
-using Google.Apis.Auth.AspNetCore3;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Pinetree.Components;
 using Pinetree.Components.Account;
 using Pinetree.Data;
 using Pinetree.Services;
 using Pinetree.Shared;
-using System.Security.Claims;
-using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
