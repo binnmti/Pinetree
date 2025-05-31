@@ -1,0 +1,158 @@
+﻿/* Advertisement sidebar styles */
+.ad-sidebar {
+    position: fixed;
+    top: 50px;
+    right: 20px;
+    width: 300px;
+    z-index: 100;
+}
+
+.ad-container {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 1200px) {
+    .ad-sidebar {
+        display: none;
+    }
+}
+
+/* Highlighted text styles */
+.highlight-text {
+    font-weight: bold;
+    color: #0056b3;
+    font-size: 1.2em;
+    background: linear-gradient(120deg, rgba(255,255,224,0.7) 0%, rgba(240,255,240,0.7) 100%);
+    padding: 0 10px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+/* Enhanced hierarchical emphasis section styles */
+.hierarchical-emphasis {
+    max-width: 800px;
+    background-color: rgba(240, 248, 255, 0.7);
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+/* Concept boxes */
+.concept-box {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-align: left;
+}
+
+    .concept-box:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+.concept-icon {
+    flex-shrink: 0;
+    width: 50px;
+    height: 50px;
+    margin-right: 15px;
+    background-color: #f0f8ff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #0056b3;
+}
+
+.concept-content {
+    flex-grow: 1;
+}
+
+/* Video container styles */
+.video-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.video-description {
+    font-size: 1.1rem;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* Features grid styles */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.feature-item {
+    padding: 20px;
+    border-radius: 8px;
+    background-color: rgba(0,0,0,0.02);
+    transition: transform 0.3s ease;
+}
+
+    .feature-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+
+/* Call to action styles - improved */
+.cta-container {
+    width: 100%;
+    background-color: #f5f9ff;
+    padding: 60px 0;
+    margin-top: 60px;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+    position: relative;
+}
+
+.cta-section {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 40px;
+    border-radius: 8px;
+    background-color: white;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+/* Make layout more mobile friendly */
+@media (max-width: 768px) {
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .video-container video {
+        width: 100%;
+        height: auto;
+    }
+
+    .highlight-text {
+        font-size: 1.1em;
+    }
+
+    .concept-box {
+        flex-direction: column;
+    }
+
+    .concept-icon {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+
+    .cta-section {
+        padding: 20px;
+        margin: 0 15px;
+    }
+}

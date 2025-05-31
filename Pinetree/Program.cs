@@ -2,6 +2,7 @@ using Azure.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Pinetree.Components;
 using Pinetree.Components.Account;
@@ -181,22 +182,6 @@ app.UseHttpsRedirection();
 
 
 app.UseAntiforgery();
-
-//var provider = new FileExtensionContentTypeProvider();
-//provider.Mappings[".mp4"] = "video/mp4";
-
-//app.UseStaticFiles(new StaticFileOptions
-//{
-//    ContentTypeProvider = provider,
-//    OnPrepareResponse = ctx =>
-//    {
-//        // 必要に応じてCORSヘッダーを追加
-//        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
-//        ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET");
-//        ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "Content-Type");
-//    }
-//});
-
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
