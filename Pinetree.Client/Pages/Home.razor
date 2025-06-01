@@ -5,13 +5,13 @@
 
 <PageTitle>Pinetree</PageTitle>
 <HeadContent>
-    <meta name="description" content="Pinetree is a browser-based hierarchical markdown editor.Inspired by Amazon's One-Pager culture, Pinetree helps you create concise documents that everyone actually wants to read. While a one-page summary is ideal, sometimes details matter too." />
-    <meta property="og:title" content="Pinetree" />
-    <meta property="og:description" content="Pinetree is a browser-based hierarchical markdown editor.Inspired by Amazon's One-Pager culture, Pinetree helps you create concise documents that everyone actually wants to read. While a one-page summary is ideal, sometimes details matter too." />
-    <meta property="og:url" content="https://pine-tree.site" />
-    <meta name="twitter:title" content="Pinetree" />
-    <meta name="twitter:description" content="Pinetree is a browser-based hierarchical markdown editor.Inspired by Amazon's One-Pager culture, Pinetree helps you create concise documents that everyone actually wants to read. While a one-page summary is ideal, sometimes details matter too." />
-    <link rel="canonical" href="https://pine-tree.site" />
+    <meta property="og:title" content=@Title />
+    <meta name="twitter:title" content=@Title />
+    <meta name="description" content=@Description />
+    <meta property="og:description" content=@Description />
+    <meta name="twitter:description" content=@Description />
+    <meta property="og:url" content=@Url />
+    <link rel="canonical" href=@Url />
 </HeadContent>
 
 <div class="position-relative">
@@ -130,6 +130,10 @@
 
     [Inject]
     public required AuthenticationStateProvider AuthenticationStateProvider { get; set; }
+
+    public const string Url = "https://pine-tree.site";
+    public const string Title = "Pinetree";
+    public const string Description = "Pinetree is a browser-based hierarchical markdown editor.Inspired by Amazon's One-Pager culture, Pinetree helps you create concise documents that everyone actually wants to read. While a one-page summary is ideal, sometimes details matter too.";
 
 #if !DEBUG
     protected override async Task OnInitializedAsync()

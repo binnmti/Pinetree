@@ -32,7 +32,7 @@
         if (firstRender)
         {
             var response = await HttpClient.GetFromJsonAsync<Pinecone>($"/api/Pinecones/get-view-include-child/{Guid}");
-            if (response.Guid == Guid.Empty)
+            if (response == null || response.Guid == Guid.Empty)
             {
                 NavigationManager.NavigateTo("/");
                 return;
