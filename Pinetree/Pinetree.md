@@ -1,5 +1,5 @@
 # TODO
-- Github Top Todo
+- GitHub Top Todo
 - GuruGuru
 - SEO/OGP
 - Paid Membership
