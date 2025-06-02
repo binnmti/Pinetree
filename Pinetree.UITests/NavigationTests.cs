@@ -18,7 +18,7 @@ namespace Pinetree.UITests
             await Page.WaitForTimeoutAsync(Timeout);
             await Page.WaitForSelectorAsync(".panel-footer div", new() { Timeout = Timeout });
 
-            StringAssert.Contains(await Page.TitleAsync(), "Tryit");
+            StringAssert.Contains(await Page.TitleAsync(), "Playground");
 
             var initialFileCount = await Page.TextContentAsync(".panel-footer div") ?? "";
             Assert.IsTrue(initialFileCount.Contains("FileCount : 1"));
