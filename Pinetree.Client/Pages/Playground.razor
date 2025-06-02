@@ -1,0 +1,36 @@
+﻿@page "/play"
+
+@using Pinetree.Client.VModel
+
+@rendermode InteractiveAuto
+
+<PageTitle>Playground</PageTitle>
+<HeadContent>
+    <meta name="description" content="Pinetree is a browser-based hierarchical markdown editor.Inspired by Amazon's One-Pager culture, Pinetree helps you create concise documents that everyone actually wants to read. While a one-page summary is ideal, sometimes details matter too." />
+    <meta property="og:title" content="Playground" />
+    <meta property="og:description" content="Pinetree is a browser-based hierarchical markdown editor.Inspired by Amazon's One-Pager culture, Pinetree helps you create concise documents that everyone actually wants to read. While a one-page summary is ideal, sometimes details matter too." />
+    <meta property="og:url" content="https://pine-tree.site/play" />
+    <meta name="twitter:title" content="Playground" />
+    <meta name="twitter:description" content="Pinetree is a browser-based hierarchical markdown editor.Inspired by Amazon's One-Pager culture, Pinetree helps you create concise documents that everyone actually wants to read. While a one-page summary is ideal, sometimes details matter too." />
+    <link rel="canonical" href="https://pine-tree.site/play" />
+</HeadContent>
+
+
+@if (Pinetree != null)
+{
+    <Markdown Guid="@(Guid)" Pinetree="@(Pinetree)" IsTry="@(true)" IsProfessional=false FileCount=@FileCount />
+}
+
+@code {
+
+    private Guid Guid { get; set; }
+    private PinetreeView? Pinetree { get; set; }
+    private int FileCount { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Guid = Guid.NewGuid();
+        Pinetree = new PinetreeView(Guid, "Untitled", "", null, Guid, false);
+        FileCount = 1;
+    }
+}

@@ -429,7 +429,7 @@ async function saveFileToIndexedDB(file: File): Promise<string> {
                 const transaction = db.transaction([storeName], 'readwrite');
                 const store = transaction.objectStore(storeName);
 
-                const id = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                const id = 'img_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
 
                 const imageData = {
                     id: id,

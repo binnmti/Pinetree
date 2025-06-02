@@ -1,43 +1,54 @@
 ﻿@page "/"
 @using Pinetree.Client.Services
-
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveAuto
+@implements IAsyncDisposable
 
 <PageTitle>Pinetree</PageTitle>
 <HeadContent>
-    <meta name="description" content="Pinetree is a browser-based hierarchical markdown editor" />
-    <meta name="keywords" content="markdown, hierarchical, one-pager" />
-    <meta name="author" content="Pinetree" />
-    <meta property="og:title" content="Pinetree" />
-    <meta property="og:description" content="Pinetree is Browser-based hierarchical markdown editor" />
-    <meta property="og:image" content="pinetree.png" />
-    <meta property="og:url" content="https://pine-tree.site" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Pinetree" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Pinetree" />
-    <meta name="twitter:description" content="Pinetree is Browser-based hierarchical markdown editor." />
-    <meta name="twitter:image" content="pinetree.png" />
-    <link rel="canonical" href="https://pine-tree.site" />
+    <meta property="og:title" content=@Title />
+    <meta name="twitter:title" content=@Title />
+    <meta name="description" content=@Description />
+    <meta property="og:description" content=@Description />
+    <meta name="twitter:description" content=@Description />
+    <meta property="og:url" content=@Url />
+    <link rel="canonical" href=@Url />
 </HeadContent>
 
 <div class="position-relative">
     <!-- Main Content - Centered -->
     <div style="display: flex; justify-content: center; align-items: center; text-align: center; flex-direction: column;">
-        
+
         <h1 style="font-size: 4em; margin-top: 50px;">
             <img src="pinetree.png" alt="Bootstrap" width="64" height="64">
-            Pinetree is Browser-based <span class="highlight-text">hierarchical</span> markdown editor
+            Pinetree is browser-based <span class="highlight-text">hierarchical</span> markdown editor
         </h1>
-        <div class="mt-4">
-            <a class="btn btn-outline-primary btn-lg m-2" href="/Tryit"><i class="bi bi-tools"></i>Try it now</a>
+        <div class="mt-4 button-container">
+            <a class="btn btn-outline-primary btn-lg m-2" href="/play"><i class="bi bi-tools"></i>Playground</a>
             <a class="btn btn-outline-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>Register</a>
         </div>
-        <img src="PinetreeScreen.png" alt="Pinetree Image" class="mt-4" />
+        <div class="slider-container mt-4">
+            <div class="slider" id="imageSlider">
+                <div class="slide active">
+                    <img src="PinetreeScreen.png" alt="Pinetree Screenshot 1" class="main-image" width="800" height="400" />
+                </div>
+                <div class="slide">
+                    <img src="PinetreeScreen2.png" alt="Pinetree Screenshot 2" class="main-image" width="800" height="400" />
+                </div>
+            </div>
+            <div class="slider-controls">
+                <button class="slider-arrow prev" @onclick="PrevSlide">❮</button>
+                <div class="slider-dots">
+                    <span class="dot active" @onclick="() => SetSlide(0)"></span>
+                    <span class="dot" @onclick="() => SetSlide(1)"></span>
+                </div>
+                <button class="slider-arrow next" @onclick="NextSlide">❯</button>
+            </div>
+        </div>
 
         <!-- Hierarchical emphasis section -->
         <div class="hierarchical-emphasis my-5 py-4">
-            <h2 class="mb-4">Experience the power of <span class="highlight-text">Hierarchical</span> markdown editing</h2>
+            <h2 class="mb-4">What is a <span class="highlight-text">Hierarchical</span> Markdown Editor?</h2>
 
             <div class="concept-box">
                 <div class="concept-icon">
@@ -45,8 +56,7 @@
                 </div>
                 <div class="concept-content">
                     <p class="mb-0">
-                        Inspired by Amazon's "One-Pager" culture, Pinetree helps you create concise documents that everyone actually wants to read.
-                        While a one-page summary is ideal, sometimes details matter too.
+                        Pinetree draws inspiration from Amazon's "One Pager" culture, which focuses on condensing key points into a single page. People prefer concise, readable content, yet there are times when detailed information is necessary.
                     </p>
                 </div>
             </div>
@@ -57,8 +67,7 @@
                 </div>
                 <div class="concept-content">
                     <p class="mb-0">
-                        Traditional file systems fail to connect overview documents with their detailed counterparts.
-                        <span class="highlight-text">Hierarchical text</span> solves this by creating natural connections between summaries and details.
+                        As documents grow more detailed, we typically organize them with rules and folders. However, traditional file structures lack physical connections between these documents. Pinetree allows you to express content in a "hierarchical" format and navigate via links, enabling readers to naturally understand the relationships between content.
                     </p>
                 </div>
             </div>
@@ -69,20 +78,23 @@
                 </div>
                 <div class="concept-content">
                     <p class="mb-0">
-                        Use Pinetree for travel plans, resumes, book notes - anything that benefits from both brevity at the top level
-                        and depth in the details. Keep each level concise while allowing readers to explore deeper when needed.
+                        Pinetree is ideal for travel plans, resumes, reading notes, and any document requiring both "conciseness" and "detail." You can keep each piece of content as simple as possible while adding hierarchical details as needed. Experience this new writing style for yourself.
                     </p>
                 </div>
             </div>
+            <blockquote class="mt-4 text-center">
+                <p class="fst-italic">Create multiple documents when you <a href="Account/Register" class="alert-link">register</a> for an account.</p>
+            </blockquote>
         </div>
-
 
         <!-- Video section -->
         <div class="video-container my-5 pt-4">
             <h2>See Pinetree in Action</h2>
-            <video controls preload="metadata" width="960" height="576">
-                <source src="PlayPinetree.mp4" type="video/mp4">
-            </video>
+            <div class="video-wrapper">
+                <video controls preload="metadata" width="960" height="576">
+                    <source src="PlayPinetree.mp4" type="video/mp4">
+                </video>
+            </div>
             <p class="video-description">
                 Watch how Pinetree helps you organize your thoughts hierarchically and efficiently.
                 This short demonstration shows the key features of our markdown editor in action.
@@ -97,7 +109,7 @@
         <h2>Ready to get started?</h2>
         <p>Join our community of organized writers and thinkers today!</p>
         <div class="mt-4">
-            <a class="btn btn-primary btn-lg m-2" href="/Tryit"><i class="bi bi-tools"></i>Try it now</a>
+            <a class="btn btn-primary btn-lg m-2" href="/play"><i class="bi bi-tools"></i>Playground</a>
             <a class="btn btn-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>Register</a>
             <a class="btn btn-info btn-lg m-2" href="/Pricing"><i class="bi bi-tag"></i>Pricing</a>
         </div>
@@ -105,29 +117,11 @@
         <div class="mt-4">
             <p class="text-muted">
                 We're currently in a phase where we want as many users as possible to try our service. <br>
-                Please start with <a href="/Tryit">Try it now</a> and we'd appreciate your <a href="/Feedback">feedback</a> afterwards. <br>
+                Please start with <a href="/play">Playground</a> and we'd appreciate your <a href="/Feedback">feedback</a> afterwards. <br>
                 Users who provide valuable feedback will receive a permanent free pass! <br>
                 We're also offering a free 1-year premium membership campaign limited to 33 users for our <a href="/Pricing">paid plans</a>!<br>
             </p>
         </div>
-    </div>
-</div>
-
-<!-- Advertisement Section - Right Side -->
-<div class="ad-sidebar">
-    <div class="ad-container mb-4">
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5747031166901717"
-                crossorigin="anonymous"></script>
-        <!-- pinetree -->
-        <ins class="adsbygoogle"
-             style="display:block"
-             data-ad-client="ca-pub-5747031166901717"
-             data-ad-slot="1174804653"
-             data-ad-format="auto"
-             data-full-width-responsive="true"></ins>
-        <script>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
     </div>
 </div>
 
@@ -138,26 +132,65 @@
     [Inject]
     public required AuthenticationStateProvider AuthenticationStateProvider { get; set; }
 
-#if !DEBUG
-    protected override async Task OnInitializedAsync()
-    {
-        await NavigateUserListIfAuthUser();
-    }
-#else
+    public const string Url = "https://pine-tree.site";
+    public const string Title = "Pinetree";
+    public const string Description = "Pinetree is a browser-based hierarchical markdown editor.Inspired by Amazon's One-Pager culture, Pinetree helps you create concise documents that everyone actually wants to read. While a one-page summary is ideal, sometimes details matter too.";
+
+    private IJSObjectReference? _jsModule;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await NavigateUserListIfAuthUser();
+            try
+            {
+                _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./Pages/Home.razor.js");
+                await _jsModule.InvokeVoidAsync("initializeSlider");
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error initializing slider: {ex.Message}");
+            }
         }
     }
-#endif
-    private async Task NavigateUserListIfAuthUser()
+
+    private async Task NextSlide()
     {
-        var identity = await AuthenticationStateProvider.GetIdentityAsync();
-        if (identity != null && identity.IsAuthenticated)
+        if (_jsModule != null)
         {
-            NavigationManager.NavigateTo($"/User");
+            await _jsModule.InvokeVoidAsync("nextSlide");
+        }
+    }
+
+    private async Task PrevSlide()
+    {
+        if (_jsModule != null)
+        {
+            await _jsModule.InvokeVoidAsync("prevSlide");
+        }
+    }
+
+    private async Task SetSlide(int index)
+    {
+        if (_jsModule != null)
+        {
+            await _jsModule.InvokeVoidAsync("setSlide", index);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_jsModule != null)
+            {
+                await _jsModule.InvokeVoidAsync("cleanupSlider");
+                await _jsModule.DisposeAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error disposing slider: {ex.Message}");
         }
     }
 }

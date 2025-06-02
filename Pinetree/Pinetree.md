@@ -1,12 +1,10 @@
 # TODO
 - GuruGuru
-- warning zero
+- SEO/OGP
 - Paid Membership
   - 33User
   - stripe
 	- A system where you can press the save button, log in from the popup, and return
-- Advertisement
-- SEO/OGP
 - Top Page Image
   - Ignite
 

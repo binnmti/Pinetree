@@ -13,7 +13,7 @@ namespace Pinetree.UITests
             await Page.GotoAsync(TargetUrl);
             StringAssert.Contains(await Page.TitleAsync(), "Pinetree");
 
-            await Page.ClickAsync("a[href='/Tryit']");
+            await Page.ClickAsync("a[href='/play']");
             await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
             await Page.WaitForTimeoutAsync(Timeout);
             await Page.WaitForSelectorAsync(".panel-footer div", new() { Timeout = Timeout });

@@ -6,7 +6,7 @@
         {
             <img src="@GetIconPath(Provider.Name)" alt="@Provider.DisplayName logo" class="auth-icon" />
         }
-        <span class="auth-text">@GetButtonText(Provider.Name, Provider.DisplayName)</span>
+        <span class="auth-text">@GetButtonText(Provider.Name, Provider?.DisplayName ?? "")</span>
     </div>
 </button>
 

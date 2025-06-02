@@ -96,7 +96,14 @@
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
-            RedirectManager.RedirectTo(ReturnUrl);
+            if (string.IsNullOrEmpty(ReturnUrl))
+            {
+                RedirectManager.RedirectTo("/User");
+            }
+            else
+            {
+                RedirectManager.RedirectTo(ReturnUrl);
+            }
         }
         else if (result.RequiresTwoFactor)
         {
