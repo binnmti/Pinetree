@@ -103,7 +103,6 @@ public class PaymentsController : ControllerBase
         {
             await UpdateUserToProfessionalRole(user);
 
-            // ステータスを更新
             user.SubscriptionStatus = "active";
             await UserManager.UpdateAsync(user);
 

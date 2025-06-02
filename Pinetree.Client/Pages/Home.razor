@@ -4,7 +4,7 @@
 @rendermode InteractiveAuto
 @implements IAsyncDisposable
 
-<PageTitle>Pinetree</PageTitle>
+<PageTitle>Pinetree(Beta)</PageTitle>
 <HeadContent>
     <meta property="og:title" content=@Title />
     <meta name="twitter:title" content=@Title />
@@ -119,7 +119,6 @@
                 We're currently in a phase where we want as many users as possible to try our service. <br>
                 Please start with <a href="/play">Playground</a> and we'd appreciate your <a href="/Feedback">feedback</a> afterwards. <br>
                 Users who provide valuable feedback will receive a permanent free pass! <br>
-                We're also offering a free 1-year premium membership campaign limited to 33 users for our <a href="/Pricing">paid plans</a>!<br>
             </p>
         </div>
     </div>
@@ -133,7 +132,7 @@
     public required AuthenticationStateProvider AuthenticationStateProvider { get; set; }
 
     public const string Url = "https://pine-tree.site";
-    public const string Title = "Pinetree";
+    public const string Title = "Pinetree(Beta)";
     public const string Description = "Pinetree is a browser-based hierarchical markdown editor.Inspired by Amazon's One-Pager culture, Pinetree helps you create concise documents that everyone actually wants to read. While a one-page summary is ideal, sometimes details matter too.";
 
     private IJSObjectReference? _jsModule;

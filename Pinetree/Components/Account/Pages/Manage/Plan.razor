@@ -23,7 +23,13 @@
             </div>
             @if (IsFree)
             {
-                <button type="submit" class="w-100 btn btn-lg btn-primary">
+                <div class="alert alert-info mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <span>Currently in beta and the Professional Plan is not available yet. If you'd like to try it, we're offering free 1-year coupons to 99 users. Please let us know through the <a href="/feedback">Feedback</a> page.</span>
+                    </div>
+                </div>
+                <button type="button" class="w-100 btn btn-lg btn-primary" disabled title="Currently in beta - not available. Please use the Feedback page to request a free coupon.">
                     @(IsReturningCustomer ? "Reactivate Pro Plan" : "Update Pro Plan") (In Testing)
                 </button>
             }
