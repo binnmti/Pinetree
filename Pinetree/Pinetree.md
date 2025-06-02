@@ -5,7 +5,6 @@
   - 33User
   - stripe
 	- A system where you can press the save button, log in from the popup, and return
-- Advertisement
 - Top Page Image
   - Ignite
 
