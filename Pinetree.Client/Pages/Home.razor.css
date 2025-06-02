@@ -29,6 +29,33 @@
     display: inline-block;
 }
 
+.button-container {
+    min-height: 60px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.main-image {
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+}
+
+.video-wrapper {
+    width: 100%;
+    max-width: 960px;
+    aspect-ratio: 16 / 9;
+    margin: 0 auto;
+}
+
+.video-wrapper video {
+    width: 960px;
+    height: 576px;
+    object-fit: contain;
+}
+
 /* Enhanced hierarchical emphasis section styles */
 .hierarchical-emphasis {
     max-width: 800px;
@@ -36,6 +63,9 @@
     border-radius: 10px;
     padding: 30px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    min-height: 300px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Concept boxes */
