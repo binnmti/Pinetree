@@ -1,6 +1,4 @@
-﻿@implements IDisposable
-
-<nav class="navbar navbar-expand-lg bg-body-tertiary bg-light">
+﻿<nav class="navbar navbar-expand-lg bg-body-tertiary bg-light">
     <div class="container-fluid">
         <a class="navbar-brand" href="/">
             <img src="pinetree.png" alt="Pinetree logo" width="32" height="32">
@@ -14,8 +12,8 @@
                 <AuthorizeView>
                     <Authorized>
                         <li class="nav-item">
-                            <NavLink class="nav-link" href="/Pricing">
-                                <i class="bi bi-cash-coin" aria-hidden="true"></i> Pricing
+                            <NavLink class="nav-link" href="/user">
+                                <i class="bi bi-card-list"></i> User
                             </NavLink>
                         </li>
                         <li class="nav-item">
@@ -26,7 +24,7 @@
                         <li class="nav-item">
                             <form action="Account/Logout" method="post">
                                 <AntiforgeryToken />
-                                <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                                <input type="hidden" name="ReturnUrl" value="" />
                                 <button type="submit" class="nav-link">
                                     <i class="bi bi-arrow-bar-up" aria-hidden="true"></i> Logout
                                 </button>
@@ -49,50 +47,20 @@
                                 <i class="bi bi-person-badge" aria-hidden="true"></i> Login
                             </NavLink>
                         </li>
-                        <li class="nav-item">
-                            <NavLink class="nav-link" href="/Pricing">
-                                <i class="bi bi-cash-coin" aria-hidden="true"></i> Pricing
-                            </NavLink>
-                        </li>
                     </NotAuthorized>
                 </AuthorizeView>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/Pricing">
+                        <i class="bi bi-cash-coin" aria-hidden="true"></i> Pricing
+                    </NavLink>
+                </li>
+
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/feedback">
                         <i class="bi bi-chat-dots" aria-hidden="true"></i> Feedback
                     </NavLink>
                 </li>
             </ul>
-
-            @*          <form class="d-flex" role="search">
-                <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-                <button class="btn btn-outline-success" type="submit">Search</button>
-            </form>
- *@
         </div>
     </div>
 </nav>
-
-
-@code {
-    [Inject]
-    public required NavigationManager NavigationManager { get; set; }
-
-    private string? currentUrl;
-
-    protected override void OnInitialized()
-    {
-        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
-        NavigationManager.LocationChanged += OnLocationChanged;
-    }
-
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
-    {
-        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
-        StateHasChanged();
-    }
-
-    public void Dispose()
-    {
-        NavigationManager.LocationChanged -= OnLocationChanged;
-    }
-}

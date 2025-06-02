@@ -1,7 +1,8 @@
 ﻿@page "/"
 @using Pinetree.Client.Services
-
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveAuto
+@implements IAsyncDisposable
 
 <PageTitle>Pinetree</PageTitle>
 <HeadContent>
@@ -17,7 +18,7 @@
 <div class="position-relative">
     <!-- Main Content - Centered -->
     <div style="display: flex; justify-content: center; align-items: center; text-align: center; flex-direction: column;">
-        
+
         <h1 style="font-size: 4em; margin-top: 50px;">
             <img src="pinetree.png" alt="Bootstrap" width="64" height="64">
             Pinetree is browser-based <span class="highlight-text">hierarchical</span> markdown editor
@@ -26,7 +27,24 @@
             <a class="btn btn-outline-primary btn-lg m-2" href="/play"><i class="bi bi-tools"></i>Playground</a>
             <a class="btn btn-outline-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>Register</a>
         </div>
-        <img src="PinetreeScreen.png" alt="Pinetree Image" class="mt-4 main-image" width="800" height="450" />
+        <div class="slider-container mt-4">
+            <div class="slider" id="imageSlider">
+                <div class="slide active">
+                    <img src="PinetreeScreen.png" alt="Pinetree Screenshot 1" class="main-image" width="800" height="400" />
+                </div>
+                <div class="slide">
+                    <img src="PinetreeScreen2.png" alt="Pinetree Screenshot 2" class="main-image" width="800" height="400" />
+                </div>
+            </div>
+            <div class="slider-controls">
+                <button class="slider-arrow prev" @onclick="PrevSlide">❮</button>
+                <div class="slider-dots">
+                    <span class="dot active" @onclick="() => SetSlide(0)"></span>
+                    <span class="dot" @onclick="() => SetSlide(1)"></span>
+                </div>
+                <button class="slider-arrow next" @onclick="NextSlide">❯</button>
+            </div>
+        </div>
 
         <!-- Hierarchical emphasis section -->
         <div class="hierarchical-emphasis my-5 py-4">
@@ -64,6 +82,9 @@
                     </p>
                 </div>
             </div>
+            <blockquote class="mt-4 text-center">
+                <p class="fst-italic">Create multiple documents when you <a href="Account/Register" class="alert-link">register</a> for an account.</p>
+            </blockquote>
         </div>
 
         <!-- Video section -->
@@ -115,26 +136,61 @@
     public const string Title = "Pinetree";
     public const string Description = "Pinetree is a browser-based hierarchical markdown editor.Inspired by Amazon's One-Pager culture, Pinetree helps you create concise documents that everyone actually wants to read. While a one-page summary is ideal, sometimes details matter too.";
 
-#if !DEBUG
-    protected override async Task OnInitializedAsync()
-    {
-        await NavigateUserListIfAuthUser();
-    }
-#else
+    private IJSObjectReference? _jsModule;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await NavigateUserListIfAuthUser();
+            try
+            {
+                _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./Pages/Home.razor.js");
+                await _jsModule.InvokeVoidAsync("initializeSlider");
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error initializing slider: {ex.Message}");
+            }
         }
     }
-#endif
-    private async Task NavigateUserListIfAuthUser()
+
+    private async Task NextSlide()
     {
-        var identity = await AuthenticationStateProvider.GetIdentityAsync();
-        if (identity != null && identity.IsAuthenticated)
+        if (_jsModule != null)
         {
-            NavigationManager.NavigateTo($"/User");
+            await _jsModule.InvokeVoidAsync("nextSlide");
+        }
+    }
+
+    private async Task PrevSlide()
+    {
+        if (_jsModule != null)
+        {
+            await _jsModule.InvokeVoidAsync("prevSlide");
+        }
+    }
+
+    private async Task SetSlide(int index)
+    {
+        if (_jsModule != null)
+        {
+            await _jsModule.InvokeVoidAsync("setSlide", index);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_jsModule != null)
+            {
+                await _jsModule.InvokeVoidAsync("cleanupSlider");
+                await _jsModule.DisposeAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error disposing slider: {ex.Message}");
         }
     }
 }
