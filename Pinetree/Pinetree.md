@@ -1,5 +1,7 @@
 # TODO
+- Google Search Console & PageSpeed Insights
 - GitHub Top Todo
+
 - GuruGuru
 - SEO/OGP
 - Paid Membership
