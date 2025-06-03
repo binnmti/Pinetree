@@ -895,10 +895,6 @@ function getEmojiKeywords(emoji) {
         '🪐': ['saturn', 'planet', 'rings'],
         '🌠': ['shooting', 'star', 'falling']
     };
-    // Check cache first for better performance
-    if (emojiKeywordsCache[emoji]) {
-        return emojiKeywordsCache[emoji];
-    }
     // Get keywords from the main emoji keywords object
     const keywords = emojiKeywords[emoji] || [];
     // Store in cache for future use

@@ -68,32 +68,21 @@
 
     protected override async Task OnInitializedAsync()
     {
-        try
+        // Load the TypeScript module
+        _emojiPickerModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import", "./Pages/Components/EmojiPicker.razor.js");
+        _ = PrefetchEmojiKeywords();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
         {
-            // Load the TypeScript module
-            _emojiPickerModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
-                "import", "./Pages/Components/EmojiPicker.razor.js");
-                
-            // Focus search input when component is rendered
-            await Task.Delay(100);
-            try
-            {
-                await JSRuntime.InvokeVoidAsync("focusEmojiSearch");
-                
-                // Prefetch emoji keywords for common emojis to improve search responsiveness
-                _ = PrefetchEmojiKeywords();
-            }
-            catch
-            {
-                // Element might not be available yet
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading EmojiPicker module: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("focusEmojiSearch");
         }
     }
-      public async ValueTask DisposeAsync()
+
+    public async ValueTask DisposeAsync()
     {
         if (_emojiPickerModule is not null)
         {
@@ -107,7 +96,8 @@
             }
         }
     }
-      private async Task PrefetchEmojiKeywords()
+    
+    private async Task PrefetchEmojiKeywords()
     {
         try
         {
@@ -247,7 +237,8 @@
         // 状態が変更されたことを通知
         await InvokeAsync(StateHasChanged);
     }
-      private async Task HandleSearchFocus(bool isFocused)
+    
+    private async Task HandleSearchFocus(bool isFocused)
     {
         try
         {
@@ -305,7 +296,8 @@
 
         return false;
     }
-      private bool ShouldDisplayEmoji(string emoji)
+    
+    private bool ShouldDisplayEmoji(string emoji)
     {
         if (string.IsNullOrEmpty(SearchQuery))
         {

@@ -923,11 +923,6 @@ function getEmojiKeywords(emoji: string): string[] {
         '🌠': ['shooting', 'star', 'falling']
     };
     
-    // Check cache first for better performance
-    if (emojiKeywordsCache[emoji]) {
-        return emojiKeywordsCache[emoji];
-    }
-    
     // Get keywords from the main emoji keywords object
     const keywords = emojiKeywords[emoji] || [];
     
