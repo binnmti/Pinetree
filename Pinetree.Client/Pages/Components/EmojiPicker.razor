@@ -1,0 +1,198 @@
+@using Pinetree.Client.Services
+@using System.Threading.Tasks
+@inject IJSRuntime JSRuntime
+
+<div id="emoji-picker-backdrop" 
+     style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background-color: rgba(0, 0, 0, 0.5); z-index: 1050; 
+            display: flex; align-items: center; justify-content: center;">
+    <div id="emoji-picker-modal" 
+         style="background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+                max-width: 90vw; max-height: 85vh; position: relative;">
+        <div style="padding: 15px; border-bottom: 1px solid #eee; background: #f8f9fa; 
+                   border-radius: 12px 12px 0 0; position: relative;">
+            <h4 style="margin: 0; text-align: center; font-size: 18px; font-weight: 600; color: #333;">
+                Select an Emoji
+            </h4>
+            <button @onclick="() => OnEmojiSelected(string.Empty)" 
+                    style="position: absolute; top: 15px; right: 15px; background: none; 
+                           border: none; font-size: 24px; cursor: pointer; color: #666; 
+                           width: 30px; height: 30px; display: flex; align-items: center; 
+                           justify-content: center; border-radius: 50%; 
+                           transition: background-color 0.2s;"
+                    onmouseover="this.style.backgroundColor='#f0f0f0'"
+                    onmouseout="this.style.backgroundColor='transparent'">&times;</button>
+        </div>
+        <div style="width: 750px; height: 550px; overflow-y: auto; padding: 0; display: flex; flex-direction: column;">
+            <div style="padding: 15px; padding-bottom: 0; flex-shrink: 0;">
+                <input type="text" placeholder="Search emojis... (try: smile, heart, food, etc.)" id="emoji-search" 
+                       style="width: 100%; padding: 10px 15px; border: 2px solid #ddd; border-radius: 8px; 
+                              margin-bottom: 15px; font-size: 14px; outline: none; transition: border-color 0.2s;"
+                       @oninput="HandleSearch" 
+                       @onfocus="e => HandleSearchFocus(true)"
+                       @onblur="e => HandleSearchFocus(false)" />
+            </div>
+            <div id="emoji-categories" style="padding: 0 15px 15px; flex: 1; overflow-y: auto;">
+                @if (!string.IsNullOrEmpty(SearchQuery) && !HasSearchResults())
+                {
+                    <div id="emoji-no-results" style="text-align: center; padding: 20px; color: #666; font-style: italic;">
+                        No emojis found for "@SearchQuery"
+                    </div>
+                }
+                
+                @foreach (var category in GetCategoriesToDisplay())
+                {
+                    <div class="emoji-category" data-category="@category.Key.ToLower()" style="margin-bottom: 25px; @(ShouldDisplayCategory(category.Key) ? "" : "display: none;")">
+                        <h5 style="margin-bottom: 12px; color: #555; border-bottom: 2px solid #eee; padding-bottom: 8px; 
+                                   font-size: 15px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">@category.Key</h5>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 4px; margin-bottom: 15px;">
+                            @foreach (var emoji in category.Value)
+                            {
+                                <button @onclick="() => OnEmojiSelected(emoji)" 
+                                        class="emoji-picker-button"
+                                        style="border: none; background: transparent; font-size: 26px; padding: 10px 6px; 
+                                               cursor: pointer; border-radius: 8px; transition: all 0.15s ease;
+                                               display: @(ShouldDisplayEmoji(emoji) ? "flex" : "none"); align-items: center; justify-content: center; height: 48px;"
+                                        title="@emoji" data-emoji="@emoji">@emoji</button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Dictionary<string, string[]> EmojiCategories { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<string> OnSelect { get; set; }
+
+    private string SearchQuery { get; set; } = string.Empty;
+    private Dictionary<string, bool> _searchResults = new();
+    private Dictionary<string, bool> _categoryVisibility = new();
+
+    protected override void OnInitialized()
+    {
+        // Focus search input when component is rendered
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(100);
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('emoji-search')?.focus()");
+            }
+            catch
+            {
+                // Element might not be available yet
+            }
+        });
+    }
+
+    private async Task HandleSearch(ChangeEventArgs e)
+    {
+        SearchQuery = e.Value?.ToString() ?? string.Empty;
+        
+        // Clear cache when search query changes
+        _searchResults.Clear();
+        _categoryVisibility.Clear();
+        
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleSearchFocus(bool isFocused)
+    {
+        string borderColor = isFocused ? "#007bff" : "#ddd";
+        _ = JSRuntime.InvokeVoidAsync("eval", $"document.getElementById('emoji-search').style.borderColor = '{borderColor}'");
+    }
+
+    private async Task OnEmojiSelected(string emoji)
+    {
+        await OnSelect.InvokeAsync(emoji);
+    }
+
+    private IEnumerable<KeyValuePair<string, string[]>> GetCategoriesToDisplay()
+    {
+        if (string.IsNullOrEmpty(SearchQuery))
+        {
+            return EmojiCategories;
+        }
+        
+        return EmojiCategories.Where(c => ShouldDisplayCategory(c.Key));
+    }
+
+    private bool ShouldDisplayCategory(string categoryName)
+    {
+        if (string.IsNullOrEmpty(SearchQuery))
+        {
+            return true;
+        }
+
+        // Check cache first
+        if (_categoryVisibility.TryGetValue(categoryName, out bool isVisible))
+        {
+            return isVisible;
+        }
+
+        if (EmojiCategories.TryGetValue(categoryName, out var emojis))
+        {
+            // Check if any emoji in this category matches the search
+            bool hasMatch = emojis.Any(emoji => ShouldDisplayEmoji(emoji));
+            _categoryVisibility[categoryName] = hasMatch;
+            return hasMatch;
+        }
+
+        return false;
+    }
+
+    private bool ShouldDisplayEmoji(string emoji)
+    {
+        if (string.IsNullOrEmpty(SearchQuery))
+        {
+            return true;
+        }
+
+        // Check cache first
+        if (_searchResults.TryGetValue(emoji, out bool isVisible))
+        {
+            return isVisible;
+        }
+
+        // Use JavaScript's getEmojiKeywords function
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var keywords = await JSRuntime.InvokeAsync<string[]>("getEmojiKeywords", emoji);
+                var searchTerm = SearchQuery.ToLowerInvariant().Trim();
+                bool matches = keywords.Any(k => k.ToLowerInvariant().Contains(searchTerm));
+                
+                _searchResults[emoji] = matches;
+                await InvokeAsync(StateHasChanged);
+            }
+            catch
+            {
+                // Fallback if JS function call fails
+                _searchResults[emoji] = emoji.Contains(SearchQuery);
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+
+        // Initially show all emojis until we have keywords
+        return true;
+    }
+    
+    private bool HasSearchResults()
+    {
+        if (string.IsNullOrEmpty(SearchQuery))
+        {
+            return true;
+        }
+        
+        return EmojiCategories.Any(c => 
+            c.Value.Any(emoji => 
+                _searchResults.TryGetValue(emoji, out bool isVisible) && isVisible));
+    }
+}
