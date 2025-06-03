@@ -129,9 +129,6 @@ function setupLinkInterceptor(markdownContainer, dotNetHelper) {
 }
 function setupBeforeUnloadWarning(dotNetHelper) {
     let bypassBeforeUnload = false;
-    let isNavigationBlocked = false;
-    let preventNextPopstate = false;
-    // Standard beforeunload handler remains the same
     window.addEventListener('beforeunload', async function (e) {
         if (bypassBeforeUnload) {
             bypassBeforeUnload = false;
@@ -141,15 +138,13 @@ function setupBeforeUnloadWarning(dotNetHelper) {
             const hasPendingChanges = await dotNetHelper.invokeMethodAsync('HasPendingChanges');
             if (hasPendingChanges) {
                 e.preventDefault();
-                e.returnValue = '';
-                return '';
+                return undefined;
             }
         }
         catch (error) {
             console.error('Error checking for pending changes:', error);
         }
     });
-    // Navigation click handler remains the same
     document.addEventListener('click', async (e) => {
         const target = e.target;
         const anchor = target.closest('a');
@@ -177,103 +172,23 @@ function setupBeforeUnloadWarning(dotNetHelper) {
             }
         }
     }, true);
-    // Enhanced browser navigation handling
-    if ('navigation' in window && window.navigation) {
-        const navigation = window.navigation;
-        navigation.addEventListener('navigate', async (e) => {
-            // Skip if it's a download or form submission
-            if (e.downloadRequest || e.formData)
-                return;
-            // Skip if it's a same-page navigation (hash change)
-            if (e.navigationType === 'push' && e.destination.url === location.href)
-                return;
-            // Check if navigation is already being handled
-            if (isNavigationBlocked)
-                return;
-            try {
-                const hasPendingChanges = await dotNetHelper.invokeMethodAsync('HasPendingChanges');
-                if (hasPendingChanges) {
-                    e.intercept({
-                        async handler() {
-                            isNavigationBlocked = true;
-                            const confirmed = confirm('Your changes have not been saved. Are you sure you want to leave this page?');
-                            isNavigationBlocked = false;
-                            if (!confirmed) {
-                                throw new Error('Navigation cancelled by user');
-                            }
-                        }
-                    });
-                }
-            }
-            catch (error) {
-                console.error('Navigation API error:', error);
-                isNavigationBlocked = false;
-            }
-        });
-    }
-    else {
-        // Improved fallback for browsers without Navigation API
-        // Create a "fake" history entry to intercept back button
-        const currentUrl = window.location.href;
-        const state = { pinetreeEditor: true, originalUrl: currentUrl };
-        // Replace current state with our marked state
-        window.history.replaceState(state, '', currentUrl);
-        // Push a duplicate state to create a buffer
-        window.history.pushState({ ...state, isDuplicate: true }, '', currentUrl);
-        const handleNavigation = async (e) => {
-            // Check if we're navigating away from our editor state
-            const currentState = window.history.state;
-            const isLeavingEditor = currentState && currentState.pinetreeEditor && !e.state?.pinetreeEditor;
-            if (isLeavingEditor && !isNavigationBlocked) {
-                try {
-                    const hasPendingChanges = await dotNetHelper.invokeMethodAsync('HasPendingChanges');
-                    if (hasPendingChanges) {
-                        isNavigationBlocked = true;
-                        // Immediately push state back to prevent navigation
-                        window.history.pushState(currentState, '', currentState.originalUrl);
-                        // Show confirmation dialog
-                        setTimeout(async () => {
-                            const confirmed = confirm('Your changes have not been saved. Are you sure you want to leave this page?');
-                            if (confirmed) {
-                                // User confirmed, allow navigation
-                                bypassBeforeUnload = true;
-                                preventNextPopstate = true;
-                                window.history.back();
-                            }
-                            isNavigationBlocked = false;
-                        }, 0);
-                    }
-                }
-                catch (error) {
-                    console.error('Navigation check error:', error);
-                    isNavigationBlocked = false;
-                }
-            }
-            else if (preventNextPopstate) {
-                // This popstate is from our confirmed navigation
-                preventNextPopstate = false;
-            }
-        };
-        window.addEventListener('popstate', handleNavigation);
-        // Handle forward button by monitoring history length
-        let lastHistoryLength = window.history.length;
-        const checkHistoryChange = setInterval(() => {
-            if (window.history.length !== lastHistoryLength) {
-                lastHistoryLength = window.history.length;
-                // Re-establish our guard state if needed
-                const currentState = window.history.state;
-                if (!currentState || !currentState.pinetreeEditor) {
-                    window.history.replaceState(state, '', currentUrl);
-                    window.history.pushState({ ...state, isDuplicate: true }, '', currentUrl);
-                }
-            }
-        }, 100);
-        // Store the cleanup function
-        dotNetHelper._navigationCleanup = () => {
-            window.removeEventListener('popstate', handleNavigation);
-            clearInterval(checkHistoryChange);
-        };
-    }
+    // TODO: When you press the back button on the browser, a warning will be displayed, but you will be forced to go back whether you press yes or no. The current workaround causes various problems with the back button on the browser, so turn off the function for now.
+    //    const pageUrl = window.location.href;
+    //    window.history.pushState({ page: 1 }, '', pageUrl);
+    //    window.addEventListener('popstate', async function (e) {
+    //        window.history.pushState({ page: 1 }, '', pageUrl);
+    //        try {
+    //            const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
+    //            if (hasPendingChanges) {
+    //                const confirmed = confirm('Your changes have not been saved. Are you sure you want to leave this page?');
+    //                if (confirmed) {
+    //                    window.location.href = document.referrer || '/';
+    //                }
+    //            }
+    //        } catch (error) {
+    //            console.error('Error checking for pending changes:', error);
+    //        }
+    //    });
 }
 // Add cleanup method
 export function cleanupNavigationHandlers(dotNetHelper) {
