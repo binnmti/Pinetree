@@ -35,12 +35,16 @@
                 <div class="slide">
                     <img src="PinetreeScreen2.webp" alt="Pinetree Screenshot 2" class="main-image" width="800" height="500" />
                 </div>
+                <div class="slide">
+                    <img src="PinetreeScreen3.webp" alt="Pinetree Screenshot 3" class="main-image" width="800" height="500" />
+                </div>
             </div>
             <div class="slider-controls">
                 <button class="slider-arrow prev" @onclick="PrevSlide">❮</button>
                 <div class="slider-dots">
                     <span class="dot active" @onclick="() => SetSlide(0)"></span>
                     <span class="dot" @onclick="() => SetSlide(1)"></span>
+                    <span class="dot" @onclick="() => SetSlide(2)"></span>
                 </div>
                 <button class="slider-arrow next" @onclick="NextSlide">❯</button>
             </div>
