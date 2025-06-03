@@ -238,79 +238,145 @@ function toggleEmojiSearchFocus(focused) {
     }
 }
 /**
- * Filters emojis based on search query
+ * Filters emojis based on search query with optimized performance
  * @param query - The search query
  */
 function filterEmojis(query) {
+    // 検索キャッシュ
+    const cache = {};
+    // 入力欄の値を更新
     const searchInput = document.getElementById('emoji-search');
     if (searchInput) {
         searchInput.value = query;
     }
     const allButtons = document.querySelectorAll('.emoji-picker-button');
     const allCategories = document.querySelectorAll('.emoji-category');
+    // 検索クエリが空の場合はすべて表示
     if (!query || query.trim() === '') {
-        // Show all emojis if no search query
-        allButtons.forEach(button => {
-            button.style.display = 'inline-block';
-        });
-        allCategories.forEach(category => {
-            category.style.display = 'block';
+        // DOM更新を最小限に抑えるために一時停止
+        requestAnimationFrame(() => {
+            allButtons.forEach(button => {
+                button.style.display = 'inline-block';
+            });
+            allCategories.forEach(category => {
+                category.style.display = 'block';
+            });
+            // 検索結果なしメッセージを削除
+            const noResults = document.getElementById('emoji-no-results');
+            if (noResults) {
+                noResults.remove();
+            }
         });
         return;
     }
     const searchTerm = query.toLowerCase().trim();
     let visibleCount = 0;
-    // Hide all categories first
-    allCategories.forEach(category => {
-        category.style.display = 'none';
+    let visibleCategories = new Set();
+    // バッチ処理を最適化
+    const processBatch = (buttons, startIndex, batchSize) => {
+        return new Promise(resolve => {
+            // 非同期で処理を行うことでUIスレッドをブロックしない
+            setTimeout(() => {
+                const endIndex = Math.min(startIndex + batchSize, buttons.length);
+                for (let i = startIndex; i < endIndex; i++) {
+                    const button = buttons[i];
+                    const emoji = button.textContent?.trim() || '';
+                    // キャッシュを使用して重複計算を避ける
+                    if (cache[emoji] === undefined) {
+                        const keywords = getEmojiKeywords(emoji);
+                        cache[emoji] = keywords.some(keyword => keyword.toLowerCase().includes(searchTerm));
+                    }
+                    if (cache[emoji]) {
+                        button.style.display = 'inline-block';
+                        // カテゴリを表示
+                        const category = button.closest('.emoji-category');
+                        if (category) {
+                            visibleCategories.add(category);
+                        }
+                        visibleCount++;
+                    }
+                    else {
+                        button.style.display = 'none';
+                    }
+                }
+                // さらに処理が必要な場合は続行
+                if (endIndex < buttons.length) {
+                    processBatch(buttons, endIndex, batchSize).then(resolve);
+                }
+                else {
+                    // すべての処理が完了したら結果を表示
+                    requestAnimationFrame(() => {
+                        // カテゴリの表示/非表示を一括で更新
+                        allCategories.forEach(category => {
+                            category.style.display = visibleCategories.has(category) ? 'block' : 'none';
+                        });
+                        // 結果がない場合はメッセージを表示
+                        if (visibleCount === 0) {
+                            const noResults = document.getElementById('emoji-no-results');
+                            if (!noResults) {
+                                const message = document.createElement('div');
+                                message.id = 'emoji-no-results';
+                                message.className = 'emoji-no-results';
+                                message.textContent = 'No emojis found for "' + query + '"';
+                                const container = document.querySelector('.emoji-picker-content');
+                                if (container) {
+                                    container.appendChild(message);
+                                }
+                            }
+                        }
+                        else {
+                            // 結果がある場合はメッセージを削除
+                            const noResults = document.getElementById('emoji-no-results');
+                            if (noResults) {
+                                noResults.remove();
+                            }
+                        }
+                        resolve();
+                    });
+                }
+            }, 0);
+        });
+    };
+    // 処理開始前にカテゴリを非表示にする
+    requestAnimationFrame(() => {
+        allCategories.forEach(category => {
+            category.style.display = 'none';
+        });
+        // バッチサイズを調整（短いクエリの場合は大きく、長いクエリの場合は小さく）
+        const batchSize = searchTerm.length <= 2 ? 30 : 50;
+        processBatch(allButtons, 0, batchSize);
     });
-    allButtons.forEach(button => {
-        const emoji = button.textContent?.trim() || '';
-        const keywords = getEmojiKeywords(emoji);
-        // Check if search term matches any keyword
-        const matches = keywords.some(keyword => keyword.toLowerCase().includes(searchTerm));
-        if (matches) {
-            button.style.display = 'inline-block';
-            // Show the parent category
-            const category = button.closest('.emoji-category');
-            if (category) {
-                category.style.display = 'block';
-            }
-            visibleCount++;
-        }
-        else {
-            button.style.display = 'none';
-        }
-    });
-    // If no matches found, show a message
-    if (visibleCount === 0) {
-        const noResults = document.getElementById('emoji-no-results');
-        if (!noResults) {
-            const message = document.createElement('div');
-            message.id = 'emoji-no-results';
-            message.style.cssText = `
-                text-align: center;
-                padding: 20px;
-                color: #666;
-                font-style: italic;
-            `;
-            message.textContent = 'No emojis found for "' + query + '"';
-            const container = document.querySelector('.emoji-picker-content');
-            if (container) {
-                container.appendChild(message);
-            }
-        }
-    }
-    else {
-        // Remove no results message if it exists
-        const noResults = document.getElementById('emoji-no-results');
-        if (noResults) {
-            noResults.remove();
-        }
-    }
 }
 // Variables for emoji picker modal
 let currentEmojiResolve = null;
+// イベントハンドラーを関数として定義（スコープ外からも参照できるように）
+function handleCloseBtnMouseover(e) {
+    const target = e.target;
+    if (target) {
+        target.style.backgroundColor = '#e9ecef';
+    }
+}
+function handleCloseBtnMouseout(e) {
+    const target = e.target;
+    if (target) {
+        target.style.backgroundColor = 'transparent';
+    }
+}
+function handleCloseBtnClick() {
+    closeEmojiPicker('');
+}
+function handleBackdropClick(e) {
+    const backdrop = document.getElementById('emoji-picker-backdrop');
+    if (e.target === backdrop) {
+        closeEmojiPicker('');
+    }
+}
+function handleEscapeKey(e) {
+    if (e.key === 'Escape') {
+        closeEmojiPicker('');
+        document.removeEventListener('keydown', handleEscapeKey);
+    }
+}
 /**
  * Shows the emoji picker modal and returns the selected emoji
  * @param emojiHtml - The HTML content for the emoji picker
@@ -322,64 +388,24 @@ function showEmojiPicker(emojiHtml) {
         // Create modal backdrop
         const backdrop = document.createElement('div');
         backdrop.id = 'emoji-picker-backdrop';
-        backdrop.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1050;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        `;
+        backdrop.className = 'emoji-picker-backdrop';
         // Create modal dialog
         const modal = document.createElement('div');
         modal.id = 'emoji-picker-modal';
-        modal.style.cssText = `
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 90vw;
-            max-width: 800px;
-            height: 80vh;
-            max-height: 600px;
-            overflow: hidden;
-            position: relative;
-        `;
+        modal.className = 'emoji-picker-modal';
         // Create header with close button
         const header = document.createElement('div');
-        header.style.cssText = `
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 15px;
-            border-bottom: 1px solid #eee;
-            background: #f8f9fa;
-        `;
+        header.classList.add('emoji-modal-dynamic-header');
         const title = document.createElement('h4');
         title.textContent = 'Select Emoji';
-        title.style.cssText = 'margin: 0; color: #333;';
+        title.classList.add('emoji-modal-dynamic-title');
         const closeBtn = document.createElement('button');
         closeBtn.innerHTML = '&times;';
-        closeBtn.style.cssText = `
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #666;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-        `;
-        closeBtn.onmouseover = () => closeBtn.style.backgroundColor = '#e9ecef';
-        closeBtn.onmouseout = () => closeBtn.style.backgroundColor = 'transparent';
-        closeBtn.onclick = () => closeEmojiPicker('');
+        closeBtn.classList.add('emoji-modal-dynamic-close');
+        // 関数を参照するようにイベントリスナーを設定
+        closeBtn.addEventListener('mouseover', handleCloseBtnMouseover);
+        closeBtn.addEventListener('mouseout', handleCloseBtnMouseout);
+        closeBtn.addEventListener('click', handleCloseBtnClick);
         header.appendChild(title);
         header.appendChild(closeBtn);
         // Create content area
@@ -388,21 +414,18 @@ function showEmojiPicker(emojiHtml) {
         modal.appendChild(header);
         modal.appendChild(content);
         backdrop.appendChild(modal);
-        // Close on backdrop click
-        backdrop.onclick = (e) => {
-            if (e.target === backdrop) {
-                closeEmojiPicker('');
-            }
-        };
-        // Close on Escape key
-        const handleKeydown = (e) => {
-            if (e.key === 'Escape') {
-                closeEmojiPicker('');
-                document.removeEventListener('keydown', handleKeydown);
-            }
-        };
-        document.addEventListener('keydown', handleKeydown);
+        // 関数を参照するように設定
+        backdrop.addEventListener('click', handleBackdropClick);
+        // Escape キーのイベントリスナー
+        document.addEventListener('keydown', handleEscapeKey);
         document.body.appendChild(backdrop);
+        // Initialize search input with a slight delay to ensure the DOM is ready
+        setTimeout(() => {
+            const searchInput = document.getElementById('emoji-search');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }, 100);
         // Focus the modal for keyboard navigation
         modal.tabIndex = -1;
         modal.focus();
@@ -422,6 +445,25 @@ function selectEmoji(emoji) {
 function closeEmojiPicker(emoji) {
     const backdrop = document.getElementById('emoji-picker-backdrop');
     if (backdrop) {
+        // イベントリスナーのクリーンアップを改善
+        try {
+            // クリックイベントのリスナーを削除
+            backdrop.removeEventListener('click', handleBackdropClick);
+            // 全てのボタンからイベントリスナーを削除
+            const closeButton = backdrop.querySelector('.emoji-modal-dynamic-close');
+            if (closeButton) {
+                // TypeScriptの型変換を正しく処理
+                const closeBtn = closeButton;
+                closeBtn.removeEventListener('mouseover', handleCloseBtnMouseover);
+                closeBtn.removeEventListener('mouseout', handleCloseBtnMouseout);
+                closeBtn.removeEventListener('click', handleCloseBtnClick);
+            }
+            // Escapeキーのイベントリスナーを削除
+            document.removeEventListener('keydown', handleEscapeKey);
+        }
+        catch (e) {
+            console.error('Error cleaning up event handlers:', e);
+        }
         backdrop.remove();
     }
     if (currentEmojiResolve) {
@@ -429,47 +471,6 @@ function closeEmojiPicker(emoji) {
         currentEmojiResolve = null;
     }
 }
-// Add CSS for emoji picker animations
-function addEmojiPickerStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-        #emoji-picker-backdrop {
-            animation: fadeIn 0.2s ease-out;
-        }
-        
-        #emoji-picker-modal {
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideIn {
-            from { 
-                opacity: 0;
-                transform: scale(0.9) translateY(-20px);
-            }
-            to { 
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-        
-        .emoji-picker-button:hover {
-            background-color: #f0f0f0 !important;
-            transform: scale(1.1);
-        }
-        
-        .emoji-picker-button:active {
-            transform: scale(0.95);
-        }
-    `;
-    document.head.appendChild(style);
-}
-// Execute on load
-addEmojiPickerStyles();
 // Assign functions to window object for global access
 window.getEmojiKeywords = getEmojiKeywords;
 window.focusEmojiSearch = focusEmojiSearch;

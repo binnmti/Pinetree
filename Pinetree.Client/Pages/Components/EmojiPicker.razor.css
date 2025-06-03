@@ -194,6 +194,86 @@
     }
 }
 
+/* Animation styles */
+#emoji-picker-backdrop {
+    animation: fadeIn 0.2s ease-out;
+}
+
+#emoji-picker-modal {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { 
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to { 
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.emoji-picker-button:hover {
+    background-color: #f0f0f0 !important;
+    transform: scale(1.1);
+}
+
+.emoji-picker-button:active {
+    transform: scale(0.95);
+}
+
+/* Dynamically generated elements styles */
+/* These were previously set via style.cssText in TypeScript */
+.emoji-modal-dynamic-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    background: #f8f9fa;
+}
+
+.emoji-modal-dynamic-title {
+    margin: 0;
+    color: #333;
+}
+
+.emoji-modal-dynamic-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.emoji-modal-dynamic-close:hover {
+    background-color: #e9ecef;
+}
+
+.emoji-modal-dynamic-close:not(:hover) {
+    background-color: transparent;
+}
+
+.emoji-modal-no-results {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
 /* Utility classes */
 .hidden {
     display: none !important;
