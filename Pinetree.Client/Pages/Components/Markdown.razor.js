@@ -106,6 +106,8 @@ export function setupAllEventListeners(container, textArea, dotNetHelper) {
     initializeTooltips();
     setupScrollSync(textArea, container);
     setupDropZone(textArea, dotNetHelper);
+    setupClipboardPaste(textArea, dotNetHelper);
+    setupTextAreaScrollBehavior(textArea);
 }
 function initializeTooltips() {
     const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -189,6 +191,15 @@ function setupBeforeUnloadWarning(dotNetHelper) {
     //            console.error('Error checking for pending changes:', error);
     //        }
     //    });
+}
+// Add cleanup method
+export function cleanupNavigationHandlers(dotNetHelper) {
+    if (dotNetHelper._navigationCleanup) {
+        dotNetHelper._navigationCleanup();
+    }
+    if (dotNetHelper._navigationObserver) {
+        dotNetHelper._navigationObserver.disconnect();
+    }
 }
 export function setupKeyboardShortcuts(element, dotNetHelper) {
     element.addEventListener('keydown', async (e) => {
@@ -675,5 +686,119 @@ async function initializeIndexedDB() {
             }
         };
     });
+}
+function setupClipboardPaste(textArea, dotNetHelper) {
+    if (!textArea)
+        return;
+    textArea.addEventListener('paste', async (e) => {
+        // Check if clipboard contains files
+        if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
+            const file = e.clipboardData.files[0];
+            // Check if the file is an image
+            if (!file.type.startsWith('image/')) {
+                return; // Let default paste behavior handle non-image files
+            }
+            e.preventDefault(); // Prevent default paste behavior for images
+            const maxSizeMB = 5;
+            const maxSizeBytes = maxSizeMB * 1024 * 1024;
+            if (file.size > maxSizeBytes) {
+                alert(`Image size is too large. Please select an image under ${maxSizeMB}MB.`);
+                return;
+            }
+            try {
+                const imageId = await saveFileToIndexedDB(file);
+                const blobUrl = await getImageBlobUrl(imageId);
+                await dotNetHelper.invokeMethodAsync('HandleDroppedFile', {
+                    blobUrl: blobUrl,
+                    fileName: file.name || 'pasted-image'
+                });
+            }
+            catch (error) {
+                console.error("Error handling pasted image:", error);
+            }
+        }
+        // Check if clipboard contains image data (not files)
+        else if (e.clipboardData && e.clipboardData.items) {
+            const items = Array.from(e.clipboardData.items);
+            const imageItem = items.find(item => item.type.startsWith('image/'));
+            if (imageItem) {
+                e.preventDefault(); // Prevent default paste behavior for images
+                const file = imageItem.getAsFile();
+                if (!file)
+                    return;
+                const maxSizeMB = 5;
+                const maxSizeBytes = maxSizeMB * 1024 * 1024;
+                if (file.size > maxSizeBytes) {
+                    alert(`Image size is too large. Please select an image under ${maxSizeMB}MB.`);
+                    return;
+                }
+                try {
+                    const imageId = await saveFileToIndexedDB(file);
+                    const blobUrl = await getImageBlobUrl(imageId);
+                    // Generate a filename based on current timestamp
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    const extension = file.type.split('/')[1] || 'png';
+                    const fileName = `pasted-image-${timestamp}.${extension}`;
+                    await dotNetHelper.invokeMethodAsync('HandleDroppedFile', {
+                        blobUrl: blobUrl,
+                        fileName: fileName
+                    });
+                }
+                catch (error) {
+                    console.error("Error handling pasted image:", error);
+                }
+            }
+        }
+    });
+}
+function setupTextAreaScrollBehavior(textArea) {
+    if (!textArea)
+        return;
+    let lastUserScrollTop = 0;
+    let lastSelectionStart = 0;
+    let lastSelectionEnd = 0;
+    let isTyping = false;
+    const saveScrollPosition = () => {
+        lastUserScrollTop = textArea.scrollTop;
+        lastSelectionStart = textArea.selectionStart;
+        lastSelectionEnd = textArea.selectionEnd;
+    };
+    textArea.addEventListener('scroll', () => {
+        if (!isTyping) {
+            saveScrollPosition();
+        }
+    });
+    textArea.addEventListener('keydown', () => {
+        isTyping = true;
+        saveScrollPosition();
+    });
+    textArea.addEventListener('keyup', () => {
+        isTyping = false;
+    });
+    textArea.addEventListener('input', (e) => {
+        const currentSelectionStart = textArea.selectionStart;
+        const isSmallChange = Math.abs(currentSelectionStart - lastSelectionStart) < 10;
+        if (isSmallChange) {
+            requestAnimationFrame(() => {
+                const lineHeight = parseInt(getComputedStyle(textArea).lineHeight) || 18;
+                const visibleLines = Math.floor(textArea.clientHeight / lineHeight);
+                const currentLine = textArea.value.substring(0, currentSelectionStart).split('\n').length;
+                const scrollLine = Math.floor(lastUserScrollTop / lineHeight) + 1;
+                const isInVisibleArea = currentLine >= scrollLine &&
+                    currentLine <= (scrollLine + visibleLines - 4); // 下部余白を考慮
+                if (isInVisibleArea) {
+                    textArea.scrollTop = lastUserScrollTop;
+                }
+                else {
+                    saveScrollPosition();
+                }
+            });
+        }
+        else {
+            saveScrollPosition();
+        }
+    });
+    textArea.addEventListener('focus', saveScrollPosition);
+    textArea.addEventListener('mousedown', saveScrollPosition);
 }
 //# sourceMappingURL=Markdown.razor.js.map
