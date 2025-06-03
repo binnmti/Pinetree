@@ -352,17 +352,34 @@
         await JS.InvokeVoidAsync("initResizers");
     }
 
+    // private async ValueTask OnLocationChanging(LocationChangingContext context)
+    // {
+    //     if (HasPendingChanges())
+    //     {
+    //         var confirmed = await JS.ConfirmAsync("Your changes have not been saved. Are you sure you want to leave this page?");
+    //         if (!confirmed)
+    //         {
+    //             context.PreventNavigation();
+    //         }
+    //     }
+    // }
+
     private async ValueTask OnLocationChanging(LocationChangingContext context)
     {
         if (HasPendingChanges())
         {
-            var confirmed = await JS.ConfirmAsync("Your changes have not been saved. Are you sure you want to leave this page?");
-            if (!confirmed)
+            var isInternalNavigation = context.TargetLocation.StartsWith(NavigationManager.BaseUri);
+            if (isInternalNavigation)
             {
-                context.PreventNavigation();
+                var confirmed = await JS.ConfirmAsync("Your changes have not been saved. Are you sure you want to leave this page?");
+                if (!confirmed)
+                {
+                    context.PreventNavigation();
+                }
             }
         }
     }
+
 
     private void OnInputTitleChange(ChangeEventArgs e)
     {
