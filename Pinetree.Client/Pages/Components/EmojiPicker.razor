@@ -55,11 +55,12 @@
     public Dictionary<string, string[]> EmojiCategories { get; set; } = new();
 
     [Parameter]
-    public EventCallback<string> OnSelect { get; set; }
-
-    private string SearchQuery { get; set; } = string.Empty;
+    public EventCallback<string> OnSelect { get; set; }    private string SearchQuery { get; set; } = string.Empty;
     private Dictionary<string, bool> _searchResults = new();
     private Dictionary<string, bool> _categoryVisibility = new();
+    private CancellationTokenSource _debounceTokenSource = new();
+    private Dictionary<string, string[]> _keywordsCache = new();
+    
     protected override void OnInitialized()
     {
         // Focus search input when component is rendered
@@ -68,7 +69,7 @@
             await Task.Delay(100);
             try
             {
-                await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('emoji-search')?.focus()");
+                await JSRuntime.InvokeVoidAsync("document.getElementById('emoji-search').focus");
                 
                 // Prefetch emoji keywords for common emojis to improve search responsiveness
                 _ = PrefetchEmojiKeywords();
@@ -79,8 +80,7 @@
             }
         });
     }
-    
-    private async Task PrefetchEmojiKeywords()
+      private async Task PrefetchEmojiKeywords()
     {
         try
         {
@@ -90,40 +90,117 @@
                 .Take(50)  // Limit to a reasonable number
                 .ToList();
                 
-            foreach (var emoji in commonEmojis)
+            // Prefetch in batches to avoid blocking the UI
+            const int batchSize = 10;
+            for (int i = 0; i < commonEmojis.Count; i += batchSize)
             {
-                if (!_searchResults.ContainsKey(emoji))
+                var batch = commonEmojis.Skip(i).Take(batchSize);
+                foreach (var emoji in batch)
                 {
-                    await FetchEmojiKeywords(emoji);
+                    if (!_keywordsCache.ContainsKey(emoji))
+                    {
+                        try
+                        {
+                            var keywords = await JSRuntime.InvokeAsync<string[]>("getEmojiKeywords", emoji);
+                            _keywordsCache[emoji] = keywords;
+                        }
+                        catch
+                        {
+                            // Fallback if JS function call fails
+                            _keywordsCache[emoji] = new[] { emoji };
+                        }
+                    }
                 }
+                // Small delay between batches to keep UI responsive
+                await Task.Delay(10);
             }
         }
         catch
         {
             // Ignore prefetch errors
         }
-    }
-
-    private async Task HandleSearch(ChangeEventArgs e)
+    }private async Task HandleSearch(ChangeEventArgs e)
     {
-        SearchQuery = e.Value?.ToString() ?? string.Empty;
+        string query = e.Value?.ToString() ?? string.Empty;
         
-        // Clear cache when search query changes
-        _searchResults.Clear();
-        _categoryVisibility.Clear();
+        // Don't update if the query hasn't changed
+        if (query == SearchQuery)
+            return;
         
-        await InvokeAsync(StateHasChanged);
+        SearchQuery = query;
+        
+        // Implement debounce to avoid excessive searches while typing
+        try
+        {
+            _debounceTokenSource.Cancel();
+            _debounceTokenSource = new CancellationTokenSource();
+            var token = _debounceTokenSource.Token;
+            
+            // Wait a short delay before processing search to avoid excessive updates
+            await Task.Delay(200, token);
+            
+            // Clear visibility cache when search query changes
+            _categoryVisibility.Clear();
+            
+            // Only clear search results for the new search term
+            if (string.IsNullOrWhiteSpace(SearchQuery))
+            {
+                _searchResults.Clear();
+            }
+            else 
+            {
+                // Update search results for all visible emojis at once
+                await UpdateSearchResults();
+            }
+            
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (TaskCanceledException)
+        {
+            // Ignore cancellation - this happens when typing quickly
+        }
+    }
+    
+    private async Task UpdateSearchResults()
+    {
+        if (string.IsNullOrWhiteSpace(SearchQuery))
+            return;
+            
+        var searchTerm = SearchQuery.ToLowerInvariant().Trim();
+        var allEmojis = EmojiCategories.SelectMany(c => c.Value).ToList();
+        
+        // Process emojis in batches to maintain responsiveness
+        foreach (var emoji in allEmojis)
+        {
+            string[] keywords;
+            if (!_keywordsCache.TryGetValue(emoji, out keywords))
+            {
+                try 
+                {
+                    keywords = await JSRuntime.InvokeAsync<string[]>("getEmojiKeywords", emoji);
+                    _keywordsCache[emoji] = keywords;
+                }
+                catch
+                {
+                    // Fallback if JS function call fails
+                    keywords = new[] { emoji };
+                }
+            }
+            
+            bool matches = keywords.Any(k => k.ToLowerInvariant().Contains(searchTerm));
+            _searchResults[emoji] = matches;
+        }
     }
     
     private void HandleSearchFocus(bool isFocused)
     {
         if (isFocused)
         {
-            _ = JSRuntime.InvokeVoidAsync("eval", "document.getElementById('emoji-search').classList.add('focused')");
+            _ = JSRuntime.InvokeVoidAsync("document.getElementById('emoji-search').classList.add", "focused");
         }
         else
         {
-            _ = JSRuntime.InvokeVoidAsync("eval", "document.getElementById('emoji-search').classList.remove('focused')");
+            _ = JSRuntime.InvokeVoidAsync("document.getElementById('emoji-search').classList.remove", "focused");
         }
     }
 
@@ -165,8 +242,7 @@
 
         return false;
     }
-    
-    private bool ShouldDisplayEmoji(string emoji)
+      private bool ShouldDisplayEmoji(string emoji)
     {
         if (string.IsNullOrEmpty(SearchQuery))
         {
@@ -179,31 +255,53 @@
             return isVisible;
         }
 
-        // Use JavaScript's getEmojiKeywords function
-        _ = FetchEmojiKeywords(emoji);
+        // If we don't have the result yet, check if we have keywords cached
+        if (_keywordsCache.TryGetValue(emoji, out var keywords))
+        {
+            var searchTerm = SearchQuery.ToLowerInvariant().Trim();
+            bool matches = keywords.Any(k => k.ToLowerInvariant().Contains(searchTerm));
+            _searchResults[emoji] = matches;
+            return matches;
+        }
 
-        // Initially show all emojis until we have keywords
+        // We don't have keywords yet, trigger fetch but return true initially
+        _ = FetchKeywordsForEmoji(emoji);
         return true;
     }
     
-    private async Task FetchEmojiKeywords(string emoji)
+    private async Task FetchKeywordsForEmoji(string emoji)
     {
         try
         {
-            var keywords = await JSRuntime.InvokeAsync<string[]>("getEmojiKeywords", emoji);
-            var searchTerm = SearchQuery.ToLowerInvariant().Trim();
-            bool matches = string.IsNullOrEmpty(searchTerm) || 
-                           keywords.Any(k => k.ToLowerInvariant().Contains(searchTerm));
+            if (!_keywordsCache.ContainsKey(emoji))
+            {
+                var keywords = await JSRuntime.InvokeAsync<string[]>("getEmojiKeywords", emoji);
+                _keywordsCache[emoji] = keywords;
+            }
             
-            _searchResults[emoji] = matches;
-            await InvokeAsync(StateHasChanged);
+            var searchTerm = SearchQuery.ToLowerInvariant().Trim();
+            bool matches = _keywordsCache[emoji].Any(k => k.ToLowerInvariant().Contains(searchTerm));
+            
+            if (_searchResults.TryGetValue(emoji, out bool currentValue) && currentValue != matches)
+            {
+                _searchResults[emoji] = matches;
+                await InvokeAsync(StateHasChanged);
+            }
+            else if (!_searchResults.ContainsKey(emoji))
+            {
+                _searchResults[emoji] = matches;
+                await InvokeAsync(StateHasChanged);
+            }
         }
         catch
         {
             // Fallback if JS function call fails
-            _searchResults[emoji] = string.IsNullOrEmpty(SearchQuery) || 
-                                   emoji.Contains(SearchQuery);
-            await InvokeAsync(StateHasChanged);
+            if (!_searchResults.ContainsKey(emoji))
+            {
+                _searchResults[emoji] = string.IsNullOrEmpty(SearchQuery) || 
+                                      emoji.Contains(SearchQuery);
+                await InvokeAsync(StateHasChanged);
+            }
         }
     }
     
