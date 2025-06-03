@@ -34,10 +34,11 @@ public static class MarkdownService
         Sanitizer.AllowedClasses.Add("math-inline");
         Sanitizer.AllowedClasses.Add("math-display");
     }
-
     public static string ToHtml(string markdown)
     {
         var html = Markdown.ToHtml(markdown, MarkdownPipeline);
-        return Sanitizer.Sanitize(html);
+        var sanitizedHtml = Sanitizer.Sanitize(html);
+        return sanitizedHtml.Replace(" disabled=\"disabled\"", "")
+                           .Replace(" disabled", "");
     }
 }
