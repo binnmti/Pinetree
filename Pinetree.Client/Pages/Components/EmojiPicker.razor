@@ -1,6 +1,7 @@
 @using Pinetree.Client.Services
 @using System.Threading.Tasks
 @inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
 <div id="emoji-picker-backdrop" class="emoji-picker-backdrop">
     <div id="emoji-picker-modal" class="emoji-picker-modal">
@@ -55,21 +56,27 @@
     public Dictionary<string, string[]> EmojiCategories { get; set; } = new();
 
     [Parameter]
-    public EventCallback<string> OnSelect { get; set; }    private string SearchQuery { get; set; } = string.Empty;
+    public EventCallback<string> OnSelect { get; set; }
+      private string SearchQuery { get; set; } = string.Empty;
     private Dictionary<string, bool> _searchResults = new();
     private Dictionary<string, bool> _categoryVisibility = new();
     private CancellationTokenSource _debounceTokenSource = new();
     private Dictionary<string, string[]> _keywordsCache = new();
-    
-    protected override void OnInitialized()
+    private IJSObjectReference? _emojiPickerModule;
+
+    protected override async Task OnInitializedAsync()
     {
-        // Focus search input when component is rendered
-        _ = Task.Run(async () =>
+        try
         {
+            // Load the TypeScript module
+            _emojiPickerModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./Pages/Components/EmojiPicker.razor.js");
+                
+            // Focus search input when component is rendered
             await Task.Delay(100);
             try
             {
-                await JSRuntime.InvokeVoidAsync("document.getElementById('emoji-search').focus");
+                await JSRuntime.InvokeVoidAsync("focusEmojiSearch");
                 
                 // Prefetch emoji keywords for common emojis to improve search responsiveness
                 _ = PrefetchEmojiKeywords();
@@ -78,7 +85,25 @@
             {
                 // Element might not be available yet
             }
-        });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading EmojiPicker module: {ex.Message}");
+        }
+    }
+      public async ValueTask DisposeAsync()
+    {
+        if (_emojiPickerModule is not null)
+        {
+            try
+            {
+                await _emojiPickerModule.DisposeAsync();
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+        }
     }
       private async Task PrefetchEmojiKeywords()
     {
@@ -119,7 +144,9 @@
         {
             // Ignore prefetch errors
         }
-    }private async Task HandleSearch(ChangeEventArgs e)
+    }
+    
+    private async Task HandleSearch(ChangeEventArgs e)
     {
         string query = e.Value?.ToString() ?? string.Empty;
         
@@ -127,8 +154,7 @@
         if (query == SearchQuery)
             return;
         
-        SearchQuery = query;
-        
+        SearchQuery = query;        
         // Implement debounce to avoid excessive searches while typing
         try
         {
@@ -141,6 +167,9 @@
             
             // Clear visibility cache when search query changes
             _categoryVisibility.Clear();
+            
+            // Call the TypeScript filtering function
+            await JSRuntime.InvokeVoidAsync("filterEmojis", SearchQuery);
             
             // Only clear search results for the new search term
             if (string.IsNullOrWhiteSpace(SearchQuery))
@@ -172,8 +201,7 @@
         // Process emojis in batches to maintain responsiveness
         foreach (var emoji in allEmojis)
         {
-            string[] keywords;
-            if (!_keywordsCache.TryGetValue(emoji, out keywords))
+            if (!_keywordsCache.TryGetValue(emoji, out var keywords))
             {
                 try 
                 {
@@ -190,17 +218,24 @@
             bool matches = keywords.Any(k => k.ToLowerInvariant().Contains(searchTerm));
             _searchResults[emoji] = matches;
         }
-    }
-    
-    private void HandleSearchFocus(bool isFocused)
+    } 
+      private async Task HandleSearchFocus(bool isFocused)
     {
-        if (isFocused)
+        try
         {
-            _ = JSRuntime.InvokeVoidAsync("document.getElementById('emoji-search').classList.add", "focused");
+            await JSRuntime.InvokeVoidAsync("toggleEmojiSearchFocus", isFocused);
         }
-        else
+        catch
         {
-            _ = JSRuntime.InvokeVoidAsync("document.getElementById('emoji-search').classList.remove", "focused");
+            // Fallback to direct DOM manipulation if JS function call fails
+            if (isFocused)
+            {
+                await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('emoji-search')?.classList.add('focused')");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('emoji-search')?.classList.remove('focused')");
+            }
         }
     }
 
