@@ -197,7 +197,7 @@
                         <div class="panel-content-wrapper">
                             <div class="panel-content">
                                 <div @ref="MarkdownContainer"
-                                     class="border markdown-body"
+                                     class="border markdown-body p-3"
                                      style="width:100%; height:99%; overflow:auto;">
                                     @((MarkupString)MarkdownText)
                                 </div>
@@ -352,18 +352,6 @@
         await JS.InvokeVoidAsync("initResizers");
     }
 
-    // private async ValueTask OnLocationChanging(LocationChangingContext context)
-    // {
-    //     if (HasPendingChanges())
-    //     {
-    //         var confirmed = await JS.ConfirmAsync("Your changes have not been saved. Are you sure you want to leave this page?");
-    //         if (!confirmed)
-    //         {
-    //             context.PreventNavigation();
-    //         }
-    //     }
-    // }
-
     private async ValueTask OnLocationChanging(LocationChangingContext context)
     {
         if (HasPendingChanges())
@@ -379,7 +367,6 @@
             }
         }
     }
-
 
     private void OnInputTitleChange(ChangeEventArgs e)
     {

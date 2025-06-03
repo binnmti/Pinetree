@@ -126,6 +126,7 @@ export function setupAllEventListeners(
     setupScrollSync(textArea, container);
     setupDropZone(textArea, dotNetHelper);
     setupClipboardPaste(textArea, dotNetHelper);
+    setupTextAreaScrollBehavior(textArea);
 }
 
 interface DotNetObject {
@@ -887,3 +888,61 @@ function setupClipboardPaste(
     });
 }
 
+function setupTextAreaScrollBehavior(textArea: HTMLTextAreaElement): void {
+    if (!textArea) return;
+
+    let lastUserScrollTop = 0;
+    let lastSelectionStart = 0;
+    let lastSelectionEnd = 0;
+    let isTyping = false;
+
+    const saveScrollPosition = () => {
+        lastUserScrollTop = textArea.scrollTop;
+        lastSelectionStart = textArea.selectionStart;
+        lastSelectionEnd = textArea.selectionEnd;
+    };
+
+    textArea.addEventListener('scroll', () => {
+        if (!isTyping) {
+            saveScrollPosition();
+        }
+    });
+
+    textArea.addEventListener('keydown', () => {
+        isTyping = true;
+        saveScrollPosition();
+    });
+
+    textArea.addEventListener('keyup', () => {
+        isTyping = false;
+    });
+
+    textArea.addEventListener('input', (e) => {
+        const currentSelectionStart = textArea.selectionStart;
+        const isSmallChange = Math.abs(currentSelectionStart - lastSelectionStart) < 10;
+
+        if (isSmallChange) {
+            requestAnimationFrame(() => {
+                const lineHeight = parseInt(getComputedStyle(textArea).lineHeight) || 18;
+                const visibleLines = Math.floor(textArea.clientHeight / lineHeight);
+                const currentLine = textArea.value.substring(0, currentSelectionStart).split('\n').length;
+                const scrollLine = Math.floor(lastUserScrollTop / lineHeight) + 1;
+
+                const isInVisibleArea = currentLine >= scrollLine &&
+                    currentLine <= (scrollLine + visibleLines - 4); // 下部余白を考慮
+
+                if (isInVisibleArea) {
+                    textArea.scrollTop = lastUserScrollTop;
+                } else {
+                    saveScrollPosition();
+                }
+            });
+        } else {
+            saveScrollPosition();
+        }
+    });
+
+    textArea.addEventListener('focus', saveScrollPosition);
+
+    textArea.addEventListener('mousedown', saveScrollPosition);
+}
