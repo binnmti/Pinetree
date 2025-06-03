@@ -1,8 +1,5 @@
 # TODO
-- Google Search Console & PageSpeed Insights
-- GitHub Top Todo
-
-- GuruGuru
+- PageSpeed Insights
 - SEO/OGP
 - Paid Membership
   - 33User
@@ -11,6 +8,7 @@
 - Top Page Image
   - Ignite
 
+- GuruGuru
 - monaco-editor
 - Multilingualization, or rather Japaneseization
 - Layout CSS 100% Check
