@@ -106,6 +106,7 @@ export function setupAllEventListeners(container, textArea, dotNetHelper) {
     initializeTooltips();
     setupScrollSync(textArea, container);
     setupDropZone(textArea, dotNetHelper);
+    setupClipboardPaste(textArea, dotNetHelper);
 }
 function initializeTooltips() {
     const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -683,6 +684,70 @@ async function initializeIndexedDB() {
                 };
             }
         };
+    });
+}
+function setupClipboardPaste(textArea, dotNetHelper) {
+    if (!textArea)
+        return;
+    textArea.addEventListener('paste', async (e) => {
+        // Check if clipboard contains files
+        if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
+            const file = e.clipboardData.files[0];
+            // Check if the file is an image
+            if (!file.type.startsWith('image/')) {
+                return; // Let default paste behavior handle non-image files
+            }
+            e.preventDefault(); // Prevent default paste behavior for images
+            const maxSizeMB = 5;
+            const maxSizeBytes = maxSizeMB * 1024 * 1024;
+            if (file.size > maxSizeBytes) {
+                alert(`Image size is too large. Please select an image under ${maxSizeMB}MB.`);
+                return;
+            }
+            try {
+                const imageId = await saveFileToIndexedDB(file);
+                const blobUrl = await getImageBlobUrl(imageId);
+                await dotNetHelper.invokeMethodAsync('HandleDroppedFile', {
+                    blobUrl: blobUrl,
+                    fileName: file.name || 'pasted-image'
+                });
+            }
+            catch (error) {
+                console.error("Error handling pasted image:", error);
+            }
+        }
+        // Check if clipboard contains image data (not files)
+        else if (e.clipboardData && e.clipboardData.items) {
+            const items = Array.from(e.clipboardData.items);
+            const imageItem = items.find(item => item.type.startsWith('image/'));
+            if (imageItem) {
+                e.preventDefault(); // Prevent default paste behavior for images
+                const file = imageItem.getAsFile();
+                if (!file)
+                    return;
+                const maxSizeMB = 5;
+                const maxSizeBytes = maxSizeMB * 1024 * 1024;
+                if (file.size > maxSizeBytes) {
+                    alert(`Image size is too large. Please select an image under ${maxSizeMB}MB.`);
+                    return;
+                }
+                try {
+                    const imageId = await saveFileToIndexedDB(file);
+                    const blobUrl = await getImageBlobUrl(imageId);
+                    // Generate a filename based on current timestamp
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    const extension = file.type.split('/')[1] || 'png';
+                    const fileName = `pasted-image-${timestamp}.${extension}`;
+                    await dotNetHelper.invokeMethodAsync('HandleDroppedFile', {
+                        blobUrl: blobUrl,
+                        fileName: fileName
+                    });
+                }
+                catch (error) {
+                    console.error("Error handling pasted image:", error);
+                }
+            }
+        }
     });
 }
 //# sourceMappingURL=Markdown.razor.js.map
