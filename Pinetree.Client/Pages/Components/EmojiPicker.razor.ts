@@ -935,9 +935,30 @@ function getEmojiKeywords(emoji: string): string[] {
  * Focuses the search input in the emoji picker
  */
 function focusEmojiSearch(): void {
-    const searchInput = document.getElementById('emoji-search');
-    if (searchInput) {
-        searchInput.focus();
+    try {
+        // Check if document is ready
+        if (document.readyState !== 'complete' && document.readyState !== 'interactive') {
+            // If document is not ready, wait for it
+            document.addEventListener('DOMContentLoaded', focusEmojiSearch, { once: true });
+            return;
+        }
+
+        const searchInput = document.getElementById('emoji-search');
+        if (searchInput) {
+            // Use requestAnimationFrame to ensure the element is properly rendered
+            requestAnimationFrame(() => {
+                try {
+                    (searchInput as HTMLElement).focus();
+                } catch (focusError) {
+                    console.warn('Failed to focus emoji search input during animation frame:', focusError);
+                }
+            });
+        } else {
+            // Element not found, but this is normal if emoji picker is not visible
+            console.debug('Emoji search input not found - this is normal if emoji picker is not currently visible');
+        }
+    } catch (error) {
+        console.warn('Failed to focus emoji search input:', error);
     }
 }
 

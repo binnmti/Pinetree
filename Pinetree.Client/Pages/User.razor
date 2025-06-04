@@ -44,7 +44,8 @@
                                 <input type="text" class="form-control" placeholder="Search documents..." 
                                        @bind="searchQuery" @bind:event="oninput" @onkeyup="@(async (e) => { if (searchDebounceTimer != null) searchDebounceTimer.Dispose(); searchDebounceTimer = new Timer(async _ => await SearchDocuments(), null, 500, Timeout.Infinite); })" />
                             </div>
-                        </div>                        <div class="col-md-2">
+                        </div>                        
+                        <div class="col-md-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="publicOnlyCheck" @bind="showPublicOnly" @bind:after="OnFilterChanged">
                                 <label class="form-check-label" for="publicOnlyCheck">
@@ -54,7 +55,8 @@
                         </div>
                         <div class="col-md-3">
                             <div class="input-group">
-                                <label class="input-group-text">Sort by:</label>                                <select class="form-select" @bind="sortBy" @bind:after="OnSortChanged">
+                                <label class="input-group-text">Sort by:</label>
+                                <select class="form-select" @bind="sortBy" @bind:after="OnSortChanged">
                                     <option value="updatedat">Updated Date</option>
                                     <option value="createdat">Created Date</option>
                                     <option value="title">Title</option>
