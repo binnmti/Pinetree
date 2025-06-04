@@ -219,13 +219,36 @@ function updateMarkdownCheckbox(
 
 function setupBeforeUnloadWarning(dotNetHelper: DotNetObject): void {
     let bypassBeforeUnload = false;
+    
+    // Helper function to safely invoke C# methods
+    async function safeInvokeMethod<T>(methodName: string, ...args: any[]): Promise<T | false> {
+        try {
+            // Check if dotNetHelper is disposed or invalid
+            if (!dotNetHelper || (dotNetHelper as any)._disposed) {
+                return false as T | false;
+            }
+            return await dotNetHelper.invokeMethodAsync<T>(methodName, ...args);
+        }
+        catch (error: any) {
+            // Log different types of errors for debugging
+            if (error.message && error.message.includes('There is no tracked object with id')) {
+                console.warn('DotNetObjectReference already disposed, skipping method call');
+            } else if (error.message && error.message.includes('disposed')) {
+                console.warn('Component disposed, skipping method call');
+            } else {
+                console.error(`Error invoking ${methodName}:`, error);
+            }
+            return false as T | false;
+        }
+    }
+    
     window.addEventListener('beforeunload', async function (e: BeforeUnloadEvent) {
         if (bypassBeforeUnload) {
             bypassBeforeUnload = false;
             return;
         }
         try {
-            const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
+            const hasPendingChanges = await safeInvokeMethod<boolean>('HasPendingChanges');
             if (hasPendingChanges) {
                 e.preventDefault();
                 return undefined;
@@ -245,7 +268,7 @@ function setupBeforeUnloadWarning(dotNetHelper: DotNetObject): void {
             }
             if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
                 try {
-                    const hasPendingChanges = await dotNetHelper.invokeMethodAsync<boolean>('HasPendingChanges');
+                    const hasPendingChanges = await safeInvokeMethod<boolean>('HasPendingChanges');
                     if (hasPendingChanges) {
                         if (confirm('Your changes have not been saved. Are you sure you want to leave this page?')) {
                             bypassBeforeUnload = true;
@@ -254,8 +277,9 @@ function setupBeforeUnloadWarning(dotNetHelper: DotNetObject): void {
                             e.stopPropagation();
                         }
                     }
-                } catch (error) {
+                    } catch (error) {
                     console.error('Navigation guard error:', error);
+                    // Allow navigation if we can't check for pending changes
                 }
             }
         }
@@ -282,11 +306,16 @@ function setupBeforeUnloadWarning(dotNetHelper: DotNetObject): void {
 
 // Add cleanup method
 export function cleanupNavigationHandlers(dotNetHelper: DotNetObject): void {
-    if ((dotNetHelper as any)._navigationCleanup) {
-        (dotNetHelper as any)._navigationCleanup();
-    }
-    if ((dotNetHelper as any)._navigationObserver) {
-        (dotNetHelper as any)._navigationObserver.disconnect();
+    if (dotNetHelper) {
+        // Mark the helper as disposed to prevent further calls
+        (dotNetHelper as any)._disposed = true;
+        
+        if ((dotNetHelper as any)._navigationCleanup) {
+            (dotNetHelper as any)._navigationCleanup();
+        }
+        if ((dotNetHelper as any)._navigationObserver) {
+            (dotNetHelper as any)._navigationObserver.disconnect();
+        }
     }
 }
 

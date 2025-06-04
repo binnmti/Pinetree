@@ -113,13 +113,17 @@
 
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
+    
     [Inject]
     public required HttpClient HttpClient { get; set; }
+    
     [Inject]
     public required IJSRuntime JS { get; set; }
+    
     private ElementReference treeViewContainer;
     private DotNetObjectReference<TreeView>? objRef;
     private IJSObjectReference? jsModule;
+    private bool _isDisposed = false;
 
     protected override void OnInitialized()
     {
@@ -128,79 +132,89 @@
             RootNode = Pinetree;
         }
     }
-    
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+      protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && IsRoot && !IsPublicView)
         {
             objRef = DotNetObjectReference.Create(this);
-            try
-            {
-                jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/Pages/Components/TreeView.razor.js");
-                await jsModule.InvokeVoidAsync("setupTreeViewDragDrop", treeViewContainer, objRef);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error initializing drag and drop: {ex.Message}");
-            }
+            // Note: Drag and drop functionality removed for now
         }
     }
 
     async ValueTask IAsyncDisposable.DisposeAsync()
     {
-        if (jsModule != null)
+        if (_isDisposed) return;
+        _isDisposed = true;
+
+        try
         {
-            await jsModule.DisposeAsync();
+            if (jsModule != null)
+            {
+                await jsModule.DisposeAsync();
+            }
+            
+            objRef?.Dispose();
         }
-        
-        objRef?.Dispose();
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error during TreeView disposal: {ex.Message}");
+        }
     }
-    
+
     [JSInvokable]
     public async Task HandleItemDrop(string sourceId, string targetId, string position, string? targetParentId = null)
     {
-        if (Guid.TryParse(sourceId, out var sourceGuid) && Guid.TryParse(targetId, out var targetGuid))
+        try
         {
-            var rootNode = RootNode ?? Pinetree;
-            var sourceItem = GetNodeById(rootNode, sourceGuid);
-            var targetItem = GetNodeById(rootNode, targetGuid);
+            if (_isDisposed) return;
 
-            if (sourceItem != null && targetItem != null)
+            if (Guid.TryParse(sourceId, out var sourceGuid) && Guid.TryParse(targetId, out var targetGuid))
             {
-                // Prevent dropping on itself or its descendants
-                if (IsDescendantOf(targetItem, sourceItem))
-                {
-                    await JS.AlertAsync("Cannot move an item into its own descendant");
-                    return;
-                }
+                var rootNode = RootNode ?? Pinetree;
+                var sourceItem = GetNodeById(rootNode, sourceGuid);
+                var targetItem = GetNodeById(rootNode, targetGuid);
 
-                bool success = false;
-
-                // Handle different drop positions using the PinetreeMover extension methods
-                switch (position)
+                if (sourceItem != null && targetItem != null)
                 {
-                    case "into":
-                        // Move as a child of the target (like right arrow button)
-                        success = sourceItem.MoveItemAsChildOf(targetItem);
-                        // Ensure the parent is expanded so the user can see the moved item
-                        if (success) targetItem.IsExpanded = true;
-                        break;
-                    case "before":
-                        // Properly handle drag and drop between children of the same parent
-                        success = sourceItem.MoveItemBefore(targetItem);
-                        break;
-                    case "after":
-                        // Properly handle drag and drop between children of the same parent
-                        success = sourceItem.MoveItemAfter(targetItem);
-                        break;
-                }
+                    // Prevent dropping on itself or its descendants
+                    if (IsDescendantOf(targetItem, sourceItem))
+                    {
+                        await JS.AlertAsync("Cannot move an item into its own descendant");
+                        return;
+                    }
 
-                if (success)
-                {
-                    await OnChildEvent.InvokeAsync(sourceItem.Guid);
-                    StateHasChanged();
+                    bool success = false;
+
+                    // Handle different drop positions using the PinetreeMover extension methods
+                    switch (position)
+                    {
+                        case "into":
+                            // Move as a child of the target (like right arrow button)
+                            success = sourceItem.MoveItemAsChildOf(targetItem);
+                            // Ensure the parent is expanded so the user can see the moved item
+                            if (success) targetItem.IsExpanded = true;
+                            break;
+                        case "before":
+                            // Properly handle drag and drop between children of the same parent
+                            success = sourceItem.MoveItemBefore(targetItem);
+                            break;
+                        case "after":
+                            // Properly handle drag and drop between children of the same parent
+                            success = sourceItem.MoveItemAfter(targetItem);
+                            break;
+                    }
+
+                    if (success)
+                    {
+                        await OnChildEvent.InvokeAsync(sourceItem.Guid);
+                        StateHasChanged();
+                    }
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error handling item drop: {ex.Message}");
         }
     }
 

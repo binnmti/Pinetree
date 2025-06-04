@@ -257,12 +257,11 @@
     [Inject]
     public required IJSRuntime JS { get; set; }
     [Inject]
-    public required HttpClient HttpClient { get; set; }
-
-    private MarkdownJsInterop _jsInterop = null!;
+    public required HttpClient HttpClient { get; set; }    private MarkdownJsInterop _jsInterop = null!;
     private ElementReference TextAreaRef;
     private ElementReference MarkdownContainer;
     private DotNetObjectReference<Markdown>? objRef;
+    private bool _isDisposed = false;
     private PinetreeView Current { get; set; } = PinetreeView.Nothing;
     private PinetreeView LastSavedState { get; set; } = PinetreeView.Nothing;
     private string Content { get; set; } = "";
@@ -306,44 +305,136 @@
             await JS.InvokeVoidAsync("initResizers");
         }
     }
-
+    
     public async ValueTask DisposeAsync()
     {
-        objRef?.Dispose();
-        registration?.Dispose();
-        _resetIconTimer?.Dispose();
-        if (_jsInterop != null)
+        if (_isDisposed) return; // Prevent multiple disposal
+        _isDisposed = true;
+
+        try
         {
-            await _jsInterop.ClearAllImagesFromIndexedDB();
-            await _jsInterop.DisposeAsync();
+            // Cleanup JavaScript event handlers first, before disposing objRef
+            if (objRef != null && _jsInterop != null)
+            {
+                try
+                {
+                    var module = await _jsInterop.GetModuleAsync();
+                    await module.InvokeVoidAsync("cleanupNavigationHandlers", objRef);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Error cleaning up navigation handlers: {ex.Message}");
+                }
+            }
+
+            // Dispose registration first
+            registration?.Dispose();
+            _resetIconTimer?.Dispose();
+            
+            // Clear JS resources before disposing objRef
+            if (_jsInterop != null)
+            {
+                try
+                {
+                    await _jsInterop.ClearAllImagesFromIndexedDB();
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Error clearing images from IndexedDB: {ex.Message}");
+                }
+                
+                try
+                {
+                    await _jsInterop.DisposeAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Error disposing JS interop: {ex.Message}");
+                }
+            }
+            
+            // Dispose objRef last
+            objRef?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error during DisposeAsync: {ex.Message}");
         }
     }
-
+    
     [JSInvokable]
     public void HandleMarkdownLinkClick(string idString)
     {
-        if (Guid.TryParse(idString, out var id))
+        try
         {
-            SetCurrent(id);
+            if (_isDisposed) return;
+            if (Guid.TryParse(idString, out var id))
+            {
+                SetCurrent(id);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error handling markdown link click: {ex.Message}");
         }
     }
 
     [JSInvokable]
     public bool HasPendingChanges()
     {
-        return LastSavedState != Pinetree;
+        try
+        {
+            if (_isDisposed) 
+            {
+                Console.WriteLine("HasPendingChanges called on disposed component, returning false");
+                return false;
+            }
+            
+            if (Pinetree == null || LastSavedState == null)
+            {
+                return false;
+            }
+            
+            return LastSavedState != Pinetree;
+        }
+        catch (ObjectDisposedException)
+        {
+            Console.WriteLine("ObjectDisposedException in HasPendingChanges, returning false");
+            return false; // Component is disposed, no pending changes
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error checking pending changes: {ex.Message}");
+            return false; // On error, assume no pending changes
+        }
     }
-
+    
     [JSInvokable]
     public async Task HandleUndoShortcut()
     {
-        await UndoAsync();
+        try
+        {
+            if (_isDisposed) return;
+            await UndoAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error handling undo shortcut: {ex.Message}");
+        }
     }
 
     [JSInvokable]
     public async Task HandleRedoShortcut()
     {
-        await RedoAsync();
+        try
+        {
+            if (_isDisposed) return;
+            await RedoAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error handling redo shortcut: {ex.Message}");
+        }
     }
 
     [JSInvokable]
@@ -371,20 +462,36 @@
 
         await JS.InvokeVoidAsync("initResizers");
     }
-
+    
     private async ValueTask OnLocationChanging(LocationChangingContext context)
     {
-        if (HasPendingChanges())
+        try
         {
-            var isInternalNavigation = context.TargetLocation.StartsWith(NavigationManager.BaseUri);
-            if (isInternalNavigation)
+            if (HasPendingChanges())
             {
-                var confirmed = await JS.ConfirmAsync("Your changes have not been saved. Are you sure you want to leave this page?");
-                if (!confirmed)
+                var isInternalNavigation = context.TargetLocation.StartsWith(NavigationManager.BaseUri);
+                if (isInternalNavigation)
                 {
-                    context.PreventNavigation();
+                    var confirmed = await JS.ConfirmAsync("Your changes have not been saved. Are you sure you want to leave this page?");
+                    if (!confirmed)
+                    {
+                        context.PreventNavigation();
+                    }
                 }
             }
+        }
+        catch (ObjectDisposedException)
+        {
+            // Component is already disposed, allow navigation
+        }
+        catch (JSDisconnectedException)
+        {
+            // JavaScript runtime is disconnected, allow navigation
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error in OnLocationChanging: {ex.Message}");
+            // Allow navigation on error to prevent infinite loops
         }
     }
 

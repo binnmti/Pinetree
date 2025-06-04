@@ -1,5 +1,4 @@
 # TODO
-- View Line Move
 - SEO/OGP
 - Paid Membership
   - 33User

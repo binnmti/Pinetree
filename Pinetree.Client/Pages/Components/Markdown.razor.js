@@ -179,13 +179,36 @@ function updateMarkdownCheckbox(textArea, checkbox, isChecked) {
 }
 function setupBeforeUnloadWarning(dotNetHelper) {
     let bypassBeforeUnload = false;
+    // Helper function to safely invoke C# methods
+    async function safeInvokeMethod(methodName, ...args) {
+        try {
+            // Check if dotNetHelper is disposed or invalid
+            if (!dotNetHelper || dotNetHelper._disposed) {
+                return false;
+            }
+            return await dotNetHelper.invokeMethodAsync(methodName, ...args);
+        }
+        catch (error) {
+            // Log different types of errors for debugging
+            if (error.message && error.message.includes('There is no tracked object with id')) {
+                console.warn('DotNetObjectReference already disposed, skipping method call');
+            }
+            else if (error.message && error.message.includes('disposed')) {
+                console.warn('Component disposed, skipping method call');
+            }
+            else {
+                console.error(`Error invoking ${methodName}:`, error);
+            }
+            return false;
+        }
+    }
     window.addEventListener('beforeunload', async function (e) {
         if (bypassBeforeUnload) {
             bypassBeforeUnload = false;
             return;
         }
         try {
-            const hasPendingChanges = await dotNetHelper.invokeMethodAsync('HasPendingChanges');
+            const hasPendingChanges = await safeInvokeMethod('HasPendingChanges');
             if (hasPendingChanges) {
                 e.preventDefault();
                 return undefined;
@@ -205,7 +228,7 @@ function setupBeforeUnloadWarning(dotNetHelper) {
             }
             if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
                 try {
-                    const hasPendingChanges = await dotNetHelper.invokeMethodAsync('HasPendingChanges');
+                    const hasPendingChanges = await safeInvokeMethod('HasPendingChanges');
                     if (hasPendingChanges) {
                         if (confirm('Your changes have not been saved. Are you sure you want to leave this page?')) {
                             bypassBeforeUnload = true;
@@ -218,6 +241,7 @@ function setupBeforeUnloadWarning(dotNetHelper) {
                 }
                 catch (error) {
                     console.error('Navigation guard error:', error);
+                    // Allow navigation if we can't check for pending changes
                 }
             }
         }
@@ -242,11 +266,15 @@ function setupBeforeUnloadWarning(dotNetHelper) {
 }
 // Add cleanup method
 export function cleanupNavigationHandlers(dotNetHelper) {
-    if (dotNetHelper._navigationCleanup) {
-        dotNetHelper._navigationCleanup();
-    }
-    if (dotNetHelper._navigationObserver) {
-        dotNetHelper._navigationObserver.disconnect();
+    if (dotNetHelper) {
+        // Mark the helper as disposed to prevent further calls
+        dotNetHelper._disposed = true;
+        if (dotNetHelper._navigationCleanup) {
+            dotNetHelper._navigationCleanup();
+        }
+        if (dotNetHelper._navigationObserver) {
+            dotNetHelper._navigationObserver.disconnect();
+        }
     }
 }
 export function setupKeyboardShortcuts(element, dotNetHelper) {
