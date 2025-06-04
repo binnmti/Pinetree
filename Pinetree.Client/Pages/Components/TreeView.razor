@@ -3,8 +3,6 @@
 @using Pinetree.Shared.Model
 @using Microsoft.JSInterop
 
-@implements IAsyncDisposable
-
 @if (IsRoot && !IsPublicView)
 {
     <div class="toolbar p-2 bg-light border-bottom d-flex justify-content-start align-items-center mb-2">
@@ -121,9 +119,6 @@
     public required IJSRuntime JS { get; set; }
     
     private ElementReference treeViewContainer;
-    private DotNetObjectReference<TreeView>? objRef;
-    private IJSObjectReference? jsModule;
-    private bool _isDisposed = false;
 
     protected override void OnInitialized()
     {
@@ -132,42 +127,12 @@
             RootNode = Pinetree;
         }
     }
-      protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && IsRoot && !IsPublicView)
-        {
-            objRef = DotNetObjectReference.Create(this);
-            // Note: Drag and drop functionality removed for now
-        }
-    }
-
-    async ValueTask IAsyncDisposable.DisposeAsync()
-    {
-        if (_isDisposed) return;
-        _isDisposed = true;
-
-        try
-        {
-            if (jsModule != null)
-            {
-                await jsModule.DisposeAsync();
-            }
-            
-            objRef?.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error during TreeView disposal: {ex.Message}");
-        }
-    }
 
     [JSInvokable]
     public async Task HandleItemDrop(string sourceId, string targetId, string position, string? targetParentId = null)
     {
         try
         {
-            if (_isDisposed) return;
-
             if (Guid.TryParse(sourceId, out var sourceGuid) && Guid.TryParse(targetId, out var targetGuid))
             {
                 var rootNode = RootNode ?? Pinetree;
