@@ -1,7 +1,8 @@
 ﻿@using Pinetree.Client.VModel
 @using Pinetree.Client.Services
-@using Pinetree.Client.Pages.Components;
+@using Pinetree.Client.Pages.Components
 @using Pinetree.Shared.Model
+@using System.Text
 
 @implements IAsyncDisposable
 
@@ -50,7 +51,7 @@
 
             <div class="resizer" id="resizer1"></div>
 
-            <div class="right-panels">
+            <div class="right-panels p-3">
                 <div class="common-header">
                     <div class="markdown-title d-flex align-items-center">
                         @if (IsPublicView)
@@ -145,6 +146,9 @@
                                     <button type="button" class="btn btn-sm btn-outline-dark" title="Insert Line" @onclick="InsertLine">
                                         <i class="bi bi-dash"></i>
                                     </button>
+                                    <button type="button" class="btn btn-sm btn-outline-success" title="Insert Emoji" @onclick="InsertEmoji">
+                                        <i class="bi bi-emoji-smile"></i>
+                                    </button>
                                 </div>
                                 <div class="btn-group ms-2" role="group" aria-label="View mode">
                                     <button type="button" class="btn btn-sm @(ViewMode == "split" ? "btn-primary" : "btn-outline-secondary")"
@@ -205,13 +209,18 @@
                             <div class="panel-footer">
                                 <div class="counter">-</div>
                             </div>
-                        </div>
+                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@if (_isEmojiPickerVisible)
+{
+    <EmojiPicker EmojiCategories="_allEmojis" OnSelect="OnEmojiSelected" />
+}
 
 @code {
     [Parameter]
@@ -259,6 +268,9 @@
     private bool IsSidebarOpen { get; set; } = true;
     private bool CanUndo => Current.CanUndo;
     private bool CanRedo => Current.CanRedo;
+    private bool _isEmojiPickerVisible = false;
+    private Dictionary<string, string[]> _allEmojis = new();
+
 
     private void ToggleSidebar()
     {
@@ -719,6 +731,38 @@
         catch (Exception ex)
         {
             Console.Error.WriteLine(ex.Message);
+        }
+    }
+    
+    private void InsertEmoji()
+    {
+        try
+        {
+            _allEmojis = EmojiData.GetAllEmojis();
+            _isEmojiPickerVisible = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error inserting emoji: {ex.Message}");
+        }
+    }
+
+    private async Task OnEmojiSelected(string emoji)
+    {
+        _isEmojiPickerVisible = false;
+        StateHasChanged();
+
+        if (!string.IsNullOrEmpty(emoji))
+        {
+            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, emoji);
+
+            int newPosition = selection.Start + emoji.Length;
+            await _jsInterop.SetCaretPositionAsync(TextAreaRef, newPosition, newPosition);
+
+            var content = await JS.GetTextAreaValueAsync();
+            UpdateContent(content);
         }
     }
 

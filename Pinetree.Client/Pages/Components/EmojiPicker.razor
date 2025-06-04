@@ -1,0 +1,389 @@
+@using Pinetree.Client.Services
+@using System.Threading.Tasks
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<div id="emoji-picker-backdrop" class="emoji-picker-backdrop">
+    <div id="emoji-picker-modal" class="emoji-picker-modal">
+        <div class="emoji-picker-header">
+            <h4 class="emoji-picker-title">
+                Select an Emoji
+            </h4>
+            <button @onclick="() => OnEmojiSelected(string.Empty)" 
+                    class="emoji-picker-close-btn">&times;</button>
+        </div>
+        <div class="emoji-picker-content">
+            <div class="emoji-picker-search-container">
+                <input type="text" placeholder="Search emojis... (try: smile, heart, food, etc.)" id="emoji-search" 
+                       class="emoji-picker-search"
+                       @oninput="HandleSearch" 
+                       @onfocus="e => HandleSearchFocus(true)"
+                       @onblur="e => HandleSearchFocus(false)" />
+            </div>
+            <div id="emoji-categories" class="emoji-picker-categories">
+                @if (!string.IsNullOrEmpty(SearchQuery) && !HasSearchResults())
+                {
+                    <div id="emoji-no-results" class="emoji-no-results">
+                        No emojis found for "@SearchQuery"
+                    </div>
+                }
+                @foreach (var category in GetCategoriesToDisplay())
+                {
+                    <div class="emoji-category @(ShouldDisplayCategory(category.Key) ? "" : "hidden")" data-category="@category.Key.ToLower()">
+                        @{
+                            var visibleEmojis = category.Value.Where(emoji => ShouldDisplayEmoji(emoji)).ToList();
+                            if (visibleEmojis.Count > 0 || string.IsNullOrEmpty(SearchQuery))
+                            {
+                                <h5 class="emoji-category-title">@category.Key</h5>
+                                <div class="emoji-grid">                                    @foreach (var emoji in category.Value)
+                                    {
+                                        <button @onclick="() => OnEmojiSelected(emoji)" 
+                                                class="emoji-picker-button @(ShouldDisplayEmoji(emoji) ? "" : "hidden")"
+                                                title="@emoji" data-emoji="@emoji">@emoji</button>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Dictionary<string, string[]> EmojiCategories { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<string> OnSelect { get; set; }
+    
+    private string SearchQuery { get; set; } = string.Empty;
+    private string _searchQuery = string.Empty; // 前回の検索クエリを保持
+    private Dictionary<string, bool> _searchResults = new();
+    private Dictionary<string, bool> _categoryVisibility = new();
+    private CancellationTokenSource _debounceTokenSource = new();
+    private Dictionary<string, string[]> _keywordsCache = new();
+    private IJSObjectReference? _emojiPickerModule;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load the TypeScript module
+        _emojiPickerModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import", "./Pages/Components/EmojiPicker.razor.js");
+        _ = PrefetchEmojiKeywords();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("focusEmojiSearch");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_emojiPickerModule is not null)
+        {
+            try
+            {
+                await _emojiPickerModule.DisposeAsync();
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+        }
+    }
+    
+    private async Task PrefetchEmojiKeywords()
+    {
+        try
+        {
+            // Get a sample of common emojis to prefetch
+            var commonEmojis = EmojiCategories
+                .SelectMany(c => c.Value)
+                .Take(50)  // Limit to a reasonable number
+                .ToList();
+                
+            // Prefetch in batches to avoid blocking the UI
+            const int batchSize = 10;
+            for (int i = 0; i < commonEmojis.Count; i += batchSize)
+            {
+                var batch = commonEmojis.Skip(i).Take(batchSize);
+                foreach (var emoji in batch)
+                {
+                    if (!_keywordsCache.ContainsKey(emoji))
+                    {
+                        try
+                        {
+                            var keywords = await JSRuntime.InvokeAsync<string[]>("getEmojiKeywords", emoji);
+                            _keywordsCache[emoji] = keywords;
+                        }
+                        catch
+                        {
+                            // Fallback if JS function call fails
+                            _keywordsCache[emoji] = new[] { emoji };
+                        }
+                    }
+                }
+                // Small delay between batches to keep UI responsive
+                await Task.Delay(10);
+            }
+        }
+        catch
+        {
+            // Ignore prefetch errors
+        }
+    }
+    
+    private async Task HandleSearch(ChangeEventArgs e)
+    {
+        string query = e.Value?.ToString() ?? string.Empty;
+        
+        // Don't update if the query hasn't changed
+        if (query == SearchQuery)
+            return;
+        
+        // 前回の検索クエリを保持
+        _searchQuery = SearchQuery;
+        SearchQuery = query;
+        
+        // Implement debounce to avoid excessive searches while typing
+        try
+        {
+            _debounceTokenSource.Cancel();
+            _debounceTokenSource = new CancellationTokenSource();
+            var token = _debounceTokenSource.Token;
+            
+            // Wait a short delay before processing search to avoid excessive updates
+            await Task.Delay(300, token); // 遅延を増やしてパフォーマンスを向上
+            
+            // Clear visibility cache when search query changes
+            _categoryVisibility.Clear();
+            
+            // 状態変更の通知をTSに委譲
+            if (!string.IsNullOrWhiteSpace(SearchQuery) && SearchQuery.Length > 0)
+            {
+                // Call the TypeScript filtering function
+                await JSRuntime.InvokeVoidAsync("filterEmojis", SearchQuery);
+            }
+            else
+            {
+                // 空の検索クエリの場合はすべて表示
+                _searchResults.Clear();
+                await JSRuntime.InvokeVoidAsync("filterEmojis", "");
+            }
+            
+            // UIの更新（最小限）
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (TaskCanceledException)
+        {
+            // Ignore cancellation - this happens when typing quickly
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error in HandleSearch: {ex.Message}");
+        }
+    }
+    
+    private async Task UpdateSearchResults()
+    {
+        if (string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            // 検索クエリが空の場合はすべて表示
+            _searchResults.Clear();
+            return;
+        }
+            
+        var searchTerm = SearchQuery.ToLowerInvariant().Trim();
+        
+        // バッチ処理を実装してUIのレスポンシブ性を向上
+        const int batchSize = 30;
+        var allEmojis = EmojiCategories.SelectMany(c => c.Value).ToList();
+        
+        for (int i = 0; i < allEmojis.Count; i += batchSize)
+        {
+            // UIスレッドがブロックされないように一時停止
+            if (i > 0 && i % (batchSize * 3) == 0)
+            {
+                await Task.Delay(1);
+            }
+            
+            var batch = allEmojis.Skip(i).Take(batchSize);
+            foreach (var emoji in batch)
+            {
+                if (!_keywordsCache.TryGetValue(emoji, out var keywords))
+                {
+                    try 
+                    {
+                        keywords = await JSRuntime.InvokeAsync<string[]>("getEmojiKeywords", emoji);
+                        _keywordsCache[emoji] = keywords;
+                    }
+                    catch
+                    {
+                        // Fallback if JS function call fails
+                        keywords = new[] { emoji };
+                    }
+                }
+                
+                bool matches = keywords.Any(k => k.ToLowerInvariant().Contains(searchTerm));
+                _searchResults[emoji] = matches;
+            }
+        }
+        
+        // 状態が変更されたことを通知
+        await InvokeAsync(StateHasChanged);
+    }
+    
+    private async Task HandleSearchFocus(bool isFocused)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("toggleEmojiSearchFocus", isFocused);
+        }
+        catch
+        {
+            // Fallback to direct DOM manipulation if JS function call fails
+            if (isFocused)
+            {
+                await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('emoji-search')?.classList.add('focused')");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('emoji-search')?.classList.remove('focused')");
+            }
+        }
+    }
+
+    private async Task OnEmojiSelected(string emoji)
+    {
+        await OnSelect.InvokeAsync(emoji);
+    }
+
+    private IEnumerable<KeyValuePair<string, string[]>> GetCategoriesToDisplay()
+    {
+        if (string.IsNullOrEmpty(SearchQuery))
+        {
+            return EmojiCategories;
+        }
+        
+        return EmojiCategories.Where(c => ShouldDisplayCategory(c.Key));
+    }
+
+    private bool ShouldDisplayCategory(string categoryName)
+    {
+        if (string.IsNullOrEmpty(SearchQuery))
+        {
+            return true;
+        }
+
+        // Check cache first
+        if (_categoryVisibility.TryGetValue(categoryName, out bool isVisible))
+        {
+            return isVisible;
+        }
+
+        if (EmojiCategories.TryGetValue(categoryName, out var emojis))
+        {
+            // Check if any emoji in this category matches the search
+            bool hasMatch = emojis.Any(emoji => ShouldDisplayEmoji(emoji));
+            _categoryVisibility[categoryName] = hasMatch;
+            return hasMatch;
+        }
+
+        return false;
+    }
+    
+    private bool ShouldDisplayEmoji(string emoji)
+    {
+        if (string.IsNullOrEmpty(SearchQuery))
+        {
+            return true;
+        }
+
+        // Check cache first - キャッシュ確認を最適化
+        if (_searchResults.TryGetValue(emoji, out bool isVisible))
+        {
+            return isVisible;
+        }
+
+        // If we don't have the result yet, check if we have keywords cached
+        if (_keywordsCache.TryGetValue(emoji, out var keywords))
+        {
+            var searchTerm = SearchQuery.ToLowerInvariant().Trim();
+            bool matches = keywords.Any(k => k.ToLowerInvariant().Contains(searchTerm));
+            _searchResults[emoji] = matches;
+            return matches;
+        }
+
+        // Use a non-blocking task to fetch keywords
+        _ = Task.Run(async () => await FetchKeywordsForEmoji(emoji));
+        
+        // Initially show the emoji (will be filtered later if needed)
+        return true;
+    }
+    
+    private async Task FetchKeywordsForEmoji(string emoji)
+    {
+        try
+        {
+            // キーワードのフェッチが進行中かどうかを追跡するフラグ
+            bool needsStateUpdate = false;
+            
+            if (!_keywordsCache.ContainsKey(emoji))
+            {
+                var keywords = await JSRuntime.InvokeAsync<string[]>("getEmojiKeywords", emoji);
+                _keywordsCache[emoji] = keywords;
+                needsStateUpdate = true;
+            }
+            
+            // 検索クエリが変更された場合は処理を中止
+            if (_searchQuery != SearchQuery)
+                return;
+                
+            var searchTerm = SearchQuery.ToLowerInvariant().Trim();
+            bool matches = _keywordsCache[emoji].Any(k => k.ToLowerInvariant().Contains(searchTerm));
+            
+            // 現在の表示状態と異なる場合または初めての場合のみ更新
+            if ((_searchResults.TryGetValue(emoji, out bool currentValue) && currentValue != matches) || 
+                !_searchResults.ContainsKey(emoji))
+            {
+                _searchResults[emoji] = matches;
+                needsStateUpdate = true;
+            }
+            
+            // 状態の更新が必要な場合のみ行う
+            if (needsStateUpdate)
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (Exception ex)
+        {
+            // エラーを記録
+            Console.Error.WriteLine($"Error fetching keywords for emoji {emoji}: {ex.Message}");
+            
+            // キャッシュにない場合は、エラーが発生しても一時的な結果を設定
+            if (!_searchResults.ContainsKey(emoji))
+            {
+                _searchResults[emoji] = emoji.Contains(SearchQuery.ToLowerInvariant());
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+    
+    private bool HasSearchResults()
+    {
+        if (string.IsNullOrEmpty(SearchQuery))
+        {
+            return true;
+        }
+        
+        return EmojiCategories.Any(c => 
+            c.Value.Any(emoji => 
+                _searchResults.TryGetValue(emoji, out bool isVisible) && isVisible));
+    }
+}

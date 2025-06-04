@@ -100,6 +100,7 @@ export function setupMarkdownClickListener(container, dotNetHelper) {
 export function setupAllEventListeners(container, textArea, dotNetHelper) {
     initializeIndexedDB();
     setupLinkInterceptor(container, dotNetHelper);
+    setupCheckboxEventListener(container, textArea);
     setupBeforeUnloadWarning(dotNetHelper);
     setupKeyboardShortcuts(textArea, dotNetHelper);
     enableContinuousList(textArea);
@@ -128,6 +129,53 @@ function setupLinkInterceptor(markdownContainer, dotNetHelper) {
             }
         }
     });
+}
+function setupCheckboxEventListener(markdownContainer, textArea) {
+    markdownContainer.addEventListener('change', (e) => {
+        const target = e.target;
+        if (target.tagName === 'INPUT' && target.type === 'checkbox') {
+            const checkbox = target;
+            const isChecked = checkbox.checked;
+            updateMarkdownCheckbox(textArea, checkbox, isChecked);
+        }
+    });
+}
+function updateMarkdownCheckbox(textArea, checkbox, isChecked) {
+    const markdownText = textArea.value;
+    const lines = markdownText.split('\n');
+    // Find the checkbox's position in the rendered HTML to match with markdown line
+    const listItem = checkbox.closest('li');
+    if (!listItem)
+        return;
+    // Get all checkboxes in the preview container
+    const allCheckboxes = listItem.closest('.markdown-body')?.querySelectorAll('input[type="checkbox"]') || [];
+    const checkboxIndex = Array.from(allCheckboxes).indexOf(checkbox);
+    // Find the corresponding markdown checkbox line
+    let currentCheckboxIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const checkboxMatch = line.match(/^(\s*)-\s+\[[ x]?\]/);
+        if (checkboxMatch) {
+            currentCheckboxIndex++;
+            if (currentCheckboxIndex === checkboxIndex) {
+                // Update the markdown line
+                const newState = isChecked ? 'x' : ' ';
+                lines[i] = line.replace(/^(\s*-\s+\[)[ x](\])/, `$1${newState}$2`);
+                // Update the textarea
+                const newMarkdownText = lines.join('\n');
+                textArea.value = newMarkdownText;
+                // Trigger input event to notify Blazor of the change
+                const inputEvent = new InputEvent('input', {
+                    bubbles: true,
+                    cancelable: true,
+                    inputType: 'insertText',
+                    data: newMarkdownText
+                });
+                textArea.dispatchEvent(inputEvent);
+                break;
+            }
+        }
+    }
 }
 function setupBeforeUnloadWarning(dotNetHelper) {
     let bypassBeforeUnload = false;
