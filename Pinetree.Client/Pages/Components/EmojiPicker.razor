@@ -73,12 +73,21 @@
             "import", "./Pages/Components/EmojiPicker.razor.js");
         _ = PrefetchEmojiKeywords();
     }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("focusEmojiSearch");
+            try
+            {
+                // Add a small delay to ensure DOM is fully rendered
+                await Task.Delay(100);
+                await JSRuntime.InvokeVoidAsync("focusEmojiSearch");
+            }
+            catch (Exception ex)
+            {
+                // Log the error but don't throw to avoid breaking the component
+                Console.WriteLine($"Failed to focus emoji search: {ex.Message}");
+            }
         }
     }
 
