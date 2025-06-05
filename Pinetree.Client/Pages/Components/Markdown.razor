@@ -259,7 +259,8 @@
     [Inject]
     public required IJSRuntime JS { get; set; }
     [Inject]
-    public required HttpClient HttpClient { get; set; }    private MarkdownJsInterop _jsInterop = null!;
+    public required HttpClient HttpClient { get; set; }    
+    private MarkdownJsInterop _jsInterop = null!;
     private ElementReference TextAreaRef;
     private ElementReference MarkdownContainer;
     private DotNetObjectReference<Markdown>? objRef;
@@ -995,7 +996,8 @@
             var result = string.Join('\n', unindentedLines);
             
             await _jsInterop.ReplaceSelectionAsync(TextAreaRef, result);
-            
+            UpdateContent(result);
+
             // Maintain selection but adjust for removed indentation
             int newEnd = Math.Max(selection.Start, selection.End - totalRemovedChars);
             await _jsInterop.SetCaretPositionAsync(TextAreaRef, selection.Start, newEnd);
