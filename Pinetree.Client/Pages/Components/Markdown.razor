@@ -759,20 +759,31 @@
             Console.Error.WriteLine($"Error creating child file: {ex.Message}");
         }
     }
-
+    
     private async Task FormatText(string prefix, string suffix)
     {
         var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
         if (selection.Text.Length > 0)
         {
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{selection.Text}{suffix}");
+            // Trim whitespace from the selected text and preserve it outside the formatting
+            var trimmedText = selection.Text.Trim();
+            var leadingWhitespace = selection.Text.Substring(0, selection.Text.Length - selection.Text.TrimStart().Length);
+            var trailingWhitespace = selection.Text.Substring(selection.Text.TrimEnd().Length);
+            
+            var formattedText = $"{leadingWhitespace}{prefix}{trimmedText}{suffix}{trailingWhitespace}";
+            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, formattedText);
+            
+            // Position cursor after the prefix, inside the formatting
+            int newStart = selection.Start + leadingWhitespace.Length + prefix.Length;
+            int newEnd = newStart + trimmedText.Length;
+            await _jsInterop.SetCaretPositionAsync(TextAreaRef, newStart, newEnd);
         }
         else
         {
             await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{suffix}");
+            int start = selection.Start;
+            await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + prefix.Length, start + prefix.Length);
         }
-        int start = selection.Start;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + prefix.Length, start + prefix.Length);
         var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
     }
