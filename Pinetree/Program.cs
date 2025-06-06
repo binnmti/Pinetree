@@ -29,6 +29,7 @@ builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<BlobStorageService>();
+builder.Services.AddScoped<AIEmojiService>();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthorization();
