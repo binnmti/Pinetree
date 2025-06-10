@@ -1,0 +1,96 @@
+﻿.title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: grab;
+}
+
+.dragging {
+    opacity: 0.5;
+    border: 1px dashed #999;
+}
+
+.drag-over {
+    position: relative;
+    z-index: 1;
+}
+
+.drag-over::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(0, 123, 255, 0.1);
+    border: 2px dashed #007bff;
+    z-index: -1;
+}
+
+.drag-over.drag-into::before {
+    background-color: rgba(40, 167, 69, 0.2); /* Lighter green background */
+    border: 2px solid #28a745; /* Simple solid border */
+    z-index: -1;
+}
+
+/* Simple arrow display */
+.drag-over.drag-into::after {
+    content: '↳'; /* Simple arrow */
+    position: absolute;
+    right: 20px; 
+    top: 50%;
+    transform: translateY(-50%);
+    color: #28a745;
+    font-size: 1.2rem;
+    opacity: 0.8;
+    z-index: 10;
+}
+
+.drag-over.drag-before::before {
+    height: 3px;
+    bottom: auto;
+    background-color: #007bff;
+    border: none;
+}
+
+.drag-over.drag-after::before {
+    height: 3px;
+    top: auto;
+    background-color: #007bff;
+    border: none;
+}
+
+/* More concise arrow icons */
+.drag-over.drag-before::after {
+    content: '\F129'; /* Bootstrap Icon up arrow */
+    font-family: bootstrap-icons !important;
+    position: absolute;
+    left: -15px;
+    top: -5px;
+    color: #007bff;
+    font-size: 0.9rem;
+    z-index: 10;
+}
+
+.drag-over.drag-after::after {
+    content: '\F12C'; /* Bootstrap Icon down arrow */
+    font-family: bootstrap-icons !important;
+    position: absolute;
+    left: -15px;
+    bottom: -5px;
+    color: #007bff;
+    font-size: 0.9rem;
+    z-index: 10;
+}
+
+.btn-outline-dark {
+    background-color: #ffffff;
+    color: #343a40;
+    border-color: #343a40;
+}
+
+.btn-outline-dark:disabled {
+    background-color: #f8f9fa;
+    color: #adb5bd;
+    border-color: #ced4da;
+}
