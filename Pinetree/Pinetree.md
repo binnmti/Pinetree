@@ -17,4 +17,7 @@
 - Browther Back
 - SEO/OGP
 - mail@pinetree.site
+
+# Bug
+- Automatically logged out on deployment?
 	

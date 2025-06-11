@@ -2,7 +2,7 @@ name: staging
 on:
   push:
     branches:
-    - main
+    - X
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
@@ -108,8 +108,10 @@ jobs:
         dotnet restore
         dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
 
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps
+    - name: Install Playwright dependencies
+      run: |
+        npm install
+        npx playwright install
 
     - name: Run GUI Tests
       run: |
