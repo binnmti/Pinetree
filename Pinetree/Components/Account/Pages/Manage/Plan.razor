@@ -16,68 +16,105 @@
 <StatusMessage Message="@message" />
 <div class="row">
     <div class="col-xl-6">
+        <!-- Free Offer Form -->
+        @if (IsFree && !HasSpecialAccess)
+        {
+            <form @onsubmit="ClaimFreeOffer" @formname="free-offer" method="post">
+                <AntiforgeryToken />
+                <div class="form-floating mb-3 input-group">
+                    <input type="text" value="@role" id="plan" class="form-control" placeholder="Enter your email" disabled />
+                    <label for="plan" class="form-label">Plan</label>
+                </div>
+                
+                <div class="alert alert-success mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-gift-fill me-2"></i>
+                        <span><strong>Limited Time Offer:</strong> Get 1 year of Professional Plan absolutely FREE!</span>
+                    </div>
+                </div>
+                <button type="submit" class="w-100 btn btn-lg btn-success mb-3">
+                    <i class="bi bi-lightning-fill"></i> Claim Your 1 Year FREE Access
+                </button>
+            </form>
+            
+            <div class="text-center mb-3">
+                <small class="text-muted">— or choose your support amount —</small>
+            </div>
+        }
+        
+        <!-- Main Form -->
         <form @onsubmit="OnSubmit" @formname="send-verification" id="send-verification-form" method="post">
             <AntiforgeryToken />
+            @if (!IsFree || HasSpecialAccess)
+            {
+                <div class="form-floating mb-3 input-group">
+                    <input type="text" value="@role" id="plan-main" class="form-control" placeholder="Enter your email" disabled />
+                    <label for="plan-main" class="form-label">Plan</label>
+                </div>
+            }
             
-            <div class="form-floating mb-3 input-group">
-                <input type="text" value="@role" id="plan" class="form-control" placeholder="Enter your email" disabled />
-                <label for="plan" class="form-label">Plan</label>
-            </div>            
             @if (IsFree)
             {
                 @if (HasSpecialAccess)
                 {
-                    <div class="alert alert-success mb-3">
+                    <div class="alert alert-info mb-3">
                         <div class="d-flex align-items-center">
-                            <i class="bi bi-gift-fill me-2"></i>
-                            <span>
-                                @GetSpecialAccessMessage(SpecialAccessType!)
-                            </span>
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <span>@GetSpecialAccessMessage(SpecialAccessType!)</span>
                         </div>
                     </div>
-                    
-                    <button type="submit" class="w-100 btn btn-lg btn-success">
-                        Activate Professional Plan - Free Access
+                    <button type="submit" class="w-100 btn btn-lg btn-primary mb-3">
+                        @(IsReturningCustomer ? "Reactivate Pro Plan" : "Activate Your Special Access")
                     </button>
                 }
                 else
                 {
-                    <div class="alert alert-info mb-3">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-info-circle-fill me-2"></i>
-                            <span>Our Free Plan includes basic hierarchical Markdown editing with some limitations. Professional Plan removes these restrictions and starts at $1/month - pay what you can to support our development!</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Custom Amount Input -->
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Choose Your Monthly Support Amount</label>
-                        <div class="input-group mb-3">
+                    <!-- Custom Amount Input Section -->
+                    <div class="mb-3">
+                        <label for="customAmount" class="form-label">Support Amount (USD/month)</label>
+                        <div class="input-group">
                             <span class="input-group-text">$</span>
-                            <input type="number" name="customAmount" 
-                                   class="form-control" placeholder="Enter amount (minimum $1)" 
-                                   min="1" max="1000" step="1" value="1" />
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="customAmount" 
+                                   name="customAmount"
+                                   value="@customAmount"
+                                   @oninput="OnAmountChanged"
+                                   min="1" 
+                                   step="1" 
+                                   placeholder="1.00" 
+                                   required />
                             <span class="input-group-text">/month</span>
                         </div>
-                        <small class="text-muted">Professional Plan features: unlimited levels, files, and characters, plus 999MB image storage.</small>
+                        <small class="form-text text-muted">
+                            Minimum: $1/month. Your support helps us improve Pinetree!
+                        </small>
+                        <div class="alert alert-warning mt-2 small">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <strong>Important:</strong> Once you subscribe, you cannot change the amount directly in Stripe. 
+                            Please choose your amount carefully.
+                            (If you need to adjust your support amount, please contact us through the <a href="/feedback" class="alert-link">Feedback</a> page.)
+                        </div>
                     </div>
-                   
+
                     <button type="submit" class="w-100 btn btn-lg btn-primary">
-                        @(IsReturningCustomer ? "Reactivate Professional Plan" : "Upgrade to Professional Plan") - Pay What You Can
+                        @(IsReturningCustomer ? "Reactivate Pro Plan" : "Upgrade to Pro Plan") - $@customAmount/month
                     </button>
                 }
             }
             else
             {
-                <button type="submit" class="w-100 btn btn-lg btn-primary">Manage Billing & Invoices (In Testing)</button>
-                <div class="text-center mt-2">
-                    <small class="text-muted">
-                        Opens Stripe secure billing portal in a new window
-                    </small>
+                <div>
+                    <button type="submit" class="w-100 btn btn-lg btn-primary">Manage Billing & Invoices</button>
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            Opens Stripe secure billing portal in a new window
+                        </small>
+                    </div>
                 </div>
             }
         </form>
-     </div>
+    </div>
 </div>
 
 @code {
@@ -89,17 +126,20 @@
     public required UserManager<ApplicationUser> UserManager { get; set; }
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
+    
     private string message = "";
     private string? role;
     private bool IsFree;
     private bool IsReturningCustomer;
     private bool HasSpecialAccess;
     private string? SpecialAccessType;
+    private decimal customAmount = 1;
     
     protected override async Task OnInitializedAsync()
     {
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        
         if (query.TryGetValue("payment", out var paymentStatus))
         {            
             if (paymentStatus == "success")
@@ -132,6 +172,20 @@
         HasSpecialAccess = !string.IsNullOrEmpty(SpecialAccessType) && IsFree;
     }
     
+    private void OnAmountChanged(ChangeEventArgs e)
+    {
+        if (decimal.TryParse(e.Value?.ToString(), out var amount) && amount >= 1)
+        {
+            customAmount = amount;
+        }
+    }
+    
+    private async Task ClaimFreeOffer()
+    {
+        var url = await PaymentService.CreateCheckoutSessionAsync();
+        NavigationManager.NavigateTo(url);
+    }
+    
     private async Task OnSubmit()
     {
         if (HasSpecialAccess && IsFree)
@@ -142,7 +196,7 @@
         }
 
         // Get the custom amount from the form data
-        decimal amount = 1; // Default fallback
+        decimal amount = customAmount; // Use the bound value
         
         if (HttpContext.Request.HasFormContentType)
         {
@@ -174,15 +228,13 @@
 
         NavigationManager.NavigateTo(url);
     }
-
+    
     private string GetSpecialAccessMessage(string accessType)
     {
         return accessType switch
         {
             "feedback_free" => "Thank you for your feedback! You've been granted free access to the Professional Plan.",
-            "lifetime_free" => "You have lifetime free access to the Professional Plan!",
-            "beta_tester" => "As a beta tester, you have free access to the Professional Plan.",
-            _ => "You have special access to the Professional Plan!"
+            _ => "You have special access to the Professional Plan."
         };
     }
 
@@ -190,10 +242,8 @@
     {
         return accessType switch
         {
-            "feedback_free" => "We truly appreciate your valuable feedback.",
-            "lifetime_free" => "Enjoy your lifetime access!",
-            "beta_tester" => "Thank you for helping us improve the product.",
-            _ => "Thank you for being part of our community!"
+            "feedback_free" => "Thank you for being an early supporter!",
+            _ => "Welcome to Professional Plan!"
         };
     }
 }
