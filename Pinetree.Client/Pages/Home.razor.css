@@ -43,19 +43,6 @@
     aspect-ratio: 16 / 9;
 }
 
-.video-wrapper {
-    width: 100%;
-    max-width: 960px;
-    aspect-ratio: 16 / 9;
-    margin: 0 auto;
-}
-
-.video-wrapper video {
-    width: 960px;
-    height: 576px;
-    object-fit: contain;
-}
-
 /* Enhanced hierarchical emphasis section styles */
 .hierarchical-emphasis {
     max-width: 800px;
@@ -273,15 +260,21 @@
     background: #717171;
 }
 
-
 .video-wrapper {
     width: 100%;
     max-width: 960px;
     margin: 0 auto;
     position: relative;
-    padding-bottom: 56.25%; /* 16:9のアスペクト比 */
+    padding-bottom: 56.25%; /* 16:9 */
     height: 0;
     overflow: hidden;
+}
+
+
+.video-wrapper video {
+    width: 960px;
+    height: 576px;
+    object-fit: contain;
 }
 
 .video-wrapper iframe {

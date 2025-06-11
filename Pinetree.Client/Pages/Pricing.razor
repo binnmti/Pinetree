@@ -77,15 +77,20 @@
             <div class="card mb-4 shadow-sm h-100">
                 <div class="card-header">
                     <h2 class="my-0 font-weight-normal">Enterprise Plan</h2>
-                </div>
-                <div class="card-body d-flex flex-column">
+                </div>                <div class="card-body d-flex flex-column">
+                    <p class="mt-3">
+                        For organizations requiring custom solutions, advanced integrations, or specialized support.
+                        Currently, we are focusing on perfecting our core features for individual and small team use.
+                    </p>
                     <h3 class="card-title pricing-card-title">Custom Pricing</h3>
                     <ul class="list-unstyled mt-3 mb-4">
-                        <li>No current necessity</li>
-                        <li>If interested, please send us an email</li>
+                        <li>Tailored solutions for your organization</li>
+                        <li>Priority support and consultation</li>
+                        <li>Custom integrations and features</li>
+                        <li>Dedicated account management</li>
                     </ul>
                     <div class="mt-auto">
-                        <button class="btn btn-lg btn-block btn-outline-secondary" @onclick="NavigateToEmail">Contact Us</button>
+                        <a href="/feedback" class="btn btn-lg btn-block btn-outline-secondary">Contact Us via Feedback</a>
                     </div>
                 </div>
             </div>
@@ -97,13 +102,4 @@
 {
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
-    [Inject]
-    public required IConfiguration Configuration { get; set; }
-
-    private void NavigateToEmail()
-    {
-        var email = Configuration.GetConnectionString("SupportEmail");
-        var mailto = $"mailto:{email}";
-        NavigationManager.NavigateTo(mailto, forceLoad: true);
-    }
 }
