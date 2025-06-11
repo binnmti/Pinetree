@@ -1,11 +1,10 @@
 # TODO
-- We recommend that those who actually use the game press save as frequently as possible.
 - Paid Membership
-  - 33User
+  - 99User
   - stripe
 	- A system where you can press the save button, log in from the popup, and return
 
-- - Layout CSS 100% Check
+- Layout CSS 100% Check
   - Smartphone Layout
 - Toolbar Refactor
 - Move Controll Folder
@@ -15,7 +14,6 @@
 - GuruGuru
 - monaco-editor
 - Multilingualization, or rather Japaneseization
-- Output
 - Browther Back
 - SEO/OGP
 - mail@pinetree.site
