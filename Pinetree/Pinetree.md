@@ -1,4 +1,5 @@
 # TODO
+- We recommend that those who actually use the game press save as frequently as possible.
 - Paid Membership
   - 33User
   - stripe
@@ -17,3 +18,5 @@
 - Output
 - Browther Back
 - SEO/OGP
+- mail@pinetree.site
+	
