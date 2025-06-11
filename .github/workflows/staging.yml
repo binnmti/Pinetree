@@ -109,10 +109,11 @@ jobs:
         dotnet restore
         dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
 
-    - name: Install Playwright dependencies
+    - name: Install Playwright
       run: |
-        npx playwright install --with-deps
-        pwsh bin/Debug/netX/playwright.ps1 install
+        cd Pinetree.UITests
+        dotnet tool install --global Microsoft.Playwright.CLI
+        playwright install --with-deps
 
     - name: Run GUI Tests
       run: |
