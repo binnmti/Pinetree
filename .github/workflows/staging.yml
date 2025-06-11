@@ -2,7 +2,8 @@ name: staging
 on:
   push:
     branches:
-    - X
+    - X 
+    #- staging/*
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
@@ -110,8 +111,8 @@ jobs:
 
     - name: Install Playwright dependencies
       run: |
-        npm install
-        npx playwright install
+        npx playwright install --with-deps
+        pwsh bin/Debug/netX/playwright.ps1 install
 
     - name: Run GUI Tests
       run: |

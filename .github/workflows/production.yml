@@ -1,8 +1,8 @@
-name: production
+name: ci/cd
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+    - main
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
