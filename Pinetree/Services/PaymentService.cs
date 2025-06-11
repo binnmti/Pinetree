@@ -84,5 +84,64 @@ public class PaymentService
         var service = new Stripe.BillingPortal.SessionService();
         var session = await service.CreateAsync(options);
         return session.Url;
+    }        
+    
+    public async Task<string> CreateCustomAmountCheckoutSessionAsync(decimal amount)
+    {
+        var httpContext = HttpContextAccessor.HttpContext!;
+        var user = httpContext.User;
+        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated。");
+        }
+
+        var priceService = new PriceService();
+        var unitAmountInCents = (long)(amount * 100);
+        
+        var price = await priceService.CreateAsync(new PriceCreateOptions
+        {
+            Currency = "usd",
+            UnitAmount = unitAmountInCents, // Convert to cents
+            Recurring = new PriceRecurringOptions
+            {
+                Interval = "month"
+            },
+            ProductData = new PriceProductDataOptions
+            {
+                Name = "Professional Plan - Custom Amount"
+            }
+        });
+
+        var requestScheme = httpContext.Request.Scheme;
+        var requestHost = httpContext.Request.Host.Value;
+        var successUrl = $"{requestScheme}://{requestHost}/Account/Manage/Plan?payment=success&session_id={{CHECKOUT_SESSION_ID}}";
+        var cancelUrl = $"{requestScheme}://{requestHost}/Account/Manage/Plan?payment=cancel&session_id={{CHECKOUT_SESSION_ID}}";
+        
+        var options = new SessionCreateOptions
+        {
+            PaymentMethodTypes = ["card"],
+            LineItems =
+            [
+                new SessionLineItemOptions
+                {
+                    Price = price.Id,
+                    Quantity = 1,
+                },
+            ],
+            Mode = "subscription",
+            SuccessUrl = successUrl,
+            CancelUrl = cancelUrl,
+            Metadata = new Dictionary<string, string>
+            {
+                { "UserId", userId },
+                { "CustomAmount", amount.ToString() }
+            }
+        };
+        
+        var service = new SessionService();
+        var session = await service.CreateAsync(options);
+        
+        return session.Url;
     }
 }

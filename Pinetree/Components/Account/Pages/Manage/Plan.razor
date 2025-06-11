@@ -1,9 +1,10 @@
-﻿@page "/Account/Manage/Plan"
+@page "/Account/Manage/Plan"
 @using System.Diagnostics
 @using Microsoft.AspNetCore.Identity
 @using Pinetree.Data
 @using Pinetree.Services
 @using Pinetree.Shared
+@using System.ComponentModel.DataAnnotations
 
 @inject IdentityUserAccessor UserAccessor
 @inject SignInManager<ApplicationUser> SignInManager
@@ -17,6 +18,7 @@
     <div class="col-xl-6">
         <form @onsubmit="OnSubmit" @formname="send-verification" id="send-verification-form" method="post">
             <AntiforgeryToken />
+            
             <div class="form-floating mb-3 input-group">
                 <input type="text" value="@role" id="plan" class="form-control" placeholder="Enter your email" disabled />
                 <label for="plan" class="form-label">Plan</label>
@@ -26,26 +28,38 @@
                 <div class="alert alert-info mb-3">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-info-circle-fill me-2"></i>
-                        <span>Currently in beta and the Professional Plan is not available yet. If you'd like to try it, we're offering free 1-year coupons to 99 users. Please let us know through the <a href="/feedback">Feedback</a> page.</span>
+                        <span>Our Free Plan includes basic hierarchical Markdown editing with some limitations. Professional Plan removes these restrictions and starts at $1/month - pay what you can to support our development!</span>
                     </div>
                 </div>
-                <button type="button" class="w-100 btn btn-lg btn-primary" disabled title="Currently in beta - not available. Please use the Feedback page to request a free coupon.">
-                    @(IsReturningCustomer ? "Reactivate Pro Plan" : "Update Pro Plan") (In Testing)
+                
+                <!-- Custom Amount Input -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Choose Your Monthly Support Amount</label>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">$</span>
+                        <input type="number" name="customAmount" 
+                               class="form-control" placeholder="Enter amount (minimum $1)" 
+                               min="1" max="1000" step="1" value="1" />
+                        <span class="input-group-text">/month</span>
+                    </div>
+                    <small class="text-muted">Professional Plan features: unlimited levels, files, and characters, plus 999MB image storage.</small>
+                </div>
+               
+                <button type="submit" class="w-100 btn btn-lg btn-primary">
+                    @(IsReturningCustomer ? "Reactivate Professional Plan" : "Upgrade to Professional Plan") - Pay What You Can
                 </button>
             }
             else
             {
-                <div>
-                    <button type="submit" class="w-100 btn btn-lg btn-primary">Manage Billing & Invoices (In Testing)</button>
-                    <div class="text-center mt-2">
-                        <small class="text-muted">
-                            Opens Stripe secure billing portal in a new window
-                        </small>
-                    </div>
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Manage Billing & Invoices (In Testing)</button>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        Opens Stripe secure billing portal in a new window
+                    </small>
                 </div>
             }
         </form>
-    </div>
+     </div>
 </div>
 
 @code {
@@ -57,24 +71,26 @@
     public required UserManager<ApplicationUser> UserManager { get; set; }
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
+    [Inject]
+    public required ILogger<Plan> Logger { get; set; }
 
     private string message = "";
     private string? role;
     private bool IsFree;
     private bool IsReturningCustomer;
+    
     protected override async Task OnInitializedAsync()
     {
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
         if (query.TryGetValue("payment", out var paymentStatus))
-        {
-            if (paymentStatus == "success")
+        {            if (paymentStatus == "success")
             {
-                message = "Your payment was successful. We appreciate your professional.";
+                message = "Your payment was successful. Thank you for your support!";
             }
             else if (paymentStatus == "cancel")
             {
-                message = "Error: There was an error processing your payment. Please try again later.";
+                message = "Payment was cancelled. You can try again anytime.";
             }
         }
 
@@ -85,14 +101,22 @@
         IsFree = role == null ? true : Roles.IsFree(role);
         IsReturningCustomer = IsFree && !string.IsNullOrEmpty(currentUser.StripeCustomerId);
     }
-
-    private void RefreshPage()
-    {
-        NavigationManager.NavigateTo("/Account/Manage/Plan", forceLoad: true);
-    }
-
+    
     private async Task OnSubmit()
     {
+        // Get the custom amount from the form data
+        decimal amount = 1; // Default fallback
+        
+        if (HttpContext.Request.HasFormContentType)
+        {
+            var form = await HttpContext.Request.ReadFormAsync();
+            if (form.TryGetValue("customAmount", out var amountValue) && 
+                decimal.TryParse(amountValue, out var parsedAmount))
+            {
+                amount = parsedAmount;
+            }
+        }
+
         string url;
 
         if (IsFree)
@@ -103,7 +127,7 @@
             }
             else
             {
-                url = await PaymentService.CreateCheckoutSessionAsync();
+                url = await PaymentService.CreateCustomAmountCheckoutSessionAsync(amount);
             }
         }
         else
