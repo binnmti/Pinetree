@@ -8,6 +8,5 @@ public class ApplicationUser : IdentityUser
     public string StripeCustomerId { get; set; } = "";
     public string StripeSubscriptionId { get; set; } = "";
     public string SubscriptionStatus { get; set; } = "";
-    public bool HasFreeProfessionalAccess { get; set; } = false; // For beta users with free access
-    public DateTime? FreeProfessionalExpiryDate { get; set; } // Optional: set expiry date
+    public string? SpecialAccessType { get; set; } // null, "feedback_free", "lifetime_free", "beta_tester", etc.
 }

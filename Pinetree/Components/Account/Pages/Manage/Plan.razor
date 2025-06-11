@@ -22,32 +22,50 @@
             <div class="form-floating mb-3 input-group">
                 <input type="text" value="@role" id="plan" class="form-control" placeholder="Enter your email" disabled />
                 <label for="plan" class="form-label">Plan</label>
-            </div>
+            </div>            
             @if (IsFree)
             {
-                <div class="alert alert-info mb-3">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-info-circle-fill me-2"></i>
-                        <span>Our Free Plan includes basic hierarchical Markdown editing with some limitations. Professional Plan removes these restrictions and starts at $1/month - pay what you can to support our development!</span>
+                @if (HasSpecialAccess)
+                {
+                    <div class="alert alert-success mb-3">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-gift-fill me-2"></i>
+                            <span>
+                                @GetSpecialAccessMessage(SpecialAccessType!)
+                            </span>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- Custom Amount Input -->
-                <div class="mb-4">
-                    <label class="form-label fw-bold">Choose Your Monthly Support Amount</label>
-                    <div class="input-group mb-3">
-                        <span class="input-group-text">$</span>
-                        <input type="number" name="customAmount" 
-                               class="form-control" placeholder="Enter amount (minimum $1)" 
-                               min="1" max="1000" step="1" value="1" />
-                        <span class="input-group-text">/month</span>
+                    
+                    <button type="submit" class="w-100 btn btn-lg btn-success">
+                        Activate Professional Plan - Free Access
+                    </button>
+                }
+                else
+                {
+                    <div class="alert alert-info mb-3">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <span>Our Free Plan includes basic hierarchical Markdown editing with some limitations. Professional Plan removes these restrictions and starts at $1/month - pay what you can to support our development!</span>
+                        </div>
                     </div>
-                    <small class="text-muted">Professional Plan features: unlimited levels, files, and characters, plus 999MB image storage.</small>
-                </div>
-               
-                <button type="submit" class="w-100 btn btn-lg btn-primary">
-                    @(IsReturningCustomer ? "Reactivate Professional Plan" : "Upgrade to Professional Plan") - Pay What You Can
-                </button>
+                    
+                    <!-- Custom Amount Input -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Choose Your Monthly Support Amount</label>
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">$</span>
+                            <input type="number" name="customAmount" 
+                                   class="form-control" placeholder="Enter amount (minimum $1)" 
+                                   min="1" max="1000" step="1" value="1" />
+                            <span class="input-group-text">/month</span>
+                        </div>
+                        <small class="text-muted">Professional Plan features: unlimited levels, files, and characters, plus 999MB image storage.</small>
+                    </div>
+                   
+                    <button type="submit" class="w-100 btn btn-lg btn-primary">
+                        @(IsReturningCustomer ? "Reactivate Professional Plan" : "Upgrade to Professional Plan") - Pay What You Can
+                    </button>
+                }
             }
             else
             {
@@ -71,26 +89,35 @@
     public required UserManager<ApplicationUser> UserManager { get; set; }
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
-    [Inject]
-    public required ILogger<Plan> Logger { get; set; }
-
     private string message = "";
     private string? role;
     private bool IsFree;
     private bool IsReturningCustomer;
+    private bool HasSpecialAccess;
+    private string? SpecialAccessType;
     
     protected override async Task OnInitializedAsync()
     {
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
         if (query.TryGetValue("payment", out var paymentStatus))
-        {            if (paymentStatus == "success")
+        {            
+            if (paymentStatus == "success")
             {
                 message = "Your payment was successful. Thank you for your support!";
             }
             else if (paymentStatus == "cancel")
             {
                 message = "Payment was cancelled. You can try again anytime.";
+            }
+        }
+        
+        if (query.TryGetValue("upgrade", out var upgradeStatus))
+        {
+            if (upgradeStatus == "success")
+            {
+                query.TryGetValue("type", out var accessType);
+                message = $"Your Professional Plan has been activated successfully! {GetSpecialAccessThankYouMessage(accessType)}";
             }
         }
 
@@ -100,10 +127,20 @@
         role = roles.FirstOrDefault() ?? "Free";
         IsFree = role == null ? true : Roles.IsFree(role);
         IsReturningCustomer = IsFree && !string.IsNullOrEmpty(currentUser.StripeCustomerId);
+        
+        SpecialAccessType = currentUser.SpecialAccessType;
+        HasSpecialAccess = !string.IsNullOrEmpty(SpecialAccessType) && IsFree;
     }
     
     private async Task OnSubmit()
     {
+        if (HasSpecialAccess && IsFree)
+        {
+            var specialUrl = await PaymentService.CreateCheckoutSessionAsync();
+            NavigationManager.NavigateTo(specialUrl);
+            return;
+        }
+
         // Get the custom amount from the form data
         decimal amount = 1; // Default fallback
         
@@ -136,5 +173,27 @@
         }
 
         NavigationManager.NavigateTo(url);
+    }
+
+    private string GetSpecialAccessMessage(string accessType)
+    {
+        return accessType switch
+        {
+            "feedback_free" => "Thank you for your feedback! You've been granted free access to the Professional Plan.",
+            "lifetime_free" => "You have lifetime free access to the Professional Plan!",
+            "beta_tester" => "As a beta tester, you have free access to the Professional Plan.",
+            _ => "You have special access to the Professional Plan!"
+        };
+    }
+
+    private string GetSpecialAccessThankYouMessage(string? accessType)
+    {
+        return accessType switch
+        {
+            "feedback_free" => "We truly appreciate your valuable feedback.",
+            "lifetime_free" => "Enjoy your lifetime access!",
+            "beta_tester" => "Thank you for helping us improve the product.",
+            _ => "Thank you for being part of our community!"
+        };
     }
 }
