@@ -27,7 +27,7 @@
             {
                 <form @onsubmit="OnSubmitPotal" @formname="send-portal" id="send-portal-form" method="post">
                     <AntiforgeryToken />
-                    <button type="submit" class="w-100 btn btn-lg btn-primary mb-3">
+                    <button type="submit" class="w-100 btn btn-lg btn-primary mb-3" disabled>
                         <i class="bi bi-lightning-fill"></i> Stripe Portal
                     </button>
                 </form>
@@ -61,13 +61,10 @@
                         (If you need to adjust your support amount, please contact us through the <a href="/feedback" class="alert-link">Feedback</a> page.)
                     </div>
                 </div>
-                <button type="submit" class="w-100 btn btn-lg btn-primary">
+                <button type="submit" class="w-100 btn btn-lg btn-primary" disabled>
                     Upgrade to Pro Plan - $@customAmount/month
                 </button>
             </form>
-            <div class="text-center mb-3">
-                <small class="text-muted">— or choose your support amount —</small>
-            </div>
             <form @onsubmit="OnSubmitProFree" @formname="free-offer" method="post">
                 <AntiforgeryToken />
                 <div class="alert alert-success mb-3">
@@ -76,7 +73,7 @@
                         <span><strong>Limited Time Offer:</strong> Get 1 year of Professional Plan absolutely FREE!</span>
                     </div>
                 </div>
-                <button type="submit" class="w-100 btn btn-lg btn-success mb-3">
+                <button type="submit" class="w-100 btn btn-lg btn-success mb-3" disabled>
                     <i class="bi bi-lightning-fill"></i> Claim Your 1 Year FREE Access
                 </button>
             </form>
@@ -87,7 +84,7 @@
             <form @onsubmit="OnSubmitPotal" @formname="send-portal" id="send-portal-form" method="post">
                 <AntiforgeryToken />
                 <div>
-                    <button type="submit" class="w-100 btn btn-lg btn-primary">Stripe Portal</button>
+                    <button type="submit" class="w-100 btn btn-lg btn-primary" disabled>Stripe Portal</button>
                     <div class="text-center mt-2">
                         <small class="text-muted">
                             Opens Stripe secure billing portal in a new window
