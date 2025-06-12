@@ -12,6 +12,12 @@ public class RateLimitService
 
     public bool IsAllowed(string userId, string? ipAddress = null)
     {
+        var result = CheckRateLimit(userId, ipAddress);
+        return result.IsAllowed;
+    }
+
+    public RateLimitResult CheckRateLimit(string userId, string? ipAddress = null)
+    {
         CleanupOldEntries();
         
         var key = !string.IsNullOrEmpty(userId) ? $"user:{userId}" : $"ip:{ipAddress ?? "unknown"}";
@@ -30,14 +36,46 @@ public class RateLimitService
         // Check 1-minute limit
         var recentRequests = requests.Count(r => now - r < TimeSpan.FromMinutes(1));
         if (recentRequests > MaxRequestsPerMinute)
-            return false;
+        {
+            var oldestRequestInMinute = requests.Where(r => now - r < TimeSpan.FromMinutes(1)).Min();
+            var waitTimeSeconds = (int)(60 - (now - oldestRequestInMinute).TotalSeconds);
+            return new RateLimitResult
+            {
+                IsAllowed = false,
+                LimitType = "per minute",
+                MaxRequests = MaxRequestsPerMinute,
+                CurrentRequests = recentRequests,
+                WaitTimeSeconds = waitTimeSeconds,
+                ResetTime = oldestRequestInMinute.AddMinutes(1)
+            };
+        }
             
         // Check 10-minute limit  
         var requests10Min = requests.Count(r => now - r < TimeSpan.FromMinutes(10));
         if (requests10Min > MaxRequestsPer10Minutes)
-            return false;
+        {
+            var oldestRequestIn10Min = requests.Where(r => now - r < TimeSpan.FromMinutes(10)).Min();
+            var waitTimeSeconds = (int)(600 - (now - oldestRequestIn10Min).TotalSeconds);
+            return new RateLimitResult
+            {
+                IsAllowed = false,
+                LimitType = "per 10 minutes",
+                MaxRequests = MaxRequestsPer10Minutes,
+                CurrentRequests = requests10Min,
+                WaitTimeSeconds = waitTimeSeconds,
+                ResetTime = oldestRequestIn10Min.AddMinutes(10)
+            };
+        }
             
-        return true;
+        return new RateLimitResult
+        {
+            IsAllowed = true,
+            LimitType = "",
+            MaxRequests = MaxRequestsPerMinute,
+            CurrentRequests = recentRequests,
+            WaitTimeSeconds = 0,
+            ResetTime = DateTime.UtcNow
+        };
     }
 
     private void CleanupOldEntries()
@@ -54,10 +92,19 @@ public class RateLimitService
             if (kvp.Value.Count == 0)
                 keysToRemove.Add(kvp.Key);
         }
-        
-        foreach (var key in keysToRemove)
+          foreach (var key in keysToRemove)
             _requestLog.TryRemove(key, out _);
             
         _lastCleanup = DateTime.UtcNow;
     }
+}
+
+public class RateLimitResult
+{
+    public bool IsAllowed { get; set; }
+    public string LimitType { get; set; } = "";
+    public int MaxRequests { get; set; }
+    public int CurrentRequests { get; set; }
+    public int WaitTimeSeconds { get; set; }
+    public DateTime ResetTime { get; set; }
 }

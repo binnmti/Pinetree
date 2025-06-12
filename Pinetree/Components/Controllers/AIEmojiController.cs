@@ -18,8 +18,7 @@ namespace Pinetree.Components.Controllers
             _aiEmojiService = aiEmojiService;
             _rateLimitService = rateLimitService;
         }
-        
-        [HttpPost("suggest")]
+          [HttpPost("suggest")]
         public IActionResult SuggestEmoji([FromBody] SuggestEmojiRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Text))
@@ -31,10 +30,15 @@ namespace Pinetree.Components.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-            // Check rate limit
-            if (!_rateLimitService.IsAllowed(userId ?? string.Empty, ipAddress))
+            // Check rate limit with detailed information
+            var rateLimitResult = _rateLimitService.CheckRateLimit(userId ?? string.Empty, ipAddress);
+            if (!rateLimitResult.IsAllowed)
             {
-                return StatusCode(429, "Rate limit exceeded. Please try again later.");
+                var errorMessage = rateLimitResult.LimitType == "per minute" 
+                    ? $"AI Emoji feature is limited to {rateLimitResult.MaxRequests} requests per minute. You have used {rateLimitResult.CurrentRequests} requests. Please wait {rateLimitResult.WaitTimeSeconds} seconds before trying again."
+                    : $"AI Emoji feature is limited to {rateLimitResult.MaxRequests} requests per 10 minutes. You have used {rateLimitResult.CurrentRequests} requests. Please wait {Math.Ceiling(rateLimitResult.WaitTimeSeconds / 60.0)} minutes before trying again.";
+                
+                return StatusCode(429, errorMessage);
             }
 
             try
