@@ -3,6 +3,8 @@
 @using Pinetree.Shared.Model
 @using Microsoft.JSInterop
 
+@implements IAsyncDisposable
+
 @if (IsRoot && !IsPublicView)
 {
     <div class="toolbar p-2 bg-light border-bottom d-flex justify-content-start align-items-center mb-2">
@@ -119,6 +121,8 @@
     public required IJSRuntime JS { get; set; }
     
     private ElementReference treeViewContainer;
+    private DotNetObjectReference<TreeView>? objRef;
+    private IJSObjectReference? jsModule;
 
     protected override void OnInitialized()
     {
@@ -126,6 +130,33 @@
         {
             RootNode = Pinetree;
         }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && IsRoot && !IsPublicView)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            try
+            {
+                jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/Pages/Components/TreeView.razor.js");
+                await jsModule.InvokeVoidAsync("setupTreeViewDragDrop", treeViewContainer, objRef);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error initializing drag and drop: {ex.Message}");
+            }
+        }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (jsModule != null)
+        {
+            await jsModule.DisposeAsync();
+        }
+
+        objRef?.Dispose();
     }
 
     [JSInvokable]

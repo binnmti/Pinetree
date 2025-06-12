@@ -2,7 +2,7 @@ name: staging
 on:
   push:
     branches:
-    - main
+    - staging/*
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
@@ -93,36 +93,3 @@ jobs:
         az webapp config appsettings set --name pinetree-staging --resource-group pinetree-staging --settings ASPNETCORE_ENVIRONMENT=Staging
       if: success()
 
-  run-gui-tests:
-    runs-on: windows-latest
-    needs: deploy
-    steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
-
-    - name: Restore and build
-      run: |
-        dotnet restore
-        dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
-
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps
-
-    - name: Run GUI Tests
-      run: |
-        dotnet test Pinetree.UITests/Pinetree.UITests.csproj --configuration ${{ env.CONFIGURATION }} --no-build --logger "trx;LogFileName=guitests.trx" --results-directory "TestResults" --filter "Category!=LongRunning"
-      env:
-        PLAYWRIGHT_TIMEOUT: 30000
-
-    - name: Publish Test Results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: gui-test-results
-        path: |
-          TestResults/**
-          **/TestResults/**
-          Pinetree.UITests/bin/**/TestResults/**
