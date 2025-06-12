@@ -1,8 +1,5 @@
 # TODO
-- Paid Membership
-  - 99User
-  - stripe
-	- A system where you can press the save button, log in from the popup, and return
+- stripe 
 
 - Layout CSS 100% Check
   - Smartphone Layout
@@ -20,4 +17,6 @@
 
 # Bug
 - Automatically logged out on deployment?
+- A system where you can press the save button, log in from the popup, and return
+
 	
