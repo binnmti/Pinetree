@@ -52,7 +52,7 @@
                     </p>
                     <div class="pricing-details mt-3">
                         <div class="current-price">
-                            <h3 class="card-title pricing-card-title">$2.99<small class="text-muted">/ month</small></h3>
+                            <h3 class="card-title pricing-card-title">$1<small class="text-muted">/ month</small></h3>
                         </div>
                     </div>
                     <ul class="list-unstyled mt-3 mb-4">
@@ -63,17 +63,18 @@
                         <li>Maximum Image: 999MB</li>
                     </ul>
                     <div class="mt-auto">
-                        <div class="alert alert-info mb-3">
+                        <div class="alert alert-warning mb-3">
                             <div class="d-flex align-items-center">
-                                <i class="bi bi-info-circle-fill me-2"></i>
-                                <span>Currently in beta and the Professional Plan is not available yet. If you'd like to try it, we're offering free 1-year coupons to 99 users. Please let us know through the <a href="/feedback">Feedback</a> page.</span>
+                                <i class="bi bi-gift-fill me-2"></i>
+                                <span><strong>Limited Time Offer:</strong> Get 1 year FREE access to Professional Plan!</span>
                             </div>
                         </div>
-                        <a href="Account/Manage/Plan" class="btn btn-lg btn-block btn-outline-primary">Select</a>
+                        <a href="Account/Manage/Plan" class="btn btn-lg btn-block btn-outline-primary">Subscribe for $1/month</a>
                     </div>
                 </div>
             </div>
-        </div>        <div class="col-md-4">
+        </div>
+        <div class="col-md-4">
             <div class="card mb-4 shadow-sm h-100">
                 <div class="card-header">
                     <h2 class="my-0 font-weight-normal">Enterprise Plan</h2>
@@ -97,9 +98,3 @@
         </div>
     </div>
 </div>
-
-@code
-{
-    [Inject]
-    public required NavigationManager NavigationManager { get; set; }
-}

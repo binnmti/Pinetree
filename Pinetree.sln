@@ -9,6 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		.github\workflows\production.yml = .github\workflows\production.yml
+		.github\workflows\PRValidation.yml = .github\workflows\PRValidation.yml
 		README.md = README.md
 		.github\workflows\staging.yml = .github\workflows\staging.yml
 	EndProjectSection

@@ -8,4 +8,5 @@ public class ApplicationUser : IdentityUser
     public string StripeCustomerId { get; set; } = "";
     public string StripeSubscriptionId { get; set; } = "";
     public string SubscriptionStatus { get; set; } = "";
+    public string? SpecialAccessType { get; set; } // null, "feedback_free", "lifetime_free", "beta_tester", etc.
 }

@@ -1,9 +1,10 @@
-﻿@page "/Account/Manage/Plan"
+@page "/Account/Manage/Plan"
 @using System.Diagnostics
 @using Microsoft.AspNetCore.Identity
 @using Pinetree.Data
 @using Pinetree.Services
 @using Pinetree.Shared
+@using System.ComponentModel.DataAnnotations
 
 @inject IdentityUserAccessor UserAccessor
 @inject SignInManager<ApplicationUser> SignInManager
@@ -15,36 +16,84 @@
 <StatusMessage Message="@message" />
 <div class="row">
     <div class="col-xl-6">
-        <form @onsubmit="OnSubmit" @formname="send-verification" id="send-verification-form" method="post">
-            <AntiforgeryToken />
-            <div class="form-floating mb-3 input-group">
-                <input type="text" value="@role" id="plan" class="form-control" placeholder="Enter your email" disabled />
-                <label for="plan" class="form-label">Plan</label>
-            </div>
-            @if (IsFree)
+        <div class="form-floating mb-3 input-group">
+            <input type="text" value="@role" id="plan" class="form-control" placeholder="Enter your email" disabled />
+            <label for="plan" class="form-label">Plan</label>
+        </div>
+        <!-- Free Offer Form -->
+        @if (IsFree)
+        {
+            @if (IsReturningCustomer)
             {
-                <div class="alert alert-info mb-3">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-info-circle-fill me-2"></i>
-                        <span>Currently in beta and the Professional Plan is not available yet. If you'd like to try it, we're offering free 1-year coupons to 99 users. Please let us know through the <a href="/feedback">Feedback</a> page.</span>
+                <form @onsubmit="OnSubmitPortal" @formname="send-portal" id="send-portal-form" method="post">
+                    <AntiforgeryToken />
+                    <button type="submit" class="w-100 btn btn-lg btn-primary mb-3" disabled>
+                        <i class="bi bi-lightning-fill"></i> Stripe Portal
+                    </button>
+                </form>
+            }
+            <form @onsubmit="OnSubmitPro" @formname="send-verification" id="send-verification-form" method="post">
+                <AntiforgeryToken />
+                <!-- Custom Amount Input Section -->
+                <div class="mb-3">
+                    <label for="customAmount" class="form-label">Support Amount (USD/month)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" 
+                                class="form-control" 
+                                id="customAmount" 
+                                name="customAmount"
+                                value="@customAmount"
+                                @oninput="OnAmountChanged"
+                                min="1"
+                                max="99"
+                                step="1" 
+                                placeholder="1.00" 
+                                required />
+                        <span class="input-group-text">/month</span>
+                    </div>
+                    <small class="form-text text-muted">
+                        Minimum: $1/month. Your support helps us improve Pinetree!
+                    </small>
+                    <div class="alert alert-warning mt-2 small">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        <strong>Important:</strong> Once you subscribe, you cannot change the amount directly in Stripe. 
+                        Please choose your amount carefully.
+                        (If you need to adjust your support amount, please contact us through the <a href="/feedback" class="alert-link">Feedback</a> page.)
                     </div>
                 </div>
-                <button type="button" class="w-100 btn btn-lg btn-primary" disabled title="Currently in beta - not available. Please use the Feedback page to request a free coupon.">
-                    @(IsReturningCustomer ? "Reactivate Pro Plan" : "Update Pro Plan") (In Testing)
+                <button type="submit" class="w-100 btn btn-lg btn-primary mb-3" disabled>
+                    Upgrade to Pro Plan
                 </button>
-            }
-            else
-            {
+            </form>
+            <form @onsubmit="OnSubmitProFree" @formname="free-offer" method="post">
+                <AntiforgeryToken />
+                <div class="alert alert-success mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-gift-fill me-2"></i>
+                        <span><strong>Limited Time Offer:</strong> Get 1 year of Professional Plan absolutely FREE!</span>
+                    </div>
+                </div>
+                <button type="submit" class="w-100 btn btn-lg btn-success mb-3" disabled>
+                    <i class="bi bi-lightning-fill"></i> Claim Your 1 Year FREE Access
+                </button>
+            </form>
+        }
+        else
+        {
+            <!-- Main Form -->
+            <form @onsubmit="OnSubmitPortal" @formname="send-portal" id="send-portal-form" method="post">
+                <AntiforgeryToken />
                 <div>
-                    <button type="submit" class="w-100 btn btn-lg btn-primary">Manage Billing & Invoices (In Testing)</button>
+                    <button type="submit" class="w-100 btn btn-lg btn-primary" disabled>Stripe Portal</button>
                     <div class="text-center mt-2">
                         <small class="text-muted">
                             Opens Stripe secure billing portal in a new window
                         </small>
                     </div>
                 </div>
-            }
-        </form>
+            </form>
+        }
     </div>
 </div>
 
@@ -62,19 +111,30 @@
     private string? role;
     private bool IsFree;
     private bool IsReturningCustomer;
+    private decimal customAmount = 1;
+
     protected override async Task OnInitializedAsync()
     {
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+
         if (query.TryGetValue("payment", out var paymentStatus))
-        {
+        {            
             if (paymentStatus == "success")
             {
-                message = "Your payment was successful. We appreciate your professional.";
+                message = "Your payment was successful. Thank you for your support!";
             }
             else if (paymentStatus == "cancel")
             {
-                message = "Error: There was an error processing your payment. Please try again later.";
+                message = "Payment was cancelled. You can try again anytime.";
+            }
+        }
+
+        if (query.TryGetValue("upgrade", out var upgradeStatus))
+        {
+            if (upgradeStatus == "success")
+            {
+                message = $"Your Professional Plan has been activated successfully! Welcome to Professional Plan!";
             }
         }
 
@@ -84,33 +144,54 @@
         role = roles.FirstOrDefault() ?? "Free";
         IsFree = role == null ? true : Roles.IsFree(role);
         IsReturningCustomer = IsFree && !string.IsNullOrEmpty(currentUser.StripeCustomerId);
+        // SpecialAccessType = currentUser.SpecialAccessType;
     }
 
-    private void RefreshPage()
+    private void OnAmountChanged(ChangeEventArgs e)
     {
-        NavigationManager.NavigateTo("/Account/Manage/Plan", forceLoad: true);
+        if (decimal.TryParse(e.Value?.ToString(), out var amount) && amount >= 1)
+        {
+            customAmount = amount;
+        }
     }
 
-    private async Task OnSubmit()
+    private async Task OnSubmitPro()
     {
-        string url;
-
-        if (IsFree)
+        var amount = customAmount;
+        if (HttpContext.Request.HasFormContentType)
         {
-            if (IsReturningCustomer)
+            var form = await HttpContext.Request.ReadFormAsync();
+            if (form.TryGetValue("customAmount", out var amountValue) &&
+                decimal.TryParse(amountValue, out var parsedAmount))
             {
-                url = await PaymentService.CreatePortalSession();
-            }
-            else
-            {
-                url = await PaymentService.CreateCheckoutSessionAsync();
+                amount = parsedAmount;
             }
         }
-        else
+
+        var url = await PaymentService.CreateCustomAmountCheckoutSessionAsync(amount, false);
+        NavigationManager.NavigateTo(url);
+    }
+
+    private async Task OnSubmitProFree()
+    {
+        var amount = customAmount;
+        if (HttpContext.Request.HasFormContentType)
         {
-            url = await PaymentService.CreatePortalSession();
+            var form = await HttpContext.Request.ReadFormAsync();
+            if (form.TryGetValue("customAmount", out var amountValue) &&
+                decimal.TryParse(amountValue, out var parsedAmount))
+            {
+                amount = parsedAmount;
+            }
         }
 
+        var url = await PaymentService.CreateCustomAmountCheckoutSessionAsync(amount, true);
+        NavigationManager.NavigateTo(url);
+    }
+
+    private async Task OnSubmitPortal()
+    {
+        var url = await PaymentService.CreatePortalSession();
         NavigationManager.NavigateTo(url);
     }
 }
