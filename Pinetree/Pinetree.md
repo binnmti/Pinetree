@@ -4,7 +4,7 @@
   - stripe
 	- A system where you can press the save button, log in from the popup, and return
 
-- - Layout CSS 100% Check
+- Layout CSS 100% Check
   - Smartphone Layout
 - Toolbar Refactor
 - Move Controll Folder
@@ -17,3 +17,6 @@
 - Output
 - Browther Back
 - SEO/OGP
+- Color Theme
+- Font / Font Size
+  - magnifying glass?

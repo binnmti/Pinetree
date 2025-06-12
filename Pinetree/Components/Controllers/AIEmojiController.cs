@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pinetree.Services;
+using System.Security.Claims;
 
 namespace Pinetree.Components.Controllers
 {
@@ -10,12 +11,14 @@ namespace Pinetree.Components.Controllers
     public class AIEmojiController : ControllerBase
     {
         private readonly AIEmojiService _aiEmojiService;
+        private readonly RateLimitService _rateLimitService;
 
-        public AIEmojiController(AIEmojiService aiEmojiService)
+        public AIEmojiController(AIEmojiService aiEmojiService, RateLimitService rateLimitService)
         {
             _aiEmojiService = aiEmojiService;
+            _rateLimitService = rateLimitService;
         }
-
+        
         [HttpPost("suggest")]
         public IActionResult SuggestEmoji([FromBody] SuggestEmojiRequest request)
         {
@@ -24,9 +27,19 @@ namespace Pinetree.Components.Controllers
                 return BadRequest("Text is required");
             }
 
+            // Get user ID for rate limiting
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            // Check rate limit
+            if (!_rateLimitService.IsAllowed(userId ?? string.Empty, ipAddress))
+            {
+                return StatusCode(429, "Rate limit exceeded. Please try again later.");
+            }
+
             try
             {
-                var emoji =  _aiEmojiService.GetEmojiForText(request.Text);
+                var emoji = _aiEmojiService.GetEmojiForText(request.Text);
                 return Ok(new SuggestEmojiResponse { Emoji = emoji });
             }
             catch (Exception ex)
