@@ -1,4 +1,4 @@
-![pinetree-staging Deploy](https://github.com/binnmti/Pinetree/actions/workflows/staging.yml/badge.svg)
+[![ci/cd](https://github.com/binnmti/Pinetree/actions/workflows/production.yml/badge.svg)](https://github.com/binnmti/Pinetree/actions/workflows/production.yml)
 
 # <img src="Pinetree/wwwroot/Pinetree.png" alt="Pinetree Logo" width="24" height="24"/> Pinetree
 ## Pinetree is browser-based hierarchical markdown editor

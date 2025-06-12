@@ -1,6 +1,5 @@
 using Azure;
 using Azure.AI.OpenAI;
-using Microsoft.Extensions.AI;
 using OpenAI.Chat;
 
 namespace Pinetree.Services;
@@ -8,25 +7,15 @@ namespace Pinetree.Services;
 public class AIEmojiService
 {
     private readonly ChatClient _client;
-    private readonly string _deploymentName;
-
-    // Fixed values optimized for emoji selection
-    private const int MaxTokens = 10;
-    private const float Temperature = 0.3f;
-
     // Simple in-memory cache for faster responses
-    private static readonly Dictionary<string, (string emoji, DateTime timestamp)> _cache = new();
+    private static readonly Dictionary<string, (string emoji, DateTime timestamp)> _cache = [];
     private static readonly TimeSpan CacheExpiration = TimeSpan.FromHours(1);
 
     public AIEmojiService(IConfiguration configuration)
     {
         var endpoint = configuration.GetConnectionString("AzureOpenAIEndpoint") ?? throw new InvalidOperationException("Azure OpenAI endpoint not configured");
         var apiKey = configuration.GetConnectionString("AzureOpenAIApiKey") ?? throw new InvalidOperationException("Azure OpenAI API key not configured");
-        _deploymentName = "gpt-35-turbo";
-        _client = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey)).GetChatClient(_deploymentName);
-
-
-        //_client = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey)).GetChatClient("_deploymentName");
+        _client = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey)).GetChatClient("gpt-35-turbo");
     }
 
     public string GetEmojiForText(string text)
@@ -73,7 +62,7 @@ public class AIEmojiService
         }
     }
 
-    private string GetCacheKey(string text)
+    private static string GetCacheKey(string text)
     {
         // Create a simple hash of the first 100 characters for caching
         var keyText = text.Length > 100 ? text[..100] : text;
