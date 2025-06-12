@@ -46,6 +46,9 @@ public class PaymentService
 
     public async Task<string> CreateCustomAmountCheckoutSessionAsync(decimal amount, bool isFreeTrial)
     {
+        if (amount < 1 || amount > 99)
+            throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be between $1 and $99.");
+
         var httpContext = HttpContextAccessor.HttpContext!;
         var user = httpContext.User;
         var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -115,7 +118,6 @@ public class PaymentService
             Currency = "usd",
             Active = true,
             Type = "recurring",
-            Limit = 100
         });
 
         var existingPrice = existingPrices.Data.FirstOrDefault(p =>

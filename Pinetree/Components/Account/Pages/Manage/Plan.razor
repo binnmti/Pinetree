@@ -25,7 +25,7 @@
         {
             @if (IsReturningCustomer)
             {
-                <form @onsubmit="OnSubmitPotal" @formname="send-portal" id="send-portal-form" method="post">
+                <form @onsubmit="OnSubmitPortal" @formname="send-portal" id="send-portal-form" method="post">
                     <AntiforgeryToken />
                     <button type="submit" class="w-100 btn btn-lg btn-primary mb-3" disabled>
                         <i class="bi bi-lightning-fill"></i> Stripe Portal
@@ -45,7 +45,8 @@
                                 name="customAmount"
                                 value="@customAmount"
                                 @oninput="OnAmountChanged"
-                                min="1" 
+                                min="1"
+                                max="99"
                                 step="1" 
                                 placeholder="1.00" 
                                 required />
@@ -61,8 +62,8 @@
                         (If you need to adjust your support amount, please contact us through the <a href="/feedback" class="alert-link">Feedback</a> page.)
                     </div>
                 </div>
-                <button type="submit" class="w-100 btn btn-lg btn-primary" disabled>
-                    Upgrade to Pro Plan - $@customAmount/month
+                <button type="submit" class="w-100 btn btn-lg btn-primary mb-3" disabled>
+                    Upgrade to Pro Plan
                 </button>
             </form>
             <form @onsubmit="OnSubmitProFree" @formname="free-offer" method="post">
@@ -81,7 +82,7 @@
         else
         {
             <!-- Main Form -->
-            <form @onsubmit="OnSubmitPotal" @formname="send-portal" id="send-portal-form" method="post">
+            <form @onsubmit="OnSubmitPortal" @formname="send-portal" id="send-portal-form" method="post">
                 <AntiforgeryToken />
                 <div>
                     <button type="submit" class="w-100 btn btn-lg btn-primary" disabled>Stripe Portal</button>
@@ -154,7 +155,6 @@
         }
     }
 
-
     private async Task OnSubmitPro()
     {
         var amount = customAmount;
@@ -189,7 +189,7 @@
         NavigationManager.NavigateTo(url);
     }
 
-    private async Task OnSubmitPotal()
+    private async Task OnSubmitPortal()
     {
         var url = await PaymentService.CreatePortalSession();
         NavigationManager.NavigateTo(url);

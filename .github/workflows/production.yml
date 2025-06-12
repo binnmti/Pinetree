@@ -111,7 +111,7 @@ jobs:
 
   run-gui-tests:
     runs-on: windows-latest
-    needs: deploy
+    needs: [build-and-unit-tests, migrate, deploy]
     steps:
     - uses: actions/checkout@v4
     - name: Setup .NET SDK
