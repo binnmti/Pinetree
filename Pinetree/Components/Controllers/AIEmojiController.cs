@@ -18,8 +18,9 @@ namespace Pinetree.Components.Controllers
             _aiEmojiService = aiEmojiService;
             _rateLimitService = rateLimitService;
         }
-          [HttpPost("suggest")]
-        public IActionResult SuggestEmoji([FromBody] SuggestEmojiRequest request)
+
+        [HttpPost("suggest")]
+        public async Task<IActionResult> SuggestEmojiAsync([FromBody] SuggestEmojiRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Text))
             {
@@ -43,7 +44,7 @@ namespace Pinetree.Components.Controllers
 
             try
             {
-                var emoji = _aiEmojiService.GetEmojiForText(request.Text);
+                var emoji = await _aiEmojiService.GetEmojiForTextAsync(request.Text);
                 return Ok(new SuggestEmojiResponse { Emoji = emoji });
             }
             catch (Exception ex)

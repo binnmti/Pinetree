@@ -18,7 +18,7 @@ public class AIEmojiService
         _client = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey)).GetChatClient("gpt-35-turbo");
     }
 
-    public string GetEmojiForText(string text)
+    public async Task<string> GetEmojiForTextAsync(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
             return "📝";
@@ -38,14 +38,14 @@ public class AIEmojiService
                 MaxOutputTokenCount = 10,
                 Temperature = 0.3f,
             };
-            var chatClient = _client.CompleteChatAsync([
+            var chatResponse = await _client.CompleteChatAsync([
                     new SystemChatMessage("You are an emoji selector. Respond with ONLY a single emoji that best represents the given text. No explanation, just one emoji."),
                     new UserChatMessage(text),
             ], chatOptions);
 
-            if (chatClient.Result.Value.Content.Count > 0)
+            if (chatResponse.Value.Content.Count > 0)
             {
-                var emoji = chatClient.Result.Value.Content[0].Text;
+                var emoji = chatResponse.Value.Content[0].Text;
 
                 // Cache the result
                 _cache[cacheKey] = (emoji, DateTime.UtcNow);

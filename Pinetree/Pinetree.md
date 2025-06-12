@@ -1,11 +1,14 @@
 # TODO
 - stripe 
 
+- Changelog Discord
+- Staging Terafform
 - Layout CSS 100% Check
   - Smartphone Layout
 - Toolbar Refactor
 - Move Controll Folder
 - Share Folder Refactor
+- Markdown Text Hidden
 
 - [carbon](https://www.carbonads.net/)
 - GuruGuru
