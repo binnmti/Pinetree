@@ -7,6 +7,7 @@ namespace Pinetree.Services;
 
 /// <summary>
 /// Server-side encryption service for protecting user content at rest
+/// Uses AES-256-GCM (AEAD) for authenticated encryption providing both confidentiality and integrity
 /// Uses password-based key derivation (PBKDF2) with User ID and Password Hash for enhanced security
 /// Each user gets a unique encryption key derived from their password hash and user ID
 /// </summary>
@@ -92,38 +93,79 @@ public class EncryptionService(UserManager<ApplicationUser> userManager)
             // Log the error but return the original content for backward compatibility
             return encryptedContent;
         }
-    }
-
-    /// <summary>
-    /// Encrypts plaintext using AES-256-CBC with the provided key
+    }    /// <summary>
+    /// Encrypts plaintext using AES-256-GCM (AEAD) with the provided key
+    /// Provides both confidentiality and authenticity/integrity
     /// </summary>
     private static string Encrypt(string plainText, byte[] key)
     {
-        using var aes = Aes.Create();
-        aes.Key = key;
-        aes.GenerateIV();
-
-        using var encryptor = aes.CreateEncryptor();
-        using var ms = new MemoryStream();
-        using var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write);
-        using var writer = new StreamWriter(cs);
-
-        writer.Write(plainText);
-        writer.Flush();
-        cs.FlushFinalBlock();
-
-        var encrypted = ms.ToArray();
-        var result = new byte[aes.IV.Length + encrypted.Length];
-        Buffer.BlockCopy(aes.IV, 0, result, 0, aes.IV.Length);
-        Buffer.BlockCopy(encrypted, 0, result, aes.IV.Length, encrypted.Length);
-
+        var plainBytes = Encoding.UTF8.GetBytes(plainText);
+        
+        // Generate random nonce (12 bytes is standard for GCM)
+        var nonce = new byte[12];
+        RandomNumberGenerator.Fill(nonce);
+        
+        // Prepare buffers
+        var cipherBytes = new byte[plainBytes.Length];
+        var tag = new byte[16]; // 128-bit authentication tag
+        
+        // Encrypt with AES-GCM
+        using var aesGcm = new AesGcm(key, tag.Length);
+        aesGcm.Encrypt(nonce, plainBytes, cipherBytes, tag);
+        
+        // Combine nonce + ciphertext + tag for storage
+        var result = new byte[nonce.Length + cipherBytes.Length + tag.Length];
+        Buffer.BlockCopy(nonce, 0, result, 0, nonce.Length);
+        Buffer.BlockCopy(cipherBytes, 0, result, nonce.Length, cipherBytes.Length);
+        Buffer.BlockCopy(tag, 0, result, nonce.Length + cipherBytes.Length, tag.Length);
+        
         return Convert.ToBase64String(result);
     }
 
     /// <summary>
-    /// Decrypts ciphertext using AES-256-CBC with the provided key
+    /// Decrypts ciphertext using AES-256-GCM (AEAD) with the provided key
+    /// Automatically verifies authenticity and throws exception if tampered
     /// </summary>
     private static string Decrypt(string cipherText, byte[] key)
+    {
+        var fullCipher = Convert.FromBase64String(cipherText);
+        
+        // Check minimum length (nonce + tag = 28 bytes minimum)
+        if (fullCipher.Length < 28)
+        {
+            // Might be legacy CBC data, try legacy decryption
+            return DecryptLegacyCBC(cipherText, key);
+        }
+        
+        // Extract components
+        var nonce = new byte[12];
+        var tag = new byte[16];
+        var cipherBytes = new byte[fullCipher.Length - nonce.Length - tag.Length];
+        
+        Buffer.BlockCopy(fullCipher, 0, nonce, 0, nonce.Length);
+        Buffer.BlockCopy(fullCipher, nonce.Length, cipherBytes, 0, cipherBytes.Length);
+        Buffer.BlockCopy(fullCipher, nonce.Length + cipherBytes.Length, tag, 0, tag.Length);
+        
+        // Decrypt and verify with AES-GCM
+        var plainBytes = new byte[cipherBytes.Length];
+        using var aesGcm = new AesGcm(key, tag.Length);
+        
+        try
+        {
+            aesGcm.Decrypt(nonce, cipherBytes, tag, plainBytes);
+            return Encoding.UTF8.GetString(plainBytes);
+        }
+        catch (AuthenticationTagMismatchException)
+        {
+            throw new InvalidOperationException("Ciphertext has been tampered with or corrupted");
+        }
+    }
+    
+    /// <summary>
+    /// Legacy CBC decryption for backward compatibility
+    /// Should only be used for existing data migration
+    /// </summary>
+    private static string DecryptLegacyCBC(string cipherText, byte[] key)
     {
         var fullCipher = Convert.FromBase64String(cipherText);
 

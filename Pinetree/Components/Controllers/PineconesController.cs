@@ -305,7 +305,9 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         Guid groupGuid,
         string userId)
     {
-        var existingPinecone = await DbContext.Pinecone.SingleOrDefaultAsync(p => p.Guid == nodeDto.Guid);        Pinecone pinecone;        if (existingPinecone != null && existingPinecone.UserName == userName)
+        var existingPinecone = await DbContext.Pinecone.SingleOrDefaultAsync(p => p.Guid == nodeDto.Guid);
+        Pinecone pinecone;
+        if (existingPinecone != null && existingPinecone.UserName == userName)
         {
             pinecone = existingPinecone;
             pinecone.Title = (await EncryptionService.EncryptContentAsync(nodeDto.Title, pinecone.IsPublic, userId))!;

@@ -2,7 +2,7 @@ name: Update Changelog on PR Close
 
 on:
   pull_request:
-    types: [closed]
+    types: edited
 
 jobs:
   update-changelog:
