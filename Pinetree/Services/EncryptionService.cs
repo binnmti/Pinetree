@@ -43,7 +43,9 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
 
         // Check if user already has an encryption key stored
         var existingKeyData = await _context.UserClaims
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.ClaimType == "EncryptionKeyData");        if (existingKeyData != null && !string.IsNullOrEmpty(existingKeyData.ClaimValue))
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.ClaimType == "EncryptionKeyData");
+        
+        if (existingKeyData != null && !string.IsNullOrEmpty(existingKeyData.ClaimValue))
         {
             try
             {
@@ -103,6 +105,49 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
             // Log the error but don't throw - this maintains system stability
             // The user will lose access to old encrypted data but can continue using the system
             Console.WriteLine($"Failed to re-encrypt user key for {userId}: {ex.Message}");
+            
+            // Generate new key as fallback
+            await GenerateAndStoreNewKeyAsync(user);        }
+    }
+
+    /// <summary>
+    /// Re-encrypts the user's master key after password reset
+    /// Uses the old password hash that was stored before the reset
+    /// </summary>
+    public async Task ReEncryptUserKeyAfterPasswordResetAsync(string userId, string oldPasswordHash)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new InvalidOperationException($"User not found: {userId}");
+
+        var existingKeyData = await _context.UserClaims
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.ClaimType == "EncryptionKeyData");
+
+        if (existingKeyData?.ClaimValue == null)
+        {
+            // No existing key, nothing to re-encrypt
+            return;
+        }
+
+        try
+        {
+            // Decrypt with old password hash
+            var storedData = Convert.FromBase64String(existingKeyData.ClaimValue);
+            var oldPasswordKey = DeriveKeyFromPasswordHash(oldPasswordHash, userId);
+            var masterKey = DecryptStoredKey(storedData, oldPasswordKey);
+
+            // Re-encrypt with new password hash
+            var newPasswordKey = DerivePasswordBasedKey(user);
+            var newEncryptedData = EncryptMasterKey(masterKey, newPasswordKey);
+
+            // Update stored data
+            existingKeyData.ClaimValue = Convert.ToBase64String(newEncryptedData);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log the error but don't throw - this maintains system stability
+            // The user will lose access to old encrypted data but can continue using the system
+            Console.WriteLine($"Failed to re-encrypt user key after password reset for {userId}: {ex.Message}");
             
             // Generate new key as fallback
             await GenerateAndStoreNewKeyAsync(user);
@@ -274,7 +319,7 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
         }
         else
         {
-            _context.UserClaims.Add(new Microsoft.AspNetCore.Identity.IdentityUserClaim<string>
+            _context.UserClaims.Add(new IdentityUserClaim<string>
             {
                 UserId = user.Id,
                 ClaimType = "EncryptionKeyData",
@@ -284,7 +329,9 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
 
         await _context.SaveChangesAsync();
         return masterKey;
-    }    /// <summary>
+    }    
+    
+    /// <summary>
     /// Derives a key from the user's current password hash
     /// </summary>
     private static byte[] DerivePasswordBasedKey(ApplicationUser user)

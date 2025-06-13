@@ -1,5 +1,6 @@
 # TODO
 - stripe 
+- Password Reset MailAddress Miss
 
 - Changelog Discord
 - Staging Terafform
@@ -17,15 +18,14 @@
 - Browther Back
 - SEO/OGP
 - mail@pinetree.site
+- Color Theme
+- Font / Font Size
+  - magnifying glass?
 
 # Bug
 - Automatically logged out on deployment?
 - A system where you can press the save button, log in from the popup, and return
 
-	
-- Color Theme
-- Font / Font Size
-  - magnifying glass?
 
 # Implementation Priority
 ## High Priority (Immediate Action)
