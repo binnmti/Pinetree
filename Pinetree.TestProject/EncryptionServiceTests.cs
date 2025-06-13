@@ -497,4 +497,142 @@ public class EncryptionServiceTests
 
         Assert.AreEqual(originalText, decrypted, "Decrypted text should match original");
     }
+
+    #region Legacy Data Compatibility Tests
+
+    [TestMethod]
+    public async Task LegacyData_PlainTextContent_ShouldReturnAsIs()
+    {
+        using var scope = _serviceProvider!.CreateScope();
+        var encryptionService = scope.ServiceProvider.GetRequiredService<EncryptionService>();
+
+        var plainTextContent = "This is legacy plain text data";
+
+        // Decrypt should return plain text as-is when no encryption marker is present
+        var result = await encryptionService.DecryptContentAsync(plainTextContent, false, _testUserId!);
+
+        Assert.AreEqual(plainTextContent, result, "Legacy plain text should be returned unchanged");
+    }
+
+    [TestMethod]
+    public async Task EncryptionMarker_NewContent_ShouldHaveMarker()
+    {
+        using var scope = _serviceProvider!.CreateScope();
+        var encryptionService = scope.ServiceProvider.GetRequiredService<EncryptionService>();
+
+        var originalText = "This is new content to be encrypted";
+
+        // Encrypt new content
+        var encrypted = await encryptionService.EncryptContentAsync(originalText, false, _testUserId!);
+
+        Assert.IsNotNull(encrypted);
+        Assert.IsTrue(encrypted.StartsWith("ENC_V1:"), "Encrypted content should have encryption marker");
+        Assert.AreNotEqual(originalText, encrypted, "Encrypted content should be different from original");
+    }
+
+    [TestMethod]
+    public async Task EncryptionMarker_AlreadyEncrypted_ShouldNotDoubleEncrypt()
+    {
+        using var scope = _serviceProvider!.CreateScope();
+        var encryptionService = scope.ServiceProvider.GetRequiredService<EncryptionService>();
+
+        var originalText = "This content will be encrypted once";
+
+        // First encryption
+        var firstEncryption = await encryptionService.EncryptContentAsync(originalText, false, _testUserId!);
+        Assert.IsTrue(firstEncryption!.StartsWith("ENC_V1:"));
+
+        // Second encryption attempt - should return same result
+        var secondEncryption = await encryptionService.EncryptContentAsync(firstEncryption, false, _testUserId!);
+
+        Assert.AreEqual(firstEncryption, secondEncryption, "Already encrypted content should not be encrypted again");
+    }
+
+    [TestMethod]
+    public async Task EncryptionMarker_RoundTrip_ShouldWorkCorrectly()
+    {
+        using var scope = _serviceProvider!.CreateScope();
+        var encryptionService = scope.ServiceProvider.GetRequiredService<EncryptionService>();
+
+        var originalText = "Test round trip encryption with marker";
+
+        // Encrypt
+        var encrypted = await encryptionService.EncryptContentAsync(originalText, false, _testUserId!);
+        Assert.IsTrue(encrypted!.StartsWith("ENC_V1:"));
+
+        // Decrypt
+        var decrypted = await encryptionService.DecryptContentAsync(encrypted, false, _testUserId!);
+
+        Assert.AreEqual(originalText, decrypted, "Round trip should preserve original content");
+    }
+
+    [TestMethod]
+    public async Task LegacyDataMigration_TryMigrateLegacyData_ShouldReturnTrue()
+    {
+        using var scope = _serviceProvider!.CreateScope();
+        var encryptionService = scope.ServiceProvider.GetRequiredService<EncryptionService>();
+
+        var plainTextContent = "Legacy plain text to migrate";
+
+        // Try to migrate legacy data
+        var migrationResult = await encryptionService.TryMigrateLegacyDataAsync(_testUserId!, "test-item-id", plainTextContent);
+
+        Assert.IsTrue(migrationResult, "Legacy data migration should succeed");
+    }
+
+    [TestMethod]
+    public async Task LegacyDataMigration_AlreadyEncrypted_ShouldReturnFalse()
+    {
+        using var scope = _serviceProvider!.CreateScope();
+        var encryptionService = scope.ServiceProvider.GetRequiredService<EncryptionService>();
+
+        var originalText = "Content to encrypt first";
+        var encryptedContent = await encryptionService.EncryptContentAsync(originalText, false, _testUserId!);
+
+        // Try to migrate already encrypted data
+        var migrationResult = await encryptionService.TryMigrateLegacyDataAsync(_testUserId!, "test-item-id", encryptedContent!);
+
+        Assert.IsFalse(migrationResult, "Already encrypted data should not be migrated");
+    }
+
+    [TestMethod]
+    public async Task PublicContent_ShouldNeverBeEncrypted()
+    {
+        using var scope = _serviceProvider!.CreateScope();
+        var encryptionService = scope.ServiceProvider.GetRequiredService<EncryptionService>();
+
+        var publicContent = "This is public content";
+
+        // Encrypt public content
+        var encrypted = await encryptionService.EncryptContentAsync(publicContent, true, _testUserId!);
+        Assert.AreEqual(publicContent, encrypted, "Public content should not be encrypted");
+
+        // Decrypt public content
+        var decrypted = await encryptionService.DecryptContentAsync(publicContent, true, _testUserId!);
+        Assert.AreEqual(publicContent, decrypted, "Public content should not be decrypted");
+    }
+
+    [TestMethod]
+    public async Task EmptyContent_ShouldBeHandledGracefully()
+    {
+        using var scope = _serviceProvider!.CreateScope();
+        var encryptionService = scope.ServiceProvider.GetRequiredService<EncryptionService>();
+
+        // Test null content
+        var encryptedNull = await encryptionService.EncryptContentAsync(null, false, _testUserId!);
+        Assert.IsNull(encryptedNull);
+
+        var decryptedNull = await encryptionService.DecryptContentAsync(null, false, _testUserId!);
+        Assert.IsNull(decryptedNull);
+
+        // Test empty content
+        var encryptedEmpty = await encryptionService.EncryptContentAsync("", false, _testUserId!);
+        Assert.AreEqual("", encryptedEmpty);
+
+        var decryptedEmpty = await encryptionService.DecryptContentAsync("", false, _testUserId!);
+        Assert.AreEqual("", decryptedEmpty);
+    }
+
+    #endregion
+
 }

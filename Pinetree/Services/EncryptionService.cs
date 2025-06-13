@@ -152,11 +152,11 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
             // Generate new key as fallback
             await GenerateAndStoreNewKeyAsync(user);
         }
-    }
-
+    }    
+    
     /// <summary>
-    /// Encrypts content if it's private
-    /// Uses user-specific key derived from password hash and user ID
+    /// Encrypts content if it's private and not already encrypted
+    /// Uses encryption marker to identify encrypted content
     /// </summary>
     public async Task<string?> EncryptContentAsync(string? content, bool isPublic, string userId)
     {
@@ -166,10 +166,17 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
             return content;
         }
 
+        // Skip encryption if already encrypted
+        if (IsEncryptedContent(content))
+        {
+            return content;
+        }
+
         try
         {
             var key = await DeriveUserKeyAsync(userId);
-            return Encrypt(content, key);
+            var encryptedData = Encrypt(content, key);
+            return AddEncryptionMarker(encryptedData);
         }
         catch (Exception ex)
         {
@@ -178,9 +185,8 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
     }
     
     /// <summary>
-    /// Decrypts content if it's private
-    /// Uses user-specific key derived from password hash and user ID
-    /// Falls back to returning original content if decryption fails (for legacy data compatibility)
+    /// Decrypts content if it's private and encrypted
+    /// Handles legacy plain text data gracefully by returning it as-is
     /// </summary>
     public async Task<string?> DecryptContentAsync(string? encryptedContent, bool isPublic, string userId)
     {
@@ -190,16 +196,72 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
             return encryptedContent;
         }
 
+        // Check if content is encrypted (has our encryption marker)
+        if (!IsEncryptedContent(encryptedContent))
+        {
+            // This is legacy plain text data - return as is
+            Console.WriteLine($"Found legacy plain text data for user {userId}");
+            return encryptedContent;
+        }
         try
         {
             var key = await DeriveUserKeyAsync(userId);
-            return Decrypt(encryptedContent, key);
+            var actualEncryptedContent = RemoveEncryptionMarker(encryptedContent);
+            return Decrypt(actualEncryptedContent, key);
         }
         catch (Exception ex)
         {
-            // For tests and debugging, we want to know about decryption failures
-            // In production, this might be logged and original content returned for legacy compatibility
             throw new InvalidOperationException($"Decryption failed for user {userId}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Checks if content is encrypted by looking for encryption marker
+    /// </summary>
+    private static bool IsEncryptedContent(string content)
+    {
+        return content.StartsWith("ENC_V1:");
+    }
+
+    /// <summary>
+    /// Adds encryption marker to encrypted content
+    /// </summary>
+    private static string AddEncryptionMarker(string encryptedContent)
+    {
+        return "ENC_V1:" + encryptedContent;
+    }
+
+    /// <summary>
+    /// Removes encryption marker from encrypted content
+    /// </summary>
+    private static string RemoveEncryptionMarker(string markedContent)
+    {
+        return markedContent.StartsWith("ENC_V1:") 
+            ? markedContent.Substring(7) 
+            : markedContent;
+    }
+
+    /// <summary>
+    /// Migrates legacy plain text data to encrypted format on-demand
+    /// </summary>
+    public async Task<bool> TryMigrateLegacyDataAsync(string userId, string itemId, string plainTextContent)
+    {
+        if (IsEncryptedContent(plainTextContent))
+        {
+            return false; // Already encrypted
+        }
+
+        try
+        {
+            var encryptedContent = await EncryptContentAsync(plainTextContent, false, userId);
+            
+            Console.WriteLine($"Migrated legacy data for item {itemId}, user {userId}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to migrate legacy data for item {itemId}, user {userId}: {ex.Message}");
+            return false;
         }
     }
     
