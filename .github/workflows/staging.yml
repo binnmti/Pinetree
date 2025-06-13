@@ -24,7 +24,7 @@ jobs:
     - name: Build
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Run Unit Tests
-      run: dotnet test Pinetree.Client.TestProject/Pinetree.Client.TestProject.csproj --no-build
+      run: dotnet test Pinetree.TestProject/Pinetree.TestProject.csproj --no-build
     - name: Publish
       run: dotnet publish Pinetree/Pinetree.csproj --configuration ${{ env.CONFIGURATION }} --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
     - name: Publish Artifacts

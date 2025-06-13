@@ -18,7 +18,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Shared", "Pinetree
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Client", "Pinetree.Client\Pinetree.Client.csproj", "{CC166F25-F9EB-4521-972E-C5EFEE8AA07E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Client.TestProject", "Pinetree.Client.TestProject\Pinetree.Client.TestProject.csproj", "{73C16934-8C8E-44F5-B037-1567133D88E1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.TestProject", "Pinetree.TestProject\Pinetree.TestProject.csproj", "{73C16934-8C8E-44F5-B037-1567133D88E1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.UITests", "Pinetree.UITests\Pinetree.UITests.csproj", "{C3927299-352A-415B-AC2F-D7A339C69203}"
 EndProject

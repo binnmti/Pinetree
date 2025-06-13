@@ -1,6 +1,6 @@
 ﻿using Pinetree.Client.VModel;
 
-namespace Pinetree.Client.TestProject;
+namespace Pinetree.TestProject;
 
 [TestClass]
 public class PinetreeViewTests

@@ -1,152 +1,192 @@
 @page "/changelog"
 @rendermode InteractiveAuto
+@inject HttpClient HttpClient
+@using System.Text.RegularExpressions
 
 <PageTitle>Changelog - Pinetree</PageTitle>
 
 <div class="container mt-4 mb-5">
-    <h1>Changelog</h1>
-    <p class="text-muted">Last updated: May 20, 2025</p>
+    <h1 class="mb-3">Changelog</h1>
 
-@*     <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h2 class="mb-0">Version 1.0.0</h2>
-            <small>Released on May 20, 2025</small>
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
         </div>
-        <div class="card-body">
-            <h3>Major Features</h3>
-            <ul>
-                <li>Initial public release of Pinetree</li>
-                <li>Hierarchical markdown editor with parent-child relationships</li>
-                <li>Real-time preview and editing capabilities</li>
-                <li>User account management system</li>
-            </ul>
-
-            <h3>Editor Features</h3>
-            <ul>
-                <li>Markdown syntax highlighting</li>
-                <li>File organization in tree structure</li>
-                <li>Extract content to child documents</li>
-                <li>Support for images and attachments</li>
-                <li>Document linking between hierarchical pages</li>
-            </ul>
+    }
+    else if (changelogEntries.Any())
+    {
+        @foreach (var entry in changelogEntries)
+        {
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h2 class="mb-0">Version @entry.Version</h2>
+                    <small>@entry.FormattedDate</small>
+                </div>
+                <div class="card-body">
+                    @((MarkupString)ConvertMarkdownToHtml(entry.Content))
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            <h4>No changelog entries found</h4>
+            <p>Unable to load changelog content. Please try refreshing the page.</p>
         </div>
-    </div> *@
-    <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">
-            <h2 class="mb-0">Version 0.9.2</h2>
-            <small>06/12/2025</small>
-        </div>
-        <div class="card-body">
-            <h3>Features</h3>
-            <ul>
-                <li>
-                    Introduced an AI-powered emoji suggestion feature in the Markdown editor, allowing users to insert contextually relevant emojis into selected text.
-                </li>
-            </ul>
-        </div>
-    </div>
-    <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">
-            <h2 class="mb-0">Version 0.9.1</h2>
-            <small>06/12/2025</small>
-        </div>
-        <div class="card-body">
-            <h3>Features</h3>
-            <ul>
-                <li>
-                    Youtube
-                </li>
-            </ul>
-            <ul>
-                <li>
-                    Added support for custom monthly subscription amounts and a limited-time free 1-year Pro plan offer.
-                </li>
-            </ul>
-            <ul>
-                <li>
-                    Integrated GUI testing into the CI/CD pipeline for improved quality assurance.
-                </li>
-            </ul>
-        </div>
-    </div>
-    <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">
-            <h2 class="mb-0">Version 0.8.2</h2>
-            <small>06/02/2025</small>
-        </div>
-        <div class="card-body">
-            <h3>Features</h3>
-            <ul>
-                <li>
-                    Major changes to the layout of the top page
-                </li>
-                <li>
-                    Many small corrections throughout
-                </li>
-                <li>
-                    Emoji
-                </li>
-            </ul>
-        </div>
-    </div>
-    <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">
-            <h2 class="mb-0">Version 0.7.0</h2>
-            <small>05/30/2025</small>
-        </div>
-        <div class="card-body">
-            <h3>Features</h3>
-            <ul>
-                <li>
-                    Added support for external authentication providers including Google and Facebook.
-                </li>
-                <li>
-                    Introduced QR code generation and display for authenticator setup to enhance two-factor authentication.
-                </li>
-                <li>
-                    Enhanced registration and external login flows to require and validate usernames with clear format rules.
-                </li>
-                <li>
-                    Introduced a feedback page where users can submit feedback, which is sent directly to the team via Discord integration.
-                </li>
-                <li>
-                    Enhanced "Documents" tab with search, filtering, sorting, and pagination controls for improved document management.
-                </li>
-            </ul>
-        </div>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">
-            <h2 class="mb-0">Version 0.5.0</h2>
-            <small>05/20/2025</small>
-        </div>
-        <div class="card-body">
-            <h3>Features</h3>
-            <ul>
-                <li>
-                    Introduced public/private visibility for files, allowing users to toggle visibility with a dedicated API endpoint.
-                </li>
-                <li>
-                    Added drag-and-drop support for reordering and restructuring items in the tree view, including moving items before, after, or into other nodes.
-                </li>
-                <li>
-                    Enabled dragging tree view items into Markdown text areas to insert formatted links directly at the cursor position.
-                </li>
-            </ul>
-        </div>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">
-            <h2 class="mb-0">Version 0.4.2</h2>
-            <small>04/26/2025</small>
-        </div>
-        <div class="card-body">
-            <h3>Features</h3>
-            <ul>
-                <li>Added a slider to adjust the screen size</li>
-            </ul>
-        </div>
-    </div>
+    }
 </div>
+
+@code {
+    private bool isLoading = true;
+    private List<ChangelogEntry> changelogEntries = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var content = await HttpClient.GetStringAsync("/Changelog.md");
+            changelogEntries = ParseChangelogContent(content);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading changelog: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private List<ChangelogEntry> ParseChangelogContent(string content)
+    {
+        var entries = new List<ChangelogEntry>();
+        var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+        ChangelogEntry? currentEntry = null;
+        var contentBuilder = new System.Text.StringBuilder();
+
+        foreach (var line in lines)
+        {
+            var trimmedLine = line.Trim();
+
+            // Skip empty lines and the main title
+            if (string.IsNullOrWhiteSpace(trimmedLine) || trimmedLine == "# Changelog")
+                continue;
+
+            // Match version headers like "## [0.9.2] - 2025-06-12"
+            var versionMatch = Regex.Match(trimmedLine, @"^## \[(.+?)\] - (.+)$");
+            if (versionMatch.Success)
+            {
+                // Save previous entry
+                if (currentEntry != null)
+                {
+                    currentEntry.Content = contentBuilder.ToString().Trim();
+                    entries.Add(currentEntry);
+                }
+
+                // Start new entry
+                currentEntry = new ChangelogEntry
+                {
+                    Version = versionMatch.Groups[1].Value,
+                    Date = ParseDate(versionMatch.Groups[2].Value),
+                    Content = string.Empty
+                };
+                contentBuilder.Clear();
+            }
+            else if (currentEntry != null && !trimmedLine.StartsWith("---"))
+            {
+                // Add content lines (skip separators)
+                contentBuilder.AppendLine(trimmedLine);
+            }
+        }
+
+        // Add the last entry
+        if (currentEntry != null)
+        {
+            currentEntry.Content = contentBuilder.ToString().Trim();
+            entries.Add(currentEntry);
+        }
+
+        return entries;
+    }
+
+    private DateTime ParseDate(string dateString)
+    {
+        // Try to parse ISO 8601 format (YYYY-MM-DD)
+        if (DateTime.TryParseExact(dateString, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var date))
+        {
+            return date;
+        }
+
+        // Fallback to general parsing
+        if (DateTime.TryParse(dateString, out var fallbackDate))
+        {
+            return fallbackDate;
+        }
+
+        return DateTime.Now;
+    }
+
+    private string ConvertMarkdownToHtml(string markdown)
+    {
+        if (string.IsNullOrWhiteSpace(markdown))
+            return string.Empty;
+
+        var lines = markdown.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var html = new System.Text.StringBuilder();
+        var inList = false;
+
+        foreach (var line in lines)
+        {
+            var trimmedLine = line.Trim();
+
+            if (trimmedLine.StartsWith("### "))
+            {
+                if (inList)
+                {
+                    html.AppendLine("</ul>");
+                    inList = false;
+                }
+                html.AppendLine($"<h3>{trimmedLine.Substring(4)}</h3>");
+            }
+            else if (trimmedLine.StartsWith("- "))
+            {
+                if (!inList)
+                {
+                    html.AppendLine("<ul>");
+                    inList = true;
+                }
+                html.AppendLine($"<li>{trimmedLine.Substring(2)}</li>");
+            }
+            else if (!string.IsNullOrWhiteSpace(trimmedLine) && !trimmedLine.StartsWith("PR: #"))
+            {
+                if (inList)
+                {
+                    html.AppendLine("</ul>");
+                    inList = false;
+                }
+                html.AppendLine($"<p>{trimmedLine}</p>");
+            }
+        }
+
+        if (inList)
+        {
+            html.AppendLine("</ul>");
+        }
+
+        return html.ToString();
+    }
+
+    public class ChangelogEntry
+    {
+        public string Version { get; set; } = string.Empty;
+        public DateTime Date { get; set; }
+        public string Content { get; set; } = string.Empty;
+
+        public string FormattedDate => Date.ToString("MM/dd/yyyy");
+    }
+}

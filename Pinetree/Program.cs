@@ -31,6 +31,8 @@ builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<BlobStorageService>();
 builder.Services.AddSingleton<RateLimitService>();
 builder.Services.AddScoped<AIEmojiService>();
+builder.Services.AddScoped<EncryptionService>();
+builder.Services.AddScoped<VersionService>();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthorization();
@@ -128,6 +130,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddDefaultTokenProviders();
 
 builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
+
+// Configure Data Protection API for secure encryption key management
+builder.Services.AddDataProtection();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
