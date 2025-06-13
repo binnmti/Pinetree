@@ -14,13 +14,14 @@ public class PasswordChangeEncryptionIntegrationTests
     [ClassInitialize]
     public static async Task ClassInitialize(TestContext context)
     {
-        var services = new ServiceCollection();        services.AddDbContext<ApplicationDbContext>(options =>
+        var services = new ServiceCollection();        
+        services.AddDbContext<ApplicationDbContext>(options =>
             options.UseInMemoryDatabase("PasswordChangeIntegrationTestDb_Fixed"));
         
         services.AddIdentity<ApplicationUser, IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
-        
+        services.AddDataProtection();
         services.AddScoped<EncryptionService>();
         services.AddLogging();
         
