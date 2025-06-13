@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.DataProtection;
 using Pinetree.Data;
 using Pinetree.Services;
 
@@ -17,11 +18,13 @@ public class EncryptionServiceTests
     {
         // Create in-memory database and services - shared across all tests
         var services = new ServiceCollection(); services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseInMemoryDatabase("EncryptionServiceTestDb_Fixed"));
-
-        services.AddIdentity<ApplicationUser, IdentityRole>()
+            options.UseInMemoryDatabase("EncryptionServiceTestDb_Fixed"));        services.AddIdentity<ApplicationUser, IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
+        
+        // Add Data Protection API for encryption service
+        services.AddDataProtection();
+        
         services.AddScoped<EncryptionService>();
         services.AddLogging();
 
@@ -313,10 +316,8 @@ public class EncryptionServiceTests
         // Act & Assert
         await Assert.ThrowsExceptionAsync<InvalidOperationException>(
             () => encryptionService.GetUserEncryptionKeyAsync(invalidUserId));
-    }
-
-    [TestMethod]
-    public async Task ReEncryptUserKeyAfterPasswordChange_ValidScenario_MaintainsKeyAccess()
+    }    [TestMethod]
+    public async Task PasswordChange_WithDataProtectionAPI_KeyRemainsConsistent()
     {
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
@@ -334,41 +335,14 @@ public class EncryptionServiceTests
 
         // Generate initial key
         var originalKey = await encryptionService.GetUserEncryptionKeyAsync(user.Id);
-        var oldPasswordHash = user.PasswordHash!;
 
-        // Change password
+        // Change password (with Data Protection API, no re-encryption needed)
         var changeResult = await userManager.ChangePasswordAsync(user, "OldPassword123!", "NewPassword456!");
         Assert.IsTrue(changeResult.Succeeded);
 
-        // Act - Re-encrypt key with new password
-        await encryptionService.ReEncryptUserKeyAfterPasswordChangeAsync(user.Id, oldPasswordHash);
-
-        // Assert - Should still get the same key
+        // Assert - Should still get the same key (Data Protection API is password-independent)
         var newKey = await encryptionService.GetUserEncryptionKeyAsync(user.Id);
-        CollectionAssert.AreEqual(originalKey, newKey, "Key should remain the same after re-encryption");
-    }
-
-    [TestMethod]
-    public async Task ReEncryptUserKeyAfterPasswordChange_NoExistingKey_HandlesGracefully()
-    {
-        // Arrange
-        using var scope = _serviceProvider!.CreateScope();
-        var encryptionService = scope.ServiceProvider.GetRequiredService<EncryptionService>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-
-        var user = new ApplicationUser
-        {
-            UserName = "nokey@example.com",
-            Email = "nokey@example.com"
-        };
-        var result = await userManager.CreateAsync(user, "Password123!");
-        Assert.IsTrue(result.Succeeded);
-
-        var oldPasswordHash = user.PasswordHash!;
-
-        // Act & Assert - Should not throw exception
-        await encryptionService.ReEncryptUserKeyAfterPasswordChangeAsync(user.Id, oldPasswordHash);
-    }
+        CollectionAssert.AreEqual(originalKey, newKey, "Key should remain the same after password change with Data Protection API");    }
 
     [TestMethod]
     public async Task EncryptionKey_PersistsAcrossSessions_ConsistentKey()

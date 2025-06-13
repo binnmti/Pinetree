@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Pinetree.Data;
@@ -8,59 +9,58 @@ namespace Pinetree.Services;
 
 /// <summary>
 /// Server-side encryption service for protecting user content at rest
-/// Uses AES-256-GCM (AEAD) for authenticated encryption providing both confidentiality and integrity
-/// Manages user-specific encryption keys independently from password changes
-/// Each user gets a unique encryption key that persists across password resets
+/// Uses Data Protection API for secure server-side key management combined with AES-256-GCM for content encryption
+/// Provides robust security against database compromise while supporting all user types (password and SNS users)
+/// Each user gets a unique encryption key that persists across password changes and is independent of authentication method
 /// </summary>
-public class EncryptionService(UserManager<ApplicationUser> userManager, ApplicationDbContext context)
+public class EncryptionService
 {
-    private readonly UserManager<ApplicationUser> _userManager = userManager;
-    private readonly ApplicationDbContext _context = context;
+    private readonly IDataProtector _keyProtector;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationDbContext _context;
 
-    // PBKDF2 parameters for master key derivation
+    // Encryption parameters for AES-256-GCM
     private const int KeySize = 32; // 256 bits
-    private const int SaltSize = 16; // 128 bits
-    private const int Iterations = 100000;
+    private const int NonceSize = 12; // 96 bits for GCM
+    private const int TagSize = 16; // 128 bits for GCM
     
     /// <summary>
-    /// Gets or creates a persistent encryption key for a user
-    /// This key is independent of the user's password and persists across password changes
-    /// Public method for external access (used by tests and other services)
+    /// Constructor - initializes the Data Protector for user key encryption
     /// </summary>
-    public async Task<byte[]> GetUserEncryptionKeyAsync(string userId)
+    public EncryptionService(IDataProtectionProvider dataProtectionProvider, UserManager<ApplicationUser> userManager, ApplicationDbContext context)
     {
-        return await DeriveUserKeyAsync(userId);
-    }
-
+        _keyProtector = dataProtectionProvider.CreateProtector("Pinetree.UserEncryptionKeys.v2");
+        _userManager = userManager;
+        _context = context;
+    }    
     /// <summary>
     /// Gets or creates a persistent encryption key for a user
-    /// This key is independent of the user's password and persists across password changes
+    /// This key is secured by Data Protection API and persists across password changes
+    /// Works for all user types (password and SNS users)
     /// </summary>
-    private async Task<byte[]> DeriveUserKeyAsync(string userId)
+    public async Task<byte[]> GetUserEncryptionKeyAsync(string userId)
     {
         var user = await _userManager.FindByIdAsync(userId)
             ?? throw new InvalidOperationException($"User not found for encryption: {userId}");
 
         // Check if user already has an encryption key stored
         var existingKeyData = await _context.UserClaims
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.ClaimType == "EncryptionKeyData");
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.ClaimType == "EncryptionKeyData_V2");
         
         if (existingKeyData != null && !string.IsNullOrEmpty(existingKeyData.ClaimValue))
-        {
-            try
+        {            try
             {
-                // Decrypt the stored key using password-derived key
-                var storedData = Convert.FromBase64String(existingKeyData.ClaimValue);
-                var passwordKey = DerivePasswordBasedKey(user);
-                return DecryptStoredKey(storedData, passwordKey);
-            }            catch (Exception ex)
+                // Decrypt the stored key using Data Protection API
+                var protectedKey = existingKeyData.ClaimValue;
+                var keyBase64 = _keyProtector.Unprotect(protectedKey);
+                var keyBytes = Convert.FromBase64String(keyBase64);
+                return keyBytes;
+            }
+            catch (Exception ex)
             {
-                // If decryption fails (e.g., password changed without proper re-encryption),
-                // we need to handle this gracefully
+                // If decryption fails (e.g., key rotation, corruption),
+                // generate a new key and lose old data (acceptable trade-off for security)
                 Console.WriteLine($"Warning: Failed to decrypt stored encryption key for user {userId}. Error: {ex.Message}");
-                
-                // For production: generate new key and lose old data (acceptable trade-off)
-                // For tests: this indicates a test setup issue, but we'll generate a new key to continue
                 return await GenerateAndStoreNewKeyAsync(user);
             }
         }
@@ -68,91 +68,6 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
         // Generate new master key for the user
         return await GenerateAndStoreNewKeyAsync(user);
     }
-
-    /// <summary>
-    /// Re-encrypts the user's master key with a new password-derived key
-    /// Called after password changes to maintain access to encrypted data
-    /// </summary>
-    public async Task ReEncryptUserKeyAfterPasswordChangeAsync(string userId, string oldPasswordHash)
-    {
-        var user = await _userManager.FindByIdAsync(userId)
-            ?? throw new InvalidOperationException($"User not found: {userId}");
-
-        var existingKeyData = await _context.UserClaims
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.ClaimType == "EncryptionKeyData");
-
-        if (existingKeyData?.ClaimValue == null)
-        {
-            // No existing key, nothing to re-encrypt
-            return;
-        }
-
-        try
-        {
-            // Decrypt with old password
-            var storedData = Convert.FromBase64String(existingKeyData.ClaimValue);
-            var oldPasswordKey = DeriveKeyFromPasswordHash(oldPasswordHash, userId);
-            var masterKey = DecryptStoredKey(storedData, oldPasswordKey);            // Re-encrypt with new password
-            var newPasswordKey = DerivePasswordBasedKey(user);
-            var newEncryptedData = EncryptMasterKey(masterKey, newPasswordKey);
-
-            // Update stored data
-            existingKeyData.ClaimValue = Convert.ToBase64String(newEncryptedData);
-            await _context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            // Log the error but don't throw - this maintains system stability
-            // The user will lose access to old encrypted data but can continue using the system
-            Console.WriteLine($"Failed to re-encrypt user key for {userId}: {ex.Message}");
-            
-            // Generate new key as fallback
-            await GenerateAndStoreNewKeyAsync(user);        }
-    }
-
-    /// <summary>
-    /// Re-encrypts the user's master key after password reset
-    /// Uses the old password hash that was stored before the reset
-    /// </summary>
-    public async Task ReEncryptUserKeyAfterPasswordResetAsync(string userId, string oldPasswordHash)
-    {
-        var user = await _userManager.FindByIdAsync(userId)
-            ?? throw new InvalidOperationException($"User not found: {userId}");
-
-        var existingKeyData = await _context.UserClaims
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.ClaimType == "EncryptionKeyData");
-
-        if (existingKeyData?.ClaimValue == null)
-        {
-            // No existing key, nothing to re-encrypt
-            return;
-        }
-
-        try
-        {
-            // Decrypt with old password hash
-            var storedData = Convert.FromBase64String(existingKeyData.ClaimValue);
-            var oldPasswordKey = DeriveKeyFromPasswordHash(oldPasswordHash, userId);
-            var masterKey = DecryptStoredKey(storedData, oldPasswordKey);
-
-            // Re-encrypt with new password hash
-            var newPasswordKey = DerivePasswordBasedKey(user);
-            var newEncryptedData = EncryptMasterKey(masterKey, newPasswordKey);
-
-            // Update stored data
-            existingKeyData.ClaimValue = Convert.ToBase64String(newEncryptedData);
-            await _context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            // Log the error but don't throw - this maintains system stability
-            // The user will lose access to old encrypted data but can continue using the system
-            Console.WriteLine($"Failed to re-encrypt user key after password reset for {userId}: {ex.Message}");
-            
-            // Generate new key as fallback
-            await GenerateAndStoreNewKeyAsync(user);
-        }
-    }    
     
     /// <summary>
     /// Encrypts content if it's private and not already encrypted
@@ -170,11 +85,9 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
         if (IsEncryptedContent(content))
         {
             return content;
-        }
-
-        try
+        }        try
         {
-            var key = await DeriveUserKeyAsync(userId);
+            var key = await GetUserEncryptionKeyAsync(userId);
             var encryptedData = Encrypt(content, key);
             return AddEncryptionMarker(encryptedData);
         }
@@ -202,10 +115,9 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
             // This is legacy plain text data - return as is
             Console.WriteLine($"Found legacy plain text data for user {userId}");
             return encryptedContent;
-        }
-        try
+        }        try
         {
-            var key = await DeriveUserKeyAsync(userId);
+            var key = await GetUserEncryptionKeyAsync(userId);
             var actualEncryptedContent = RemoveEncryptionMarker(encryptedContent);
             return Decrypt(actualEncryptedContent, key);
         }
@@ -264,7 +176,7 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
             return false;
         }
     }
-    
+
     /// <summary>
     /// Encrypts plaintext using AES-256-GCM (AEAD) with the provided key
     /// Provides both confidentiality and authenticity/integrity
@@ -274,15 +186,13 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
         var plainBytes = Encoding.UTF8.GetBytes(plainText);
         
         // Generate random nonce (12 bytes is standard for GCM)
-        var nonce = new byte[12];
+        var nonce = new byte[NonceSize];
         RandomNumberGenerator.Fill(nonce);
         
         // Prepare buffers
         var cipherBytes = new byte[plainBytes.Length];
-        var tag = new byte[16]; // 128-bit authentication tag
-        
-        // Encrypt with AES-GCM
-        using var aesGcm = new AesGcm(key, tag.Length);
+        var tag = new byte[TagSize]; // 128-bit authentication tag        // Encrypt with AES-GCM
+        using var aesGcm = new AesGcm(key, TagSize);
         aesGcm.Encrypt(nonce, plainBytes, cipherBytes, tag);
         
         // Combine nonce + ciphertext + tag for storage
@@ -293,7 +203,7 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
         
         return Convert.ToBase64String(result);
     }
-
+    
     /// <summary>
     /// Decrypts ciphertext using AES-256-GCM (AEAD) with the provided key
     /// Automatically verifies authenticity and throws exception if tampered
@@ -303,24 +213,24 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
         var fullCipher = Convert.FromBase64String(cipherText);
         
         // Check minimum length (nonce + tag = 28 bytes minimum)
-        if (fullCipher.Length < 28)
+        var minimumLength = NonceSize + TagSize;
+        if (fullCipher.Length < minimumLength)
         {
             // Might be legacy CBC data, try legacy decryption
             return DecryptLegacyCBC(cipherText, key);
         }
         
         // Extract components
-        var nonce = new byte[12];
-        var tag = new byte[16];
+        var nonce = new byte[NonceSize];
+        var tag = new byte[TagSize];
         var cipherBytes = new byte[fullCipher.Length - nonce.Length - tag.Length];
         
         Buffer.BlockCopy(fullCipher, 0, nonce, 0, nonce.Length);
         Buffer.BlockCopy(fullCipher, nonce.Length, cipherBytes, 0, cipherBytes.Length);
         Buffer.BlockCopy(fullCipher, nonce.Length + cipherBytes.Length, tag, 0, tag.Length);
-        
-        // Decrypt and verify with AES-GCM
+          // Decrypt and verify with AES-GCM
         var plainBytes = new byte[cipherBytes.Length];
-        using var aesGcm = new AesGcm(key, tag.Length);
+        using var aesGcm = new AesGcm(key, TagSize);
         
         try
         {
@@ -358,118 +268,39 @@ public class EncryptionService(UserManager<ApplicationUser> userManager, Applica
         using var reader = new StreamReader(cs);
 
         return reader.ReadToEnd();
-    }
-
+    }    
+    
     /// <summary>
-    /// Generates a new master key and stores it encrypted with the user's password
+    /// Generates a new master key and stores it protected with Data Protection API
+    /// This method works for all user types (password and SNS users)
     /// </summary>
     private async Task<byte[]> GenerateAndStoreNewKeyAsync(ApplicationUser user)
     {
         // Generate random master key
         var masterKey = new byte[KeySize];
-        RandomNumberGenerator.Fill(masterKey);        // Encrypt with password-derived key
-        var passwordKey = DerivePasswordBasedKey(user);
-        var encryptedData = EncryptMasterKey(masterKey, passwordKey);
+        RandomNumberGenerator.Fill(masterKey);
 
-        // Store encrypted key as user claim
+        // Protect with Data Protection API
+        var protectedKey = _keyProtector.Protect(Convert.ToBase64String(masterKey));
+
+        // Store protected key as user claim (using V2 to distinguish from old password-based keys)
         var existingClaim = await _context.UserClaims
-            .FirstOrDefaultAsync(c => c.UserId == user.Id && c.ClaimType == "EncryptionKeyData");
+            .FirstOrDefaultAsync(c => c.UserId == user.Id && c.ClaimType == "EncryptionKeyData_V2");
 
         if (existingClaim != null)
         {
-            existingClaim.ClaimValue = Convert.ToBase64String(encryptedData);
+            existingClaim.ClaimValue = protectedKey;
         }
         else
         {
             _context.UserClaims.Add(new IdentityUserClaim<string>
             {
                 UserId = user.Id,
-                ClaimType = "EncryptionKeyData",
-                ClaimValue = Convert.ToBase64String(encryptedData)
+                ClaimType = "EncryptionKeyData_V2",
+                ClaimValue = protectedKey
             });
         }
 
         await _context.SaveChangesAsync();
         return masterKey;
-    }    
-    
-    /// <summary>
-    /// Derives a key from the user's current password hash
-    /// </summary>
-    private static byte[] DerivePasswordBasedKey(ApplicationUser user)
-    {
-        if (string.IsNullOrEmpty(user.PasswordHash))
-        {
-            throw new InvalidOperationException($"Password hash not found for user: {user.Id}");
-        }
-
-        return DeriveKeyFromPasswordHash(user.PasswordHash, user.Id);
-    }
-
-    /// <summary>
-    /// Derives a key from a specific password hash
-    /// </summary>
-    private static byte[] DeriveKeyFromPasswordHash(string passwordHash, string userId)
-    {
-        // Create deterministic salt based on user ID
-        var saltMaterial = $"PinetreeKeyEncryption_{userId}_v2";
-        var salt = SHA256.HashData(Encoding.UTF8.GetBytes(saltMaterial))[..SaltSize];
-
-        // Derive key using PBKDF2
-        using var pbkdf2 = new Rfc2898DeriveBytes(passwordHash, salt, Iterations, HashAlgorithmName.SHA256);
-        return pbkdf2.GetBytes(KeySize);
-    }
-
-    /// <summary>
-    /// Encrypts the master key using AES-GCM
-    /// </summary>
-    private static byte[] EncryptMasterKey(byte[] masterKey, byte[] passwordKey)
-    {
-        // Generate random nonce
-        var nonce = new byte[12];
-        RandomNumberGenerator.Fill(nonce);
-
-        // Prepare buffers
-        var cipherBytes = new byte[masterKey.Length];
-        var tag = new byte[16];
-
-        // Encrypt with AES-GCM
-        using var aesGcm = new AesGcm(passwordKey, tag.Length);
-        aesGcm.Encrypt(nonce, masterKey, cipherBytes, tag);
-
-        // Combine nonce + ciphertext + tag
-        var result = new byte[nonce.Length + cipherBytes.Length + tag.Length];
-        Buffer.BlockCopy(nonce, 0, result, 0, nonce.Length);
-        Buffer.BlockCopy(cipherBytes, 0, result, nonce.Length, cipherBytes.Length);
-        Buffer.BlockCopy(tag, 0, result, nonce.Length + cipherBytes.Length, tag.Length);
-
-        return result;
-    }
-
-    /// <summary>
-    /// Decrypts the stored master key using AES-GCM
-    /// </summary>
-    private static byte[] DecryptStoredKey(byte[] encryptedData, byte[] passwordKey)
-    {
-        if (encryptedData.Length < 28) // nonce + tag minimum
-        {
-            throw new ArgumentException("Invalid encrypted key data");
-        }
-
-        // Extract components
-        var nonce = new byte[12];
-        var tag = new byte[16];
-        var cipherBytes = new byte[encryptedData.Length - nonce.Length - tag.Length];
-
-        Buffer.BlockCopy(encryptedData, 0, nonce, 0, nonce.Length);
-        Buffer.BlockCopy(encryptedData, nonce.Length, cipherBytes, 0, cipherBytes.Length);
-        Buffer.BlockCopy(encryptedData, nonce.Length + cipherBytes.Length, tag, 0, tag.Length);
-
-        // Decrypt with AES-GCM
-        var plainBytes = new byte[cipherBytes.Length];
-        using var aesGcm = new AesGcm(passwordKey, tag.Length);
-        aesGcm.Decrypt(nonce, cipherBytes, tag, plainBytes);
-
-        return plainBytes;
-    }
-}
+    }}

@@ -131,6 +131,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
 
+// Configure Data Protection API for secure encryption key management
+builder.Services.AddDataProtection();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {

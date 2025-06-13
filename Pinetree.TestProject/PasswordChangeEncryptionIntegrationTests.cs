@@ -63,15 +63,12 @@ public class PasswordChangeEncryptionIntegrationTests
         // Step 2: Verify we can decrypt it
         var decryptedData1 = await encryptionService.DecryptContentAsync(encryptedData, false, user.Id);
         Assert.AreEqual(secretData, decryptedData1);
-        
-        // Step 3: Change password with proper key migration
-        var oldPasswordHash = user.PasswordHash!;
+          // Step 3: Change password (with Data Protection API, no re-encryption needed)
         var changeResult = await userManager.ChangePasswordAsync(user, "OriginalPassword123!", "NewPassword456!");
         Assert.IsTrue(changeResult.Succeeded);
-          // Simulate the key re-encryption that would happen in ChangePassword.razor
-        await encryptionService.ReEncryptUserKeyAfterPasswordChangeAsync(user.Id, oldPasswordHash);
         
         // Step 4: Verify we can still decrypt the data after password change
+        // With Data Protection API, password changes don't affect encryption keys
         var decryptedData2 = await encryptionService.DecryptContentAsync(encryptedData, false, user.Id);
         Assert.AreEqual(secretData, decryptedData2, "Data should still be accessible after password change");
         
@@ -80,10 +77,8 @@ public class PasswordChangeEncryptionIntegrationTests
         var newEncryptedData = await encryptionService.EncryptContentAsync(newSecretData, false, user.Id);
         var newDecryptedData = await encryptionService.DecryptContentAsync(newEncryptedData, false, user.Id);
         Assert.AreEqual(newSecretData, newDecryptedData);
-    }
-
-    [TestMethod]
-    public async Task PasswordReset_GeneratesNewKey_LosesOldData()
+    }    [TestMethod]
+    public async Task PasswordReset_WithDataProtectionAPI_PreservesData()
     {
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
@@ -108,12 +103,10 @@ public class PasswordChangeEncryptionIntegrationTests
         // Simulate password reset (which generates a new key)
         var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
         var resetResult = await userManager.ResetPasswordAsync(user, resetToken, "ResetPassword789!");
-        Assert.IsTrue(resetResult.Succeeded);
-          // After reset, trying to decrypt old data should fail with an exception
-        // because the old key is no longer accessible
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-            () => encryptionService.DecryptContentAsync(encryptedData, false, user.Id),
-            "Old encrypted data should be inaccessible after password reset");
+        Assert.IsTrue(resetResult.Succeeded);        // After reset with Data Protection API, old data should still be accessible
+        // because keys are not tied to passwords
+        var decryptedData2 = await encryptionService.DecryptContentAsync(encryptedData, false, user.Id);
+        Assert.AreEqual(secretData, decryptedData2, "Old encrypted data should remain accessible after password reset with Data Protection API");
         
         // But new data should work fine
         var newSecretData = "New secret data after reset";
