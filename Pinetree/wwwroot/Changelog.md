@@ -1,0 +1,53 @@
+# Changelog
+
+## [0.9.2] - 2025-06-12
+
+### Features
+- Introduced an AI-powered emoji suggestion feature in the Markdown editor, allowing users to insert contextually relevant emojis into selected text.
+
+---
+
+## [0.9.1] - 2025-06-12
+
+### Features
+- Youtube
+- Added support for custom monthly subscription amounts and a limited-time free 1-year Pro plan offer.
+- Integrated GUI testing into the CI/CD pipeline for improved quality assurance.
+
+---
+
+## [0.8.2] - 2025-06-02
+
+### Features
+- Major changes to the layout of the top page
+- Many small corrections throughout
+- Emoji
+
+---
+
+## [0.7.0] - 2025-05-30
+
+### Features
+- Added support for external authentication providers including Google and Facebook.
+- Introduced QR code generation and display for authenticator setup to enhance two-factor authentication.
+- Enhanced registration and external login flows to require and validate usernames with clear format rules.
+- Introduced a feedback page where users can submit feedback, which is sent directly to the team via Discord integration.
+- Enhanced "Documents" tab with search, filtering, sorting, and pagination controls for improved document management.
+
+---
+
+## [0.5.0] - 2025-05-20
+
+### Features
+- Introduced public/private visibility for files, allowing users to toggle visibility with a dedicated API endpoint.
+- Added drag-and-drop support for reordering and restructuring items in the tree view, including moving items before, after, or into other nodes.
+- Enabled dragging tree view items into Markdown text areas to insert formatted links directly at the cursor position.
+
+---
+
+## [0.4.2] - 2025-04-26
+
+### Features
+- Added a slider to adjust the screen size
+
+---

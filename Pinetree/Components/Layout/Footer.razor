@@ -1,3 +1,4 @@
+@using Pinetree.Services
 <footer class="footer @GetFooterClass()">
     <div class="container">
         <div class="d-flex flex-column align-items-center">
@@ -15,7 +16,7 @@
             </div>
             <div class="footer-copyright my-1 text-center">
                 <span>© 2025 Pinetree</span>
-                <span class="version ms-2">Version @AppVersion</span>
+                <span class="version ms-2">Version @appVersion</span>
             </div>
         </div>
     </div>
@@ -72,7 +73,10 @@
     [Inject]
     private NavigationManager NavigationManager { get; set; } = default!;
 
-    private string AppVersion => Configuration["AppVersion"] ?? "1.0.0";
+    [Inject]
+    private VersionService VersionService { get; set; } = default!;
+
+    private string appVersion = "1.0.0";
 
     private string GetFooterClass()
     {
@@ -97,8 +101,18 @@
         return "footer-fixed";
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        try
+        {
+            appVersion = await VersionService.GetLatestVersionAsync();
+        }
+        catch (Exception)
+        {
+            // Use fallback version if service fails
+            appVersion = Configuration["AppVersion"] ?? "1.0.0";
+        }
+        
         NavigationManager.LocationChanged += (sender, e) => StateHasChanged();
     }
 

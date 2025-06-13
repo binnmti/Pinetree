@@ -32,6 +32,7 @@ builder.Services.AddScoped<BlobStorageService>();
 builder.Services.AddSingleton<RateLimitService>();
 builder.Services.AddScoped<AIEmojiService>();
 builder.Services.AddScoped<EncryptionService>();
+builder.Services.AddScoped<VersionService>();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthorization();
