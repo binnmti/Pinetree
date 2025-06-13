@@ -24,4 +24,4 @@ jobs:
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
     
     - name: Run Unit Tests
-      run: dotnet test Pinetree.Client.TestProject/Pinetree.Client.TestProject.csproj --no-build
+      run: dotnet test Pinetree.TestProject/Pinetree.TestProject.csproj --no-build

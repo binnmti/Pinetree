@@ -8,7 +8,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目", "ソリューション項目", "{5140C14F-88BA-4002-AF44-B9160A9C20AB}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
-		.github\workflows\changelog.yml = .github\workflows\changelog.yml
 		.github\workflows\production.yml = .github\workflows\production.yml
 		.github\workflows\PRValidation.yml = .github\workflows\PRValidation.yml
 		README.md = README.md

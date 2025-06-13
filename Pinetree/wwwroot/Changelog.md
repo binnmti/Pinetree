@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.3] - 2025-06-13
+
+### Features
+- Implemented per-user encryption for all user content, ensuring data is securely stored and decrypted on access.
+
+---
+
 ## [0.9.2] - 2025-06-12
 
 ### Features
