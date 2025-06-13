@@ -1,0 +1,122 @@
+name: Update Changelog on PR Close
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  update-changelog:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Extract version from PR body
+      id: extract_version
+      run: |
+        PR_BODY="${{ github.event.pull_request.body }}"
+        VERSION=$(echo "$PR_BODY" | grep -i "version:" | sed 's/.*version:\s*//' | head -1 | tr -d ' ')
+        if [ -z "$VERSION" ]; then
+          echo "No version found in PR body. Please include 'Version: X.X.X' in your PR description."
+          exit 1
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Found version: $VERSION"
+    
+    - name: Extract summary from PR body
+      id: extract_summary
+      run: |
+        PR_BODY="${{ github.event.pull_request.body }}"
+        PR_TITLE="${{ github.event.pull_request.title }}"
+        
+        # Try to extract summary between ## Summary and next ## or end of text
+        SUMMARY=$(echo "$PR_BODY" | sed -n '/## Summary/,/^## /p' | sed '1d;$d' | sed '/^$/d')
+        
+        # If no summary section found, use PR title
+        if [ -z "$SUMMARY" ]; then
+          SUMMARY="$PR_TITLE"
+        fi
+        
+        # Escape special characters and newlines for GitHub output
+        SUMMARY=$(echo "$SUMMARY" | sed 's/"/\\"/g' | tr '\n' ' ')
+        echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
+        echo "Extracted summary: $SUMMARY"
+    
+    - name: Update CHANGELOG.md
+      run: |
+        VERSION="${{ steps.extract_version.outputs.version }}"
+        DATE=$(date +%Y-%m-%d)
+        PR_NUMBER="${{ github.event.pull_request.number }}"
+        SUMMARY="${{ steps.extract_summary.outputs.summary }}"
+        
+        # Create new changelog entry
+        cat > temp_changelog.md << 'EOF'
+        # Changelog
+        
+        ## [VERSION_PLACEHOLDER] - DATE_PLACEHOLDER
+        
+        ### Features
+        - SUMMARY_PLACEHOLDER
+        
+        PR: #PR_NUMBER_PLACEHOLDER
+        
+        ---
+        
+        EOF
+        
+        # Replace placeholders
+        sed -i "s/VERSION_PLACEHOLDER/$VERSION/g" temp_changelog.md
+        sed -i "s/DATE_PLACEHOLDER/$DATE/g" temp_changelog.md
+        sed -i "s/SUMMARY_PLACEHOLDER/$SUMMARY/g" temp_changelog.md
+        sed -i "s/PR_NUMBER_PLACEHOLDER/$PR_NUMBER/g" temp_changelog.md
+        
+        # Append existing changelog content (skip the first title line)
+        if [ -f "Pinetree/wwwroot/Changelog.md" ]; then
+          tail -n +3 "Pinetree/wwwroot/Changelog.md" >> temp_changelog.md
+        fi
+        
+        # Update the main project's wwwroot
+        cp temp_changelog.md "Pinetree/wwwroot/Changelog.md"
+        rm temp_changelog.md
+        
+        echo "Updated CHANGELOG.md with version $VERSION"
+    
+    - name: Commit changelog
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add "Pinetree/wwwroot/Changelog.md"
+        git commit -m "docs: update changelog for ${{ steps.extract_version.outputs.version }}"
+        git push
+        echo "Committed and pushed changelog update"
+    - name: Send Discord notification
+      if: secrets.DISCORD_WEBHOOK_URL != ''
+      run: |
+        VERSION="${{ steps.extract_version.outputs.version }}"
+        SUMMARY="${{ steps.extract_summary.outputs.summary }}"
+        PR_NUMBER="${{ github.event.pull_request.number }}"
+        PR_URL="${{ github.event.pull_request.html_url }}"
+        DATE=$(date +%Y-%m-%d)
+        
+        curl -H "Content-Type: application/json" \
+             -X POST \
+             -d "{
+               \"embeds\": [{
+                 \"title\": \"🚀 New Release: $VERSION\",
+                 \"description\": \"$SUMMARY\",
+                 \"color\": 3447003,
+                 \"fields\": [
+                   {\"name\": \"PR\", \"value\": \"[#$PR_NUMBER]($PR_URL)\", \"inline\": true},
+                   {\"name\": \"Date\", \"value\": \"$DATE\", \"inline\": true}
+                 ],
+                 \"footer\": {
+                   \"text\": \"Pinetree Changelog\"
+                 }
+               }]
+             }" \
+             "${{ secrets.DISCORD_WEBHOOK_URL }}"
+        echo "Sent Discord notification"
