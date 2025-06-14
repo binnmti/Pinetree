@@ -22,11 +22,22 @@
     <HeadOutlet />
 </head>
 
-<body>
+<body>    
     <Routes />
     <script src="_framework/blazor.web.js"></script>
     <script src="js/resizablePanels.js"></script>
     <script src="@Assets["lib/bootstrap/dist/js/bootstrap.bundle.min.js"]" defer></script>
+    <script>
+        window.downloadFile = (fileName, contentType, base64Data) => {
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', `data:${contentType};base64,${base64Data}`);
+            linkElement.setAttribute('download', fileName);
+            linkElement.style.display = 'none';
+            document.body.appendChild(linkElement);
+            linkElement.click();
+            document.body.removeChild(linkElement);
+        };
+    </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8Z23ZSK9XG"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
