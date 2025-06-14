@@ -10,34 +10,20 @@ public class AuditLogMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<AuditLogMiddleware> _logger;
-    private readonly HashSet<string> _excludedPaths;
 
     public AuditLogMiddleware(RequestDelegate next, ILogger<AuditLogMiddleware> logger)
     {
         _next = next;
         _logger = logger;
-        _excludedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "/_framework/", "/_content/", "/css/", "/js/", "/lib/", "/images/", 
-            "/favicon.ico", "/manifest.json", "/_vs/", "/sw.js"
-        };
     }
 
     public async Task InvokeAsync(HttpContext context, IAuditLogService auditLogService, 
                                   UserManager<ApplicationUser> userManager)
     {
         var stopwatch = Stopwatch.StartNew();
-        var originalResponseBodyStream = context.Response.Body;
         
         try
         {
-            // Skip static files and framework files
-            if (ShouldSkipLogging(context.Request.Path))
-            {
-                await _next(context);
-                return;
-            }
-
             await _next(context);
         }
         catch (Exception ex)
@@ -50,16 +36,48 @@ public class AuditLogMiddleware
         {
             stopwatch.Stop();
             
-            if (!ShouldSkipLogging(context.Request.Path))
+            // Only log if it meets compliance requirements
+            if (ShouldLogForCompliance(context))
             {
                 await LogRequestAsync(context, auditLogService, userManager, stopwatch.ElapsedMilliseconds);
             }
         }
     }
 
-    private bool ShouldSkipLogging(PathString path)
+    private bool ShouldLogForCompliance(HttpContext context)
     {
-        return _excludedPaths.Any(excluded => path.StartsWithSegments(excluded, StringComparison.OrdinalIgnoreCase));
+        var path = context.Request.Path.Value?.ToLower() ?? "";
+        var method = context.Request.Method;
+
+        // Authentication events (login/logout/register)
+        if (path.Contains("/login") || 
+            path.Contains("/logout") || 
+            path.Contains("/register") ||
+            path.StartsWith("/account"))
+        {
+            return true;
+        }
+
+        // Administrative actions
+        if (path.StartsWith("/admin"))
+        {
+            return true;
+        }
+
+        // Data modification operations (API calls)
+        if (path.StartsWith("/api") && method != "GET")
+        {
+            return true;
+        }
+
+        // Failed requests (potential security issues)
+        if (context.Response.StatusCode >= 400)
+        {
+            return true;
+        }
+
+        // Skip everything else (static files, normal page views, etc.)
+        return false;
     }
 
     private async Task LogRequestAsync(HttpContext context, IAuditLogService auditLogService,

@@ -35,6 +35,7 @@ builder.Services.AddScoped<AIEmojiService>();
 builder.Services.AddScoped<EncryptionService>();
 builder.Services.AddScoped<VersionService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddHostedService<AuditCleanupService>();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthorization();
