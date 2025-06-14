@@ -190,6 +190,46 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 }
 app.UseHttpsRedirection();
 
+// Add Security Headers Middleware
+app.Use(async (context, next) =>
+{
+    // Security headers for protection against various attacks
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    
+    // Content Security Policy - adjust based on environment
+    var cspConnectSrc = app.Environment.IsDevelopment() 
+        ? "connect-src 'self' wss: https: ws: http://localhost:* https://localhost:*; "
+        : "connect-src 'self' wss: https: ws:; ";
+    
+    context.Response.Headers["Content-Security-Policy"] = 
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://connect.facebook.net; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "img-src 'self' data: https: blob:; " +
+        "font-src 'self' https://fonts.gstatic.com; " +
+        cspConnectSrc +
+        "frame-src 'self' https://www.youtube.com https://www.google.com https://www.facebook.com; " +
+        "media-src 'self' https: blob:; " +
+        "object-src 'none'; " +
+        "base-uri 'self';";
+    
+    // HSTS header (only for HTTPS)
+    if (context.Request.IsHttps)
+    {
+        context.Response.Headers["Strict-Transport-Security"] = 
+            "max-age=31536000; includeSubDomains; preload";
+    }
+    
+    // Additional security headers
+    context.Response.Headers["Permissions-Policy"] = 
+        "camera=(), microphone=(), geolocation=(), payment=()";
+    
+    await next();
+});
+
 app.UseMiddleware<AuditLogMiddleware>();
 
 app.UseAntiforgery();
