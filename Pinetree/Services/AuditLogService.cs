@@ -87,7 +87,7 @@ public class AuditLogService : IAuditLogService
         if (!string.IsNullOrEmpty(searchTerm))
         {
             query = query.Where(l => l.RequestPath.Contains(searchTerm) ||
-                                     l.UserName!.Contains(searchTerm) ||
+                                     (l.UserName != null && l.UserName.Contains(searchTerm)) ||
                                      l.IpAddress.Contains(searchTerm));
         }
 

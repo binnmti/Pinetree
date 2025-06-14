@@ -5,7 +5,8 @@ using Pinetree.Shared.Model;
 namespace Pinetree.Data
 {
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options)
-    {        protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {        
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.Entity<Pinecone>(entity =>

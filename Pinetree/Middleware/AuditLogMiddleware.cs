@@ -155,7 +155,7 @@ public class AuditLogMiddleware
                 requestPath: request.Path,
                 queryString: request.QueryString.HasValue ? request.QueryString.Value : null,
                 ipAddress: ipAddress,
-                userAgent: request.Headers.UserAgent.FirstOrDefault(),
+                userAgent: request.Headers["User-Agent"].FirstOrDefault(),
                 userId: userId,
                 userName: userName,
                 userRole: userRole,
