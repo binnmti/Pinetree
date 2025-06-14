@@ -43,7 +43,7 @@ public class AuditLogMiddleware
             }
         }
     }
-
+    
     private bool ShouldLogForCompliance(HttpContext context)
     {
         var path = context.Request.Path.Value?.ToLower() ?? "";
@@ -58,19 +58,56 @@ public class AuditLogMiddleware
             return true;
         }
 
-        // Administrative actions
-        if (path.StartsWith("/admin"))
+        // User creation/deletion and permission changes
+        if (path.Contains("/user") || 
+            path.Contains("/role") || 
+            path.Contains("/permission") ||
+            path.StartsWith("/identity"))
         {
             return true;
         }
 
-        // Data modification operations (API calls)
-        if (path.StartsWith("/api") && method != "GET")
+        // Setting changes and administrative actions
+        if (path.StartsWith("/admin") || 
+            path.Contains("/setting") ||
+            path.Contains("/config"))
+        {
+            return true;
+        }
+        
+        // File upload/download operations
+        if (path.Contains("/upload") || 
+            path.Contains("/download") ||
+            path.Contains("/file") ||
+            (method == "POST" && context.Request.HasFormContentType))
         {
             return true;
         }
 
-        // Failed requests (potential security issues)
+        // Data update operations (API calls and form submissions)
+        if (path.StartsWith("/api") && (method == "POST" || method == "PUT" || method == "DELETE" || method == "PATCH"))
+        {
+            return true;
+        }
+
+        // Plan changes (subscription/billing related)
+        if (path.Contains("/plan") || 
+            path.Contains("/subscription") ||
+            path.Contains("/billing"))
+        {
+            return true;
+        }
+
+        // Data viewing of confidential information
+        if (path.Contains("/audit") || 
+            path.Contains("/report") ||
+            path.Contains("/export") ||
+            (path.StartsWith("/api") && method == "GET" && path.Contains("/confidential")))
+        {
+            return true;
+        }
+
+        // Error operations (4xx, 5xx status codes)
         if (context.Response.StatusCode >= 400)
         {
             return true;
@@ -79,7 +116,7 @@ public class AuditLogMiddleware
         // Skip everything else (static files, normal page views, etc.)
         return false;
     }
-
+    
     private async Task LogRequestAsync(HttpContext context, IAuditLogService auditLogService,
                                        UserManager<ApplicationUser> userManager, long responseTimeMs, 
                                        string? errorMessage = null)
@@ -111,6 +148,7 @@ public class AuditLogMiddleware
             }
 
             var ipAddress = GetClientIpAddress(context);
+            var (category, priority) = DetermineAuditCategoryAndPriority(context);
 
             await auditLogService.LogAsync(
                 httpMethod: request.Method,
@@ -123,13 +161,75 @@ public class AuditLogMiddleware
                 userRole: userRole,
                 statusCode: response.StatusCode,
                 responseTimeMs: responseTimeMs,
-                errorMessage: errorMessage
+                errorMessage: errorMessage,
+                auditCategory: category,
+                priority: priority
             );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to log audit entry in middleware");
         }
+    }
+
+    private (string category, string priority) DetermineAuditCategoryAndPriority(HttpContext context)
+    {
+        var path = context.Request.Path.Value?.ToLower() ?? "";
+        var method = context.Request.Method;
+        var statusCode = context.Response.StatusCode;
+
+        // Authentication events
+        if (path.Contains("/login") || path.Contains("/logout") || path.Contains("/register") || path.StartsWith("/account"))
+        {
+            return ("Authentication", "Highest");
+        }
+
+        // User/Permission management
+        if (path.Contains("/user") || path.Contains("/role") || path.Contains("/permission") || path.StartsWith("/identity"))
+        {
+            return ("User Management", "Highest");
+        }
+
+        // Settings/Configuration changes
+        if (path.StartsWith("/admin") || path.Contains("/setting") || path.Contains("/config"))
+        {
+            return ("Configuration", "Highest");
+        }
+
+        // File operations
+        if (path.Contains("/upload") || path.Contains("/download") || path.Contains("/file") || 
+            (method == "POST" && context.Request.HasFormContentType))
+        {
+            return ("File Operations", "High");
+        }
+
+        // Data modification
+        if (path.StartsWith("/api") && (method == "POST" || method == "PUT" || method == "DELETE" || method == "PATCH"))
+        {
+            return ("Data Modification", "High");
+        }
+
+        // Plan/Subscription changes
+        if (path.Contains("/plan") || path.Contains("/subscription") || path.Contains("/billing"))
+        {
+            return ("Business Operations", "High");
+        }
+        
+        // Confidential data viewing
+        if (path.Contains("/audit") || path.Contains("/report") || path.Contains("/export") ||
+            (path.StartsWith("/api") && method == "GET" && path.Contains("/confidential")))
+        {
+            return ("Data Access", "Medium");
+        }
+
+        // Error conditions
+        if (statusCode >= 400)
+        {
+            return (statusCode >= 500 ? "System Error" : "Client Error", "Medium");
+        }
+
+        // Default fallback
+        return ("General", "Low");
     }
 
     private string GetClientIpAddress(HttpContext context)

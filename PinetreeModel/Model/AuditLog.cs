@@ -45,14 +45,20 @@ public class AuditLog
     
     [Required]
     public int StatusCode { get; set; }
-    
-    public long ResponseTimeMs { get; set; }
+      public long ResponseTimeMs { get; set; }
     
     [MaxLength(500)]
     public string? ErrorMessage { get; set; }
     
     [MaxLength(1000)]
     public string? AdditionalData { get; set; }
+    
+    // Audit category and priority tracking
+    [MaxLength(50)]
+    public string? AuditCategory { get; set; }
+    
+    [MaxLength(20)]
+    public string? Priority { get; set; }
     
     public bool IsSuccess => StatusCode >= 200 && StatusCode < 400;
     

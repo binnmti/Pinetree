@@ -12,7 +12,9 @@ public interface IAuditLogService
     Task LogAsync(string httpMethod, string requestPath, string? queryString, string ipAddress, 
                   string? userAgent, string? userId, string? userName, string? userRole, 
                   int statusCode, long responseTimeMs, string? errorMessage = null, 
-                  object? additionalData = null);
+                  object? additionalData = null,
+                  string? auditCategory = null,
+                  string? priority = null);
     
     Task<(IEnumerable<AuditLog> logs, int totalCount)> GetLogsAsync(
         int page = 1, int pageSize = 50, string? searchTerm = null, 
@@ -33,11 +35,12 @@ public class AuditLogService : IAuditLogService
         _context = context;
         _logger = logger;
     }
-
+    
     public async Task LogAsync(string httpMethod, string requestPath, string? queryString, 
                                string ipAddress, string? userAgent, string? userId, string? userName, 
                                string? userRole, int statusCode, long responseTimeMs, 
-                               string? errorMessage = null, object? additionalData = null)
+                               string? errorMessage = null, object? additionalData = null, 
+                               string? auditCategory = null, string? priority = null)
     {
         try
         {
@@ -56,6 +59,8 @@ public class AuditLogService : IAuditLogService
                 ResponseTimeMs = responseTimeMs,
                 ErrorMessage = errorMessage,
                 AdditionalData = additionalData != null ? JsonSerializer.Serialize(additionalData) : null,
+                AuditCategory = auditCategory,
+                Priority = priority,
                 CreatedAt = DateTime.UtcNow
             };
 

@@ -96,8 +96,7 @@
 
                         <!-- Audit Log Table -->
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead class="table-dark">
+                            <table class="table table-striped table-hover">                                <thead class="table-dark">
                                     <tr>
                                         <th style="width: 150px;">Timestamp</th>
                                         <th style="width: 80px;">Method</th>
@@ -106,6 +105,8 @@
                                         <th style="width: 120px;">IP Address</th>
                                         <th style="width: 80px;">Status</th>
                                         <th style="width: 80px;">Time (ms)</th>
+                                        <th style="width: 100px;">Category</th>
+                                        <th style="width: 80px;">Priority</th>
                                         <th style="width: 60px;">Success</th>
                                         <th style="width: 100px;">Actions</th>
                                     </tr>
@@ -148,9 +149,24 @@
                                                 <span class="badge @GetStatusBadgeClass(log.StatusCode)">
                                                     @log.StatusCode
                                                 </span>
+                                            </td>                                            <td>
+                                                @log.ResponseTimeMs
                                             </td>
                                             <td>
-                                                @log.ResponseTimeMs
+                                                @if (!string.IsNullOrEmpty(log.AuditCategory))
+                                                {
+                                                    <span class="badge @GetCategoryBadgeClass(log.AuditCategory)">
+                                                        @log.AuditCategory
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(log.Priority))
+                                                {
+                                                    <span class="badge @GetPriorityBadgeClass(log.Priority)">
+                                                        @log.Priority
+                                                    </span>
+                                                }
                                             </td>
                                             <td>
                                                 @if (log.IsSuccess)
@@ -443,7 +459,7 @@
             _ => "bg-secondary"
         };
     }
-
+    
     private string GetStatusBadgeClass(int statusCode)
     {
         return statusCode switch
@@ -453,6 +469,35 @@
             >= 400 and < 500 => "bg-danger",
             >= 500 => "bg-dark",
             _ => "bg-secondary"
+        };
+    }
+
+    private string GetCategoryBadgeClass(string category)
+    {
+        return category switch
+        {
+            "Authentication" => "bg-primary",
+            "User Management" => "bg-info",
+            "Configuration" => "bg-warning",
+            "File Operations" => "bg-success",
+            "Data Modification" => "bg-danger",
+            "Business Operations" => "bg-dark",
+            "Data Access" => "bg-secondary",
+            "System Error" => "bg-danger",
+            "Client Error" => "bg-warning",
+            _ => "bg-light text-dark"
+        };
+    }
+
+    private string GetPriorityBadgeClass(string priority)
+    {
+        return priority switch
+        {
+            "Highest" => "bg-danger",
+            "High" => "bg-warning",
+            "Medium" => "bg-info",
+            "Low" => "bg-secondary",
+            _ => "bg-light text-dark"
         };
     }
 
