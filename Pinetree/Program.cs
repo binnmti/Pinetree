@@ -9,6 +9,7 @@ using Pinetree.Components.Account;
 using Pinetree.Data;
 using Pinetree.Services;
 using Pinetree.Shared;
+using Pinetree.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +34,8 @@ builder.Services.AddSingleton<RateLimitService>();
 builder.Services.AddScoped<AIEmojiService>();
 builder.Services.AddScoped<EncryptionService>();
 builder.Services.AddScoped<VersionService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddHostedService<AuditCleanupService>();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthorization();
@@ -187,6 +190,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 }
 app.UseHttpsRedirection();
 
+app.UseMiddleware<AuditLogMiddleware>();
 
 app.UseAntiforgery();
 

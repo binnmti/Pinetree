@@ -26,10 +26,22 @@
 - Automatically logged out on deployment?
 - A system where you can press the save button, log in from the popup, and return
 
-
 # Implementation Priority
 ## High Priority (Immediate Action)
 - Access Audit Log
+  - Highest priority (required)
+    - Login/logout
+    - Permission changes
+    - User creation/deletion
+    - Setting changes
+  - High priority (recommended)
+    - File upload/download
+    - Data update operations
+    - Plan changes
+  - Medium priority (as needed)
+    - Data viewing (confidential information only)
+    - Operations when an error occurs
+ 
 - Security Headers
 - Data Classification
 ## Medium Priority (Within 3 Months)
