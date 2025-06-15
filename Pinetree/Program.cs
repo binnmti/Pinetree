@@ -2,7 +2,6 @@ using Azure.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Pinetree.Components;
 using Pinetree.Components.Account;
@@ -35,6 +34,7 @@ builder.Services.AddScoped<AIEmojiService>();
 builder.Services.AddScoped<EncryptionService>();
 builder.Services.AddScoped<VersionService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<ISensitiveDataDetectorService, SensitiveDataDetectorService>();
 builder.Services.AddHostedService<AuditCleanupService>();
 builder.Services.AddHttpContextAccessor();
 
@@ -160,6 +160,9 @@ if (!string.IsNullOrEmpty(builder.Configuration.GetConnectionString("APPLICATION
     });
 }
 var app = builder.Build();
+
+// Set up the service provider for LoggerExtensions
+Pinetree.Extensions.LoggerExtensions.SetServiceProvider(app.Services);
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
