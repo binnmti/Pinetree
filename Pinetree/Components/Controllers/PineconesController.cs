@@ -151,7 +151,7 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         var userName = User.Identity?.Name ?? "";
         var userId = await GetCurrentUserIdAsync();
         var documents = await GetUserTopList(userName)
-            .OrderBy(p => p.Order) // Order でソート
+            .OrderBy(p => p.Order)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
