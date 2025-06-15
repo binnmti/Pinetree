@@ -16,20 +16,20 @@ public class AuditLogMiddleware
         _next = next;
         _logger = logger;
     }
-
+    
     public async Task InvokeAsync(HttpContext context, IAuditLogService auditLogService, 
-                                  UserManager<ApplicationUser> userManager)
+                                  UserManager<ApplicationUser> userManager,
+                                  ISensitiveDataDetectorService sensitiveDataDetector)
     {
         var stopwatch = Stopwatch.StartNew();
-        
-        try
+          try
         {
             await _next(context);
         }
         catch (Exception ex)
         {
             context.Response.StatusCode = 500;
-            await LogRequestAsync(context, auditLogService, userManager, stopwatch.ElapsedMilliseconds, ex.Message);
+            await LogRequestAsync(context, auditLogService, userManager, sensitiveDataDetector, stopwatch.ElapsedMilliseconds, ex.Message);
             throw;
         }
         finally
@@ -39,7 +39,7 @@ public class AuditLogMiddleware
             // Only log if it meets compliance requirements
             if (ShouldLogForCompliance(context))
             {
-                await LogRequestAsync(context, auditLogService, userManager, stopwatch.ElapsedMilliseconds);
+                await LogRequestAsync(context, auditLogService, userManager, sensitiveDataDetector, stopwatch.ElapsedMilliseconds);
             }
         }
     }
@@ -118,8 +118,9 @@ public class AuditLogMiddleware
     }
     
     private async Task LogRequestAsync(HttpContext context, IAuditLogService auditLogService,
-                                       UserManager<ApplicationUser> userManager, long responseTimeMs, 
-                                       string? errorMessage = null)
+                                       UserManager<ApplicationUser> userManager,
+                                       ISensitiveDataDetectorService sensitiveDataDetector,
+                                       long responseTimeMs, string? errorMessage = null)
     {
         try
         {
@@ -146,14 +147,19 @@ public class AuditLogMiddleware
                     }
                 }
             }
-
+            
             var ipAddress = GetClientIpAddress(context);
             var (category, priority) = DetermineAuditCategoryAndPriority(context);
+
+            // Mask sensitive query parameters
+            var maskedQueryString = request.QueryString.HasValue 
+                ? sensitiveDataDetector.MaskQueryString(request.QueryString.Value) 
+                : null;
 
             await auditLogService.LogAsync(
                 httpMethod: request.Method,
                 requestPath: request.Path,
-                queryString: request.QueryString.HasValue ? request.QueryString.Value : null,
+                queryString: maskedQueryString,
                 ipAddress: ipAddress,
                 userAgent: request.Headers["User-Agent"].FirstOrDefault(),
                 userId: userId,

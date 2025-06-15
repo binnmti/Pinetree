@@ -48,7 +48,8 @@ public class EncryptionService
             .FirstOrDefaultAsync(c => c.UserId == userId && c.ClaimType == "EncryptionKeyData_V2");
         
         if (existingKeyData != null && !string.IsNullOrEmpty(existingKeyData.ClaimValue))
-        {            try
+        {            
+            try
             {
                 // Decrypt the stored key using Data Protection API
                 var protectedKey = existingKeyData.ClaimValue;
@@ -115,7 +116,8 @@ public class EncryptionService
             // This is legacy plain text data - return as is
             Console.WriteLine($"Found legacy plain text data for user {userId}");
             return encryptedContent;
-        }        try
+        }        
+        try
         {
             var key = await GetUserEncryptionKeyAsync(userId);
             var actualEncryptedContent = RemoveEncryptionMarker(encryptedContent);
