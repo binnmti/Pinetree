@@ -1,4 +1,4 @@
-namespace Pinetree.Constants;
+namespace Pinetree.Services;
 
 public static class ImageConstants
 {
