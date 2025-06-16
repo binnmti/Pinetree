@@ -8,16 +8,9 @@ namespace Pinetree.Components.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class AIEmojiController : ControllerBase
+    public class AIEmojiController(AIEmojiWithRateLimitService aiEmojiService) : ControllerBase
     {
-        private readonly AIEmojiService _aiEmojiService;
-        private readonly RateLimitService _rateLimitService;
-
-        public AIEmojiController(AIEmojiService aiEmojiService, RateLimitService rateLimitService)
-        {
-            _aiEmojiService = aiEmojiService;
-            _rateLimitService = rateLimitService;
-        }
+        private readonly AIEmojiWithRateLimitService _aiEmojiService = aiEmojiService;
 
         [HttpPost("suggest")]
         public async Task<IActionResult> SuggestEmojiAsync([FromBody] SuggestEmojiRequest request)
@@ -31,21 +24,21 @@ namespace Pinetree.Components.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-            // Check rate limit with detailed information
-            var rateLimitResult = _rateLimitService.CheckRateLimit(userId ?? string.Empty, ipAddress);
-            if (!rateLimitResult.IsAllowed)
-            {
-                var errorMessage = rateLimitResult.LimitType == "per minute" 
-                    ? $"AI Emoji feature is limited to {rateLimitResult.MaxRequests} requests per minute. You have used {rateLimitResult.CurrentRequests} requests. Please wait {rateLimitResult.WaitTimeSeconds} seconds before trying again."
-                    : $"AI Emoji feature is limited to {rateLimitResult.MaxRequests} requests per 10 minutes. You have used {rateLimitResult.CurrentRequests} requests. Please wait {Math.Ceiling(rateLimitResult.WaitTimeSeconds / 60.0)} minutes before trying again.";
-                
-                return StatusCode(429, errorMessage);
-            }
-
             try
             {
-                var emoji = await _aiEmojiService.GetEmojiForTextAsync(request.Text);
-                return Ok(new SuggestEmojiResponse { Emoji = emoji });
+                var result = await _aiEmojiService.GetEmojiForTextAsync(request.Text, userId ?? string.Empty, ipAddress);
+                
+                if (!result.IsSuccess && result.RateLimitResult != null)
+                {
+                    var rateLimitResult = result.RateLimitResult;
+                    var errorMessage = rateLimitResult.LimitType == "per minute" 
+                        ? $"AI Emoji feature is limited to {rateLimitResult.MaxRequests} requests per minute. You have used {rateLimitResult.CurrentRequests} requests. Please wait {rateLimitResult.WaitTimeSeconds} seconds before trying again."
+                        : $"AI Emoji feature is limited to {rateLimitResult.MaxRequests} requests per 10 minutes. You have used {rateLimitResult.CurrentRequests} requests. Please wait {Math.Ceiling(rateLimitResult.WaitTimeSeconds / 60.0)} minutes before trying again.";
+                    
+                    return StatusCode(429, errorMessage);
+                }
+
+                return Ok(new SuggestEmojiResponse { Emoji = result.Emoji });
             }
             catch (Exception ex)
             {
