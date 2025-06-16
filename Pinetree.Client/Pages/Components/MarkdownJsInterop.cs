@@ -75,6 +75,12 @@ public class MarkdownJsInterop(IJSRuntime jsRuntime) : IAsyncDisposable
         await module.InvokeVoidAsync("setupAllEventListeners", container, textArea, dotNetRef);
     }
 
+    public async ValueTask InitResizersAsync()
+    {
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("initResizers");
+    }
+
     public async ValueTask<IJSObjectReference> GetModuleAsync()
     {
         return await _moduleTask.Value;

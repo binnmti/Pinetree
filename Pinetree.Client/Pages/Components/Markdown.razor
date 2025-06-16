@@ -322,7 +322,7 @@
                 await _jsInterop.SetupAllEventListenersAsync(MarkdownContainer, TextAreaRef, objRef);
                 await _jsInterop.ClearAllImagesFromIndexedDB();
             }
-            await JS.InvokeVoidAsync("initResizers");
+            await _jsInterop.InitResizersAsync();
         }
     }
     
@@ -480,7 +480,7 @@
         ViewMode = mode;
         StateHasChanged();
 
-        await JS.InvokeVoidAsync("initResizers");
+        await _jsInterop.InitResizersAsync();
     }
     
     private async ValueTask OnLocationChanging(LocationChangingContext context)

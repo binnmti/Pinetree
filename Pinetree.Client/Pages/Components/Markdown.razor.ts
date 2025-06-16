@@ -1036,3 +1036,146 @@ function setupTextAreaScrollBehavior(textArea: HTMLTextAreaElement): void {
 
     textArea.addEventListener('mousedown', saveScrollPosition);
 }
+
+// Resizable panels functionality
+interface ResizerConfig {
+    resizerId: string;
+    targetPanelId: string;
+    minPercent: number;
+    maxPercent: number;
+}
+
+interface ResizeState {
+    startX: number;
+    startWidth: number;
+    parentWidth: number;
+    isResizing: boolean;
+}
+
+export function initResizers(): void {
+    const resizer1 = document.getElementById('resizer1') as HTMLElement;
+    const resizer2 = document.getElementById('resizer2') as HTMLElement;
+    const panel1 = document.getElementById('panel1') as HTMLElement;
+    const panel2 = document.getElementById('panel2') as HTMLElement;
+    
+    if (!resizer1 || !panel1) {
+        return;
+    }
+    
+    setupResizer(resizer1, panel1, 10, 50);
+    
+    if (resizer2 && panel2) {
+        setupResizer(resizer2, panel2, 10, 90);
+    }
+}
+
+function setupResizer(
+    resizer: HTMLElement, 
+    targetPanel: HTMLElement, 
+    minPercent: number, 
+    maxPercent: number
+): void {
+    const state: ResizeState = {
+        startX: 0,
+        startWidth: 0,
+        parentWidth: 0,
+        isResizing: false
+    };
+    
+    function onMouseDown(e: MouseEvent): void {
+        try {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (!targetPanel || !targetPanel.parentNode) {
+                return;
+            }
+            
+            state.startX = e.pageX;
+            const rect = targetPanel.getBoundingClientRect();
+            state.startWidth = rect.width;
+            state.parentWidth = (targetPanel.parentNode as HTMLElement).getBoundingClientRect().width;
+            state.isResizing = true;
+            
+            document.addEventListener('mousemove', onMouseMove, { passive: false });
+            document.addEventListener('mouseup', onMouseUp, { once: true });
+            resizer.classList.add('resizing');
+            
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            document.body.classList.add('dragging');
+        } catch (error) {
+            console.error("Error during mouse down:", error);
+        }
+    }
+    
+    function onMouseMove(e: MouseEvent): void {
+        try {
+            if (!state.isResizing) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const dx = e.pageX - state.startX;
+            let newWidth = state.startWidth + dx;
+            
+            if (!targetPanel.parentNode) {
+                onMouseUp();
+                return;
+            }
+            
+            const currentParentWidth = state.parentWidth;
+            const minWidth = currentParentWidth * (minPercent / 100);
+            const maxWidth = currentParentWidth * (maxPercent / 100);
+            
+            if (newWidth < minWidth) newWidth = minWidth;
+            if (newWidth > maxWidth) newWidth = maxWidth;
+            
+            const newWidthPercent = (newWidth / currentParentWidth) * 100;
+            
+            if (targetPanel && targetPanel.style) {
+                targetPanel.style.flex = `0 0 ${newWidthPercent}%`;
+                targetPanel.style.width = `${newWidthPercent}%`;
+            }
+        } catch (error) {
+            console.error("Error during mouse move:", error);
+            onMouseUp();
+        }
+    }
+    
+    function onMouseUp(): void {
+        try {
+            state.isResizing = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            
+            if (resizer) {
+                resizer.classList.remove('resizing');
+            }
+            
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            document.body.classList.remove('dragging');
+        } catch (error) {
+            console.error("Error during mouse up:", error);
+        }
+    }
+    
+    resizer.addEventListener('mousedown', onMouseDown);
+    
+    // Prevent TreeView drag events from interfering with resizer
+    resizer.addEventListener('dragstart', (e: DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+    
+    resizer.addEventListener('dragover', (e: DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+    
+    resizer.addEventListener('drop', (e: DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+}
