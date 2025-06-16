@@ -31,6 +31,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Pinetree.Client\Pinetree.Client.csproj" />
-    <ProjectReference Include="..\PinetreeModel\Pinetree.Shared.csproj" />
+    <ProjectReference Include="..\Pinetree.Shared\Pinetree.Shared.csproj" />
   </ItemGroup>
 </Project>

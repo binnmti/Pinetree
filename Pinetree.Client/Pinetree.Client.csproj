@@ -18,6 +18,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PinetreeModel\Pinetree.Shared.csproj" />
+    <ProjectReference Include="..\Pinetree.Shared\Pinetree.Shared.csproj" />
   </ItemGroup>
 </Project>
