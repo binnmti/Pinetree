@@ -62,7 +62,7 @@ public class ImagesController(BlobStorageService blobStorageService) : Controlle
 
         return Ok(images);
     }
-
+    
     [HttpGet("usage")]
     public async Task<IActionResult> GetStorageUsage()
     {
@@ -72,13 +72,15 @@ public class ImagesController(BlobStorageService blobStorageService) : Controlle
             return Unauthorized();
         }
 
-        var usage = await _blobStorageService.GetUserStorageUsageAsync(userName);
+        var usage = await _blobStorageService.GetUserStorageUsageViewModelAsync(userName);
 
         return Ok(new
         {
             used = usage.TotalSizeInBytes,
             quota = usage.QuotaInBytes,
-            percentage = (double)usage.TotalSizeInBytes / usage.QuotaInBytes * 100
+            percentage = usage.UsagePercentage,
+            remaining = usage.RemainingBytes,
+            isOverQuota = usage.IsOverQuota
         });
     }
 

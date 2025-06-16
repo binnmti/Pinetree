@@ -1,11 +1,112 @@
-using Pinetree.Models;
 using Pinetree.Shared.ViewModels;
+using Pinetree.Controllers;
+using Pinetree.Services;
+using Pinetree.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.DataProtection;
+using Moq;
+using Pinetree.Models;
 
 namespace Pinetree.TestProject;
 
 [TestClass]
-public class PineconeModelViewModelTests
+public class PineconeViewModelTests
 {
+    private ApplicationDbContext _context = null!;
+    private Mock<EncryptionService> _mockEncryptionService = null!;
+    private Mock<UserManager<ApplicationUser>> _mockUserManager = null!;
+    private PineconesController _controller = null!;    [TestInitialize]
+    public void Setup()
+    {
+        // In-memory database for testing
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        _context = new ApplicationDbContext(options);
+
+        // Mock UserManager
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        _mockUserManager = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        // Mock EncryptionService with required constructor parameters
+        var mockDataProtectionProvider = new Mock<IDataProtectionProvider>();
+        var mockDataProtector = new Mock<IDataProtector>();
+        mockDataProtectionProvider.Setup(x => x.CreateProtector(It.IsAny<string>())).Returns(mockDataProtector.Object);
+        
+        _mockEncryptionService = new Mock<EncryptionService>(
+            mockDataProtectionProvider.Object, 
+            _mockUserManager.Object, 
+            _context);
+
+        _controller = new PineconesController(_context, _mockEncryptionService.Object, _mockUserManager.Object);
+    }
+    
+    [TestCleanup]
+    public void Cleanup()
+    {
+        _context.Dispose();
+    }
+
+    // Helper methods to access private methods via reflection or create test-specific versions
+    private static PineconeViewModel ToPineconeViewModel(Pinecone model)
+    {
+        return new PineconeViewModel
+        {
+            Guid = model.Guid,
+            Title = model.Title,
+            Content = model.Content,
+            GroupGuid = model.GroupGuid,
+            ParentGuid = model.ParentGuid,
+            Order = model.Order,
+            IsPublic = model.IsPublic,
+            UserName = model.UserName,
+            Create = model.Create,
+            Update = model.Update
+        };
+    }
+
+    private static void UpdatePineconeFromRequest(Pinecone pinecone, PineconeUpdateRequest request, string userName)
+    {
+        pinecone.Title = request.Title;
+        pinecone.Content = request.Content;
+        pinecone.GroupGuid = request.GroupGuid;
+        pinecone.ParentGuid = request.ParentGuid;
+        pinecone.Order = request.Order;
+        pinecone.IsPublic = request.IsPublic;
+        pinecone.UserName = userName;
+        pinecone.Update = DateTime.UtcNow;
+    }    private static async Task<PineconeViewModelWithChildren> ToPineconeViewModelWithChildren(Pinecone model, EncryptionService encryptionService, string userId)
+    {
+        // For testing, we'll just return the content as-is without decryption
+        var viewModel = new PineconeViewModelWithChildren
+        {
+            Guid = model.Guid,
+            Title = model.Title,
+            Content = model.Content, // Use content directly for testing
+            GroupGuid = model.GroupGuid,
+            ParentGuid = model.ParentGuid,
+            Order = model.Order,
+            IsPublic = model.IsPublic,
+            UserName = model.UserName,
+            Create = model.Create,
+            Update = model.Update,
+            Children = new List<PineconeViewModelWithChildren>()
+        };
+
+        if (model.Children != null && model.Children.Count > 0)
+        {
+            foreach (var child in model.Children.OrderBy(c => c.Order))
+            {
+                var childViewModel = await ToPineconeViewModelWithChildren(child, encryptionService, userId);
+                viewModel.Children.Add(childViewModel);
+            }
+        }
+
+        return viewModel;
+    }
+
     [TestMethod]
     public void ToPineconeViewModel_ShouldMapAllProperties()
     {
@@ -23,9 +124,7 @@ public class PineconeModelViewModelTests
             UserName = "testuser",
             Create = DateTime.UtcNow,
             Update = DateTime.UtcNow
-        };
-
-        // Act
+        };        // Act
         var viewModel = ToPineconeViewModel(pinecone);
 
         // Assert
@@ -69,9 +168,7 @@ public class PineconeModelViewModelTests
             ParentGuid = Guid.NewGuid(),
             Order = 2,
             IsPublic = true
-        };
-
-        var userName = "newuser";
+        };        var userName = "newuser";
         var originalUpdate = pinecone.Update;
 
         // Act
@@ -89,7 +186,7 @@ public class PineconeModelViewModelTests
     }
 
     [TestMethod]
-    public void ToPineconeViewModelWithChildren_ShouldMapHierarchy()
+    public async Task ToPineconeViewModelWithChildren_ShouldMapHierarchy()
     {
         // Arrange
         var parentGuid = Guid.NewGuid();
@@ -142,10 +239,8 @@ public class PineconeModelViewModelTests
                     Children = new List<Pinecone>()
                 }
             }
-        };
-
-        // Act
-        var viewModel = ToPineconeViewModelWithChildren(parent);
+        };        // Act
+        var viewModel = await ToPineconeViewModelWithChildren(parent, _mockEncryptionService.Object, "testuser");
 
         // Assert
         Assert.AreEqual(parent.Guid, viewModel.Guid);
@@ -264,64 +359,5 @@ public class PineconeModelViewModelTests
         Assert.AreEqual("Child", viewModel.Children[0].Title);
         Assert.AreEqual("Child Content", viewModel.Children[0].Content);
         Assert.AreEqual(0, viewModel.Children[0].Children.Count);
-    }
-
-    // Helper methods to simulate the conversion logic
-    private static PineconeViewModel ToPineconeViewModel(Pinecone model)
-    {
-        return new PineconeViewModel
-        {
-            Guid = model.Guid,
-            Title = model.Title,
-            Content = model.Content,
-            GroupGuid = model.GroupGuid,
-            ParentGuid = model.ParentGuid,
-            Order = model.Order,
-            IsPublic = model.IsPublic,
-            UserName = model.UserName,
-            Create = model.Create,
-            Update = model.Update
-        };
-    }
-
-    private static void UpdatePineconeFromRequest(Pinecone pinecone, PineconeUpdateRequest request, string userName)
-    {
-        pinecone.Title = request.Title;
-        pinecone.Content = request.Content;
-        pinecone.GroupGuid = request.GroupGuid;
-        pinecone.ParentGuid = request.ParentGuid;
-        pinecone.Order = request.Order;
-        pinecone.IsPublic = request.IsPublic;
-        pinecone.UserName = userName;
-        pinecone.Update = DateTime.UtcNow;
-    }
-
-    private static PineconeViewModelWithChildren ToPineconeViewModelWithChildren(Pinecone model)
-    {
-        var viewModel = new PineconeViewModelWithChildren
-        {
-            Guid = model.Guid,
-            Title = model.Title,
-            Content = model.Content,
-            GroupGuid = model.GroupGuid,
-            ParentGuid = model.ParentGuid,
-            Order = model.Order,
-            IsPublic = model.IsPublic,
-            UserName = model.UserName,
-            Create = model.Create,
-            Update = model.Update,
-            Children = new List<PineconeViewModelWithChildren>()
-        };
-
-        if (model.Children != null && model.Children.Count > 0)
-        {
-            foreach (var child in model.Children.OrderBy(c => c.Order))
-            {
-                var childViewModel = ToPineconeViewModelWithChildren(child);
-                viewModel.Children.Add(childViewModel);
-            }
-        }
-
-        return viewModel;
     }
 }

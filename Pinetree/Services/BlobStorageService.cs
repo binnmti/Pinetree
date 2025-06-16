@@ -2,7 +2,7 @@
 using Azure.Storage.Blobs.Models;
 using Microsoft.EntityFrameworkCore;
 using Pinetree.Data;
-using Pinetree.Shared.Model;
+using Pinetree.Models;
 using Pinetree.Shared.ViewModels;
 
 namespace Pinetree.Services;
@@ -112,7 +112,7 @@ public class BlobStorageService
 
         return true;
     }
-
+    
     public async Task<UserStorageUsage> GetUserStorageUsageAsync(string userName)
     {
         var usage = await _dbContext.UserStorageUsages.SingleOrDefaultAsync(x => x.UserName == userName);
@@ -130,6 +130,12 @@ public class BlobStorageService
             await _dbContext.SaveChangesAsync();
         }
         return usage;
+    }
+
+    public async Task<UserStorageUsageViewModel> GetUserStorageUsageViewModelAsync(string userName)
+    {
+        var usage = await GetUserStorageUsageAsync(userName);
+        return ToUserStorageUsageViewModel(usage);
     }
 
     private string GenerateBlobUrl(string userName, string blobName)
@@ -167,7 +173,7 @@ public class BlobStorageService
                 }
             )
             .ToListAsync();
-
+        
         return [.. results.Select(x => new UserBlobViewModel
         {
             Id = x.Id,
@@ -179,5 +185,17 @@ public class BlobStorageService
             PineconeTitle = x.PineconeTitle,
             UploadedAt = x.UploadedAt
         })];
+    }
+
+    // Model to ViewModel conversion methods
+    private static UserStorageUsageViewModel ToUserStorageUsageViewModel(UserStorageUsage model)
+    {
+        return new UserStorageUsageViewModel
+        {
+            UserName = model.UserName,
+            TotalSizeInBytes = model.TotalSizeInBytes,
+            QuotaInBytes = model.QuotaInBytes,
+            LastUpdated = model.LastUpdated
+        };
     }
 }

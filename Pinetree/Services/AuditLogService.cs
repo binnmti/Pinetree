@@ -1,5 +1,6 @@
 using Pinetree.Data;
-using Pinetree.Shared.Model;
+using Pinetree.Models;
+using Pinetree.Shared.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
@@ -15,11 +16,14 @@ public interface IAuditLogService
                   object? additionalData = null,
                   string? auditCategory = null,
                   string? priority = null);
-    
+      
     Task<(IEnumerable<AuditLog> logs, int totalCount)> GetLogsAsync(
         int page = 1, int pageSize = 50, string? searchTerm = null, 
         DateTime? startDate = null, DateTime? endDate = null, 
         string? userId = null, int? statusCode = null);
+    
+    Task<(IEnumerable<AuditLogViewModel> logs, int totalCount)> GetLogViewModelsAsync(
+        AuditLogFilterRequest filter);
     
     Task<byte[]> ExportToCsvAsync(string? searchTerm = null, DateTime? startDate = null, 
                                   DateTime? endDate = null, string? userId = null, int? statusCode = null);
@@ -118,8 +122,24 @@ public class AuditLogService : IAuditLogService
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
-
+        
         return (logs, totalCount);
+    }
+
+    public async Task<(IEnumerable<AuditLogViewModel> logs, int totalCount)> GetLogViewModelsAsync(
+        AuditLogFilterRequest filter)
+    {
+        var (logs, totalCount) = await GetLogsAsync(
+            filter.Page, 
+            filter.PageSize, 
+            searchTerm: null, // Use filter parameters instead
+            filter.StartDate, 
+            filter.EndDate, 
+            filter.UserName, 
+            filter.StatusCode);
+
+        var viewModels = logs.Select(ToAuditLogViewModel);
+        return (viewModels, totalCount);
     }
 
     public async Task<byte[]> ExportToCsvAsync(string? searchTerm = null, DateTime? startDate = null,
@@ -137,12 +157,38 @@ public class AuditLogService : IAuditLogService
 
         return Encoding.UTF8.GetBytes(csv.ToString());
     }
-
+    
     private string GenerateHash(AuditLog auditLog)
     {
         var data = $"{auditLog.Timestamp:yyyy-MM-dd HH:mm:ss.fff}{auditLog.HttpMethod}{auditLog.RequestPath}{auditLog.IpAddress}{auditLog.UserId}{auditLog.StatusCode}";
         using var sha256 = SHA256.Create();
         var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(data));
         return Convert.ToBase64String(hash);
+    }
+
+    // Model to ViewModel conversion methods
+    private static AuditLogViewModel ToAuditLogViewModel(AuditLog model)
+    {
+        return new AuditLogViewModel
+        {
+            Id = model.Id,
+            Timestamp = model.Timestamp,
+            HttpMethod = model.HttpMethod,
+            RequestPath = model.RequestPath,
+            QueryString = model.QueryString,
+            IpAddress = model.IpAddress,
+            UserAgent = model.UserAgent,
+            UserId = model.UserId,
+            UserName = model.UserName,
+            UserRole = model.UserRole,
+            StatusCode = model.StatusCode,
+            ResponseTimeMs = model.ResponseTimeMs,
+            ErrorMessage = model.ErrorMessage,
+            AdditionalData = model.AdditionalData,
+            AuditCategory = model.AuditCategory,
+            Priority = model.Priority,
+            IsSuccess = model.IsSuccess,
+            CreatedAt = model.CreatedAt
+        };
     }
 }

@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 
-namespace Pinetree.Shared.Model;
+namespace Pinetree.Models;
 
 [Index(nameof(Timestamp))]
 [Index(nameof(UserId))]
@@ -42,13 +42,18 @@ public class AuditLog
     
     [MaxLength(100)]
     public string? UserRole { get; set; }
-    
-    [Required]
+      [Required]
     public int StatusCode { get; set; }
-      public long ResponseTimeMs { get; set; }
+    public long ResponseTimeMs { get; set; }
     
     [MaxLength(500)]
     public string? ErrorMessage { get; set; }
+    
+    [MaxLength(100)]
+    public string? Category { get; set; }
+    
+    [MaxLength(20)]
+    public string? Priority { get; set; }
     
     [MaxLength(1000)]
     public string? AdditionalData { get; set; }
@@ -57,15 +62,33 @@ public class AuditLog
     [MaxLength(50)]
     public string? AuditCategory { get; set; }
     
-    [MaxLength(20)]
-    public string? Priority { get; set; }
-    
-    public bool IsSuccess => StatusCode >= 200 && StatusCode < 400;
-    
     [Required]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     // For tamper detection
     [MaxLength(64)]
     public string? HashValue { get; set; }
+      // Navigation properties for common queries
+    public bool IsError => StatusCode >= 400;
+    public bool IsSuccess => StatusCode >= 200 && StatusCode < 400;
+    public bool IsRedirect => StatusCode >= 300 && StatusCode < 400;
+    
+    // Helper methods
+    public string GetPriorityLevel()
+    {
+        return StatusCode switch
+        {
+            >= 500 => "Critical",
+            >= 400 => "High",
+            >= 300 => "Medium",
+            _ => "Low"
+        };
+    }
+    
+    public string GetFormattedResponseTime()
+    {
+        return ResponseTimeMs < 1000 
+            ? $"{ResponseTimeMs}ms" 
+            : $"{ResponseTimeMs / 1000.0:F2}s";
+    }
 }
