@@ -86,12 +86,6 @@ public class BlobStorageService
         return blobClient.Uri.ToString();
     }
 
-    public async Task<List<UserBlobInfo>> GetUserBlobsAsync(string userName)
-        => await _dbContext.UserBlobInfos
-            .Where(b => b.UserName == userName && !b.IsDeleted)
-            .OrderByDescending(b => b.UploadedAt)
-            .ToListAsync();
-
     public async Task<bool> DeleteBlobAsync(int blobInfoId, string userName)
     {
         var blobInfo = await _dbContext.UserBlobInfos
@@ -138,7 +132,7 @@ public class BlobStorageService
         return usage;
     }
 
-    public string GenerateBlobUrl(string userName, string blobName)
+    private string GenerateBlobUrl(string userName, string blobName)
     {
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
         var folderPath = $"{userName}/";
@@ -146,17 +140,6 @@ public class BlobStorageService
         var blobClient = containerClient.GetBlobClient(fullBlobPath);
         return blobClient.Uri.ToString();
     }
-
-    public UserBlobViewModel MapToViewModel(UserBlobInfo blobInfo) => new()
-    {
-        Id = blobInfo.Id,
-        BlobUrl = GenerateBlobUrl(blobInfo.UserName, blobInfo.BlobName),
-        FileName = blobInfo.BlobName,
-        SizeInBytes = blobInfo.SizeInBytes,
-        ContentType = blobInfo.ContentType,
-        PineconeGuid = blobInfo.PineconeGuid,
-        UploadedAt = blobInfo.UploadedAt
-    };
 
     public async Task<List<UserBlobViewModel>> GetUserBlobViewModelsAsync(string userName)
     {
