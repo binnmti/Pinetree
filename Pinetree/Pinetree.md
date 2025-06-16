@@ -16,6 +16,7 @@
 - Multilingualization, or rather Japaneseization
 - Browther Back
 - SEO/OGP
+- User Data Cancellation
 - mail@pinetree.site
 - Color Theme
 - Font / Font Size
