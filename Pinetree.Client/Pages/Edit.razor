@@ -8,6 +8,7 @@
 @using Pinetree.Client.VModel
 @using Pinetree.Shared
 @using Pinetree.Shared.Model
+@using Pinetree.Shared.ViewModels
 
 @rendermode InteractiveWebAssembly
 
@@ -46,7 +47,7 @@
             }
             var roleClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role);
             IsProfessional = Roles.IsProfessional(roleClaim?.Value ?? "");
-            var hit = await HttpClient.GetFromJsonAsync<Pinecone>($"/api/Pinecones/get-include-child/{Guid}");
+            var hit = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"/api/Pinecones/get-include-child/{Guid}");
             if (hit == null)
             {
                 NavigationManager.NavigateTo("/");

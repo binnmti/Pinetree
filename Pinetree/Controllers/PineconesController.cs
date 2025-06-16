@@ -3,8 +3,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Pinetree.Data;
+using Pinetree.Models;
 using Pinetree.Services;
-using Pinetree.Shared.Model;
+using Pinetree.Shared.ViewModels;
 
 namespace Pinetree.Controllers;
 
@@ -26,7 +27,61 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         var user = await UserManager.GetUserAsync(User);
         return user?.Id ?? throw new UnauthorizedAccessException("User not found");
     }
-    
+
+    /// <summary>
+    /// Converts Pinecone model to PineconeViewModel
+    /// </summary>
+    private static PineconeViewModel ToPineconeViewModel(Pinecone model)
+    {
+        return new PineconeViewModel
+        {
+            Guid = model.Guid,
+            Title = model.Title,
+            Content = model.Content,
+            GroupGuid = model.GroupGuid,
+            ParentGuid = model.ParentGuid,
+            Order = model.Order,
+            IsPublic = model.IsPublic,
+            UserName = model.UserName,
+            Create = model.Create,
+            Update = model.Update
+        };
+    }
+
+    /// <summary>
+    /// Converts Pinecone model with children to PineconeViewModelWithChildren for hierarchical data
+    /// </summary>
+    private static async Task<PineconeViewModelWithChildren> ToPineconeViewModelWithChildren(Pinecone model, EncryptionService encryptionService, string userId)
+    {
+        // Decrypt content
+        var decryptedTitle = await encryptionService.DecryptContentAsync(model.Title, model.IsPublic, userId);
+        var decryptedContent = await encryptionService.DecryptContentAsync(model.Content, model.IsPublic, userId);
+
+        var viewModel = new PineconeViewModelWithChildren
+        {
+            Guid = model.Guid,
+            Title = decryptedTitle ?? "",
+            Content = decryptedContent ?? "",
+            GroupGuid = model.GroupGuid,
+            ParentGuid = model.ParentGuid,
+            Order = model.Order,
+            IsPublic = model.IsPublic,
+            UserName = model.UserName,
+            Create = model.Create,
+            Update = model.Update,
+            Children = new List<PineconeViewModelWithChildren>()
+        };
+
+        // Convert children recursively
+        foreach (var child in model.Children.OrderBy(c => c.Order))
+        {
+            var childViewModel = await ToPineconeViewModelWithChildren(child, encryptionService, userId);
+            viewModel.Children.Add(childViewModel);
+        }
+
+        return viewModel;
+    }
+
     [HttpPost("update-tree")]
     public async Task<IActionResult> UpdateTree([FromBody] TreeUpdateRequest request)
     {
@@ -44,9 +99,8 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
 
         return Ok();
     }
-    
     [HttpPost("add-top")]
-    public async Task<Pinecone> AddTop()
+    public async Task<PineconeViewModel> AddTop()
     {
         var userName = User.Identity?.Name ?? "";
         var userId = await GetCurrentUserIdAsync();
@@ -77,14 +131,15 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
             IsPublic = false,
             Create = DateTime.UtcNow,
             Update = DateTime.UtcNow,
-        };await DbContext.Pinecone.AddAsync(pinecone);
+        };
+        await DbContext.Pinecone.AddAsync(pinecone);
         await DbContext.SaveChangesAsync();
-        
+
         // Return decrypted data to client
         pinecone.Title = (await EncryptionService.DecryptContentAsync(pinecone.Title, pinecone.IsPublic, userId))!;
         pinecone.Content = (await EncryptionService.DecryptContentAsync(pinecone.Content, pinecone.IsPublic, userId))!;
-        
-        return pinecone;
+
+        return ToPineconeViewModel(pinecone);
     }
 
     [HttpDelete("delete-include-child/{id}")]
@@ -122,31 +177,30 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
 
         await DbContext.SaveChangesAsync();
     }
-    
     [HttpGet("get-include-child/{guid}")]
-    public async Task<Pinecone> GetIncludeChild(Guid guid)
+    public async Task<PineconeViewModelWithChildren?> GetIncludeChild(Guid guid)
     {
         var userId = await GetCurrentUserIdAsync();
         var pinecone = await GetPineconeById(guid);
         var rootPinecone = await GetPineconeById(pinecone?.GroupGuid ?? Guid.Empty);
-        if (rootPinecone == null) return Pinecone.None;
-        return await LoadChildrenRecursively(rootPinecone, userId);
+        if (rootPinecone == null) return null;
+        var loadedPinecone = await LoadChildrenRecursively(rootPinecone, userId);
+        return await ToPineconeViewModelWithChildren(loadedPinecone, EncryptionService, userId);
     }
-    
     [HttpGet("get-view-include-child/{guid}")]
     [AllowAnonymous]
-    public async Task<Pinecone?> GetViewIncludeChild(Guid guid)
+    public async Task<PineconeViewModelWithChildren?> GetViewIncludeChild(Guid guid)
     {
         var pinecone = await GetPineconeById(guid);
-        if (pinecone == null || !pinecone.IsPublic) return Pinecone.None;
+        if (pinecone == null || !pinecone.IsPublic) return null;
         var rootPinecone = await GetPineconeById(pinecone.GroupGuid);
-        if (rootPinecone == null) return Pinecone.None;
-        // For public content, we can use a dummy userId since public content is not encrypted
-        return await LoadChildrenRecursively(rootPinecone, "anonymous");
+        if (rootPinecone == null) return null;        // For public content, we can use a dummy userId since public content is not encrypted
+        var loadedPinecone = await LoadChildrenRecursively(rootPinecone, "anonymous");
+        return await ToPineconeViewModelWithChildren(loadedPinecone, EncryptionService, "anonymous");
     }
-    
+
     [HttpGet("get-user-top-list")]
-    public async Task<List<Pinecone>> GetUserTopList([FromQuery] int pageNumber, [FromQuery] int pageSize)
+    public async Task<List<PineconeViewModel>> GetUserTopList([FromQuery] int pageNumber, [FromQuery] int pageSize)
     {
         var userName = User.Identity?.Name ?? "";
         var userId = await GetCurrentUserIdAsync();
@@ -156,14 +210,16 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
             .Take(pageSize)
             .ToListAsync();
 
-        // Decrypt content for client
+        // Decrypt content and convert to ViewModels
+        var result = new List<PineconeViewModel>();
         foreach (var doc in documents)
         {
             doc.Title = (await EncryptionService.DecryptContentAsync(doc.Title, doc.IsPublic, userId))!;
             doc.Content = (await EncryptionService.DecryptContentAsync(doc.Content, doc.IsPublic, userId))!;
+            result.Add(ToPineconeViewModel(doc));
         }
 
-        return documents;
+        return result;
     }
 
     [HttpGet("get-user-top-count")]
@@ -172,7 +228,7 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         var userName = User.Identity?.Name ?? "";
         return await GetUserTopList(userName).CountAsync();
     }
-    
+
     [HttpPut("toggle-visibility/{guid}")]
     public async Task<IActionResult> ToggleVisibility(Guid guid, [FromBody] VisibilityUpdateRequest request)
     {
@@ -193,7 +249,7 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
             // Decrypt current content
             var currentTitle = await EncryptionService.DecryptContentAsync(pinecone.Title, pinecone.IsPublic, userId);
             var currentContent = await EncryptionService.DecryptContentAsync(pinecone.Content, pinecone.IsPublic, userId);
-              // Re-encrypt with new visibility setting
+            // Re-encrypt with new visibility setting
             pinecone.Title = (await EncryptionService.EncryptContentAsync(currentTitle, request.IsPublic, userId))!;
             pinecone.Content = (await EncryptionService.EncryptContentAsync(currentContent, request.IsPublic, userId))!;
         }
@@ -209,8 +265,8 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
     {
         public bool IsPublic { get; set; }
     }
-    
-    private async Task RebuildTreeAsync(Guid rootId, List<PineconeDto> nodes, string userName, string userId)
+
+    private async Task RebuildTreeAsync(Guid rootId, List<PineconeUpdateRequest> nodes, string userName, string userId)
     {
         using var transaction = await DbContext.Database.BeginTransactionAsync();
         try
@@ -296,14 +352,14 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
             DbContext.Pinecone.Remove(child);
         }
     }
-    
+
     private async Task<Pinecone> CreateNodeRecursivelyAsync(
-        PineconeDto nodeDto,
-        Guid? parentGuid,
-        Dictionary<Guid, PineconeDto> nodeMap,
-        string userName,
-        Guid groupGuid,
-        string userId)
+      PineconeUpdateRequest nodeDto,
+      Guid? parentGuid,
+      Dictionary<Guid, PineconeUpdateRequest> nodeMap,
+      string userName,
+      Guid groupGuid,
+      string userId)
     {
         var existingPinecone = await DbContext.Pinecone.SingleOrDefaultAsync(p => p.Guid == nodeDto.Guid);
         Pinecone pinecone;
@@ -349,8 +405,8 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
 
         return pinecone;
     }
-    
-    private async Task UpdateNodesAsync(List<PineconeDto> nodes, string userName, string userId)
+
+    private async Task UpdateNodesAsync(List<PineconeUpdateRequest> nodes, string userName, string userId)
     {
         foreach (var node in nodes)
         {
@@ -367,7 +423,7 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
 
         await DbContext.SaveChangesAsync();
     }
-    
+
     private async Task<Pinecone> SingleIncludeChild(Guid id)
     {
         var userName = User.Identity?.Name ?? "";
@@ -385,7 +441,7 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         => DbContext.Pinecone
             .Where(x => x.UserName == userName)
             .Where(x => x.ParentGuid == null);
-    
+
     private async Task<Pinecone> LoadChildrenRecursively(Pinecone parent, string userId)
     {
         // Decrypt parent content
@@ -405,7 +461,7 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         return parent;
     }
 
-    private async Task<Pinecone?> GetPineconeById(Guid guid) 
+    private async Task<Pinecone?> GetPineconeById(Guid guid)
         => await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Guid == guid);
 
     [HttpGet("get-user-documents")]
@@ -417,7 +473,7 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         // Apply search filter
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            query = query.Where(p => 
+            query = query.Where(p =>
                 EF.Functions.Like(p.Title, $"%{request.Search}%") ||
                 EF.Functions.Like(p.Content, $"%{request.Search}%"));
         }
@@ -431,40 +487,41 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         // Apply sorting
         query = request.SortBy?.ToLower() switch
         {
-            "title" => request.SortDescending 
-                ? query.OrderByDescending(p => p.Title) 
+            "title" => request.SortDescending
+                ? query.OrderByDescending(p => p.Title)
                 : query.OrderBy(p => p.Title),
-            "createdat" => request.SortDescending 
-                ? query.OrderByDescending(p => p.Create) 
+            "createdat" => request.SortDescending
+                ? query.OrderByDescending(p => p.Create)
                 : query.OrderBy(p => p.Create),
-            "updatedat" => request.SortDescending 
-                ? query.OrderByDescending(p => p.Update) 
+            "updatedat" => request.SortDescending
+                ? query.OrderByDescending(p => p.Update)
                 : query.OrderBy(p => p.Update),
-            _ => request.SortDescending 
-                ? query.OrderByDescending(p => p.Update) 
+            _ => request.SortDescending
+                ? query.OrderByDescending(p => p.Update)
                 : query.OrderBy(p => p.Update)
         };
 
         // Get total count before pagination
         var totalRecords = await query.CountAsync();
-        
+
         // Apply pagination
         var documents = await query
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
             .ToListAsync();
-        
-        // Decrypt content for client
+        // Decrypt content and convert to ViewModels
         var userId = await GetCurrentUserIdAsync();
+        var documentViewModels = new List<PineconeViewModel>();
         foreach (var doc in documents)
         {
             doc.Title = (await EncryptionService.DecryptContentAsync(doc.Title, doc.IsPublic, userId))!;
             doc.Content = (await EncryptionService.DecryptContentAsync(doc.Content, doc.IsPublic, userId))!;
+            documentViewModels.Add(ToPineconeViewModel(doc));
         }
 
         return new UserDocumentsResponse
         {
-            Documents = documents,
+            Documents = documentViewModels,
             TotalRecords = totalRecords,
             TotalPages = (int)Math.Ceiling(totalRecords / (double)request.PageSize),
             CurrentPage = request.PageNumber,
@@ -484,7 +541,7 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
 
     public class UserDocumentsResponse
     {
-        public List<Pinecone> Documents { get; set; } = new();
+        public List<PineconeViewModel> Documents { get; set; } = new();
         public int TotalRecords { get; set; }
         public int TotalPages { get; set; }
         public int CurrentPage { get; set; }

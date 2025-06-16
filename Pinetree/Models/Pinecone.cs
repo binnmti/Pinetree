@@ -1,17 +1,18 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
-namespace Pinetree.Shared.Model;
+namespace Pinetree.Models;
 
-[Index(nameof(Guid), IsUnique = true)] // Move the Index attribute to the class level
+[Index(nameof(Guid), IsUnique = true)]
 public class Pinecone
 {
     [Key]
     public long Id { get; set; }
     public required Guid Guid { get; set; }
     public required Guid GroupGuid { get; set; }
-    // From a database perspective, it is more convenient to set this to NULL, so we decided to allow long?    [ForeignKey("Parent")]
+    // From a database perspective, it is more convenient to set this to NULL, so we decided to allow long?
     public required Guid? ParentGuid { get; set; }
+    
     [MaxLength(200)]
     public required string Title { get; set; }
     public required string Content { get; set; }
@@ -40,21 +41,3 @@ public class Pinecone
         Update = default,
     };
 }
-
-public class PineconeDto
-{
-    public Guid Guid { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
-    public Guid GroupGuid { get; set; }
-    public Guid? ParentGuid { get; set; }
-    public int Order { get; set; }
-}
-
-public class TreeUpdateRequest
-{
-    public Guid RootId { get; set; }
-    public bool HasStructuralChanges { get; set; }
-    public List<PineconeDto> Nodes { get; set; } = [];
-}
-
