@@ -199,11 +199,10 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    
-    // Content Security Policy - adjust based on environment
+      // Content Security Policy - adjust based on environment
     var cspConnectSrc = app.Environment.IsDevelopment() 
-        ? "connect-src 'self' wss: https: ws: http://localhost:* https://localhost:*; "
-        : "connect-src 'self' wss: https: ws:; ";
+        ? "connect-src 'self' wss: https: ws: http://localhost:* https://localhost:* blob:; "
+        : "connect-src 'self' wss: https: ws: blob:; ";
     
     context.Response.Headers["Content-Security-Policy"] = 
         "default-src 'self'; " +
