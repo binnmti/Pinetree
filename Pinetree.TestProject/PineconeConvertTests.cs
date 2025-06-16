@@ -1,5 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Pinetree.Client.VModel;
+using Pinetree.Client.ViewModels;
 using Pinetree.Shared.ViewModels;
 
 namespace Pinetree.TestProject;

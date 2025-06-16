@@ -1,5 +1,5 @@
 ﻿using Microsoft.JSInterop;
-using Pinetree.Client.VModel;
+using Pinetree.Client.ViewModels;
 using Pinetree.Client.Services;
 
 namespace Pinetree.Client.Pages.Components;

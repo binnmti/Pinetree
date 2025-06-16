@@ -1,8 +1,8 @@
 ﻿using Pinetree.Shared.ViewModels;
 
-namespace Pinetree.Client.VModel;
+namespace Pinetree.Client.ViewModels;
 
-public static class PineconeConvert
+public static class PineconeViewConvert
 {
     public static PinetreeView ToPinetree(this PineconeViewModel pinecone, PinetreeView? parent)
         => new(pinecone.Guid, pinecone.Title, pinecone.Content, parent, pinecone.GroupGuid, pinecone.IsPublic);

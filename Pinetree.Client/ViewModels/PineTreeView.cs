@@ -1,4 +1,4 @@
-﻿namespace Pinetree.Client.VModel;
+﻿namespace Pinetree.Client.ViewModels;
 
 public class PinetreeView(Guid guid, string title, string content, PinetreeView? parent, Guid groupId, bool isPublic) : IEquatable<PinetreeView>
 {
