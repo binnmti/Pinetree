@@ -1,6 +1,5 @@
 # TODO
 - stripe 
-- Password Reset MailAddress Miss
 
 - Refactor
 - Changelog Discord
@@ -8,7 +7,6 @@
 - Layout CSS 100% Check
   - Smartphone Layout
 - Toolbar Refactor
-- Move Controll Folder
 - Share Folder Refactor
 - Markdown Text Hidden
 
@@ -18,6 +16,7 @@
 - Multilingualization, or rather Japaneseization
 - Browther Back
 - SEO/OGP
+- User Data Cancellation
 - mail@pinetree.site
 - Color Theme
 - Font / Font Size

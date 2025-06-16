@@ -77,7 +77,7 @@
                             @if (!IsPublicView)
                             {
                                 <button @onclick="SaveChanges" disabled="@(!HasPendingChanges() || IsTry || _isSaving)"
-                                class="btn btn-sm btn-primary me-2" title="Save changes">
+                                        class="btn btn-sm btn-primary me-2" title="Save changes">
                                     @if (_isSaving)
                                     {
                                         <span class="d-flex align-items-center">
@@ -117,10 +117,10 @@
                                     <button type="button" class="btn btn-sm btn-outline-dark" title="Bold" @onclick='() => FormatText("**", "**")'>
                                         <i class="bi bi-type-bold"></i>
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-outline-dark" title="Italic" @onclick='() => FormatText("*", "*" )'>
+                                    <button type="button" class="btn btn-sm btn-outline-dark" title="Italic" @onclick='() => FormatText("*", "*")'>
                                         <i class="bi bi-type-italic"></i>
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-outline-dark" title="Strikethrough" @onclick='() => FormatText("~~", "~~" )'>
+                                    <button type="button" class="btn btn-sm btn-outline-dark" title="Strikethrough" @onclick='() => FormatText("~~", "~~")'>
                                         <i class="bi bi-type-strikethrough"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-outline-dark" title="Heading" @onclick='() => InsertList("# ")'>
@@ -137,13 +137,13 @@
                                     <button type="button" class="btn btn-sm btn-outline-dark" title="Check List" @onclick='() => InsertList("- [ ] ")'>
                                         <i class="bi bi-check-square"></i>
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-outline-dark" title="Insert Code Block" @onclick='() => FormatText("```\n", "\n```" )'>
+                                    <button type="button" class="btn btn-sm btn-outline-dark" title="Insert Code Block" @onclick='() => FormatText("```\n", "\n```")'>
                                         <i class="bi bi-code-slash"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-outline-dark" title="Quotation" @onclick='() => InsertList("> ")'>
                                         <i class="bi bi-quote"></i>
                                     </button>
-                                </div>                       
+                                </div>
                                 <div class="btn-group me-2" role="group" aria-label="Indentation">
                                     <button type="button" class="btn btn-sm btn-outline-dark" title="Decrease Indent" @onclick="DecreaseIndent">
                                         <i class="bi bi-text-indent-right"></i>
@@ -175,19 +175,19 @@
                                         </button>
                                         <i class="bi bi-question-circle ms-1 p-1 text-body" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" data-bs-custom-class="custom-tooltip"
                                            title="<strong>AI Emoji Feature</strong><br>Select text and click the AI Emoji button to automatically suggest the most suitable emoji for your content.<br><br>Rate limits apply to prevent abuse. Please wait a moment if you reach the limit."></i>
-                                            }
+                                    }
                                 </div>
                                 <div class="btn-group ms-2" role="group" aria-label="View mode">
                                     <button type="button" class="btn btn-sm @(ViewMode == "split" ? "btn-primary" : "btn-outline-secondary")"
-                                    @onclick='() => SetViewMode("split")' title="Split view">
+                                            @onclick='() => SetViewMode("split")' title="Split view">
                                         <i class="bi bi-layout-split"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm @(ViewMode == "edit" ? "btn-primary" : "btn-outline-secondary")"
-                                    @onclick='() => SetViewMode("edit")' title="Edit only">
+                                            @onclick='() => SetViewMode("edit")' title="Edit only">
                                         <i class="bi bi-pencil-square"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm @(ViewMode == "preview" ? "btn-primary" : "btn-outline-secondary")"
-                                    @onclick='() => SetViewMode("preview")' title="Preview only">
+                                            @onclick='() => SetViewMode("preview")' title="Preview only">
                                         <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
@@ -201,7 +201,7 @@
                                 </button>
                             </div>
                             <i class="bi bi-question-circle ms-1 p-1 text-body" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" data-bs-custom-class="custom-tooltip"
-                            title="<strong>Document ID</strong><br>This unique identifier can be used to reference this document in markdown links.<br>Format: [link text](//ID)"></i>
+                               title="<strong>Document ID</strong><br>This unique identifier can be used to reference this document in markdown links.<br>Format: [link text](//ID)"></i>
                         </div>
                     }
                 </div>
@@ -209,13 +209,13 @@
                     @if (!IsPublicView)
                     {
                         <div id="panel2" class="panel"
-                        style="display: @(ViewMode == "edit" || ViewMode == "split" ? "flex" : "none");
-                                @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
+                             style="display: @(ViewMode == "edit" || ViewMode == "split" ? "flex" : "none");
+                                    @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
                             <div class="panel-content-wrapper">
                                 <div class="panel-content">
                                     <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize"
-                                    style="width:100%; height:99%; padding-bottom: 50vh; box-sizing: border-box;"
-                                    @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
+                                              style="width:100%; height:99%; padding-bottom: 50vh; box-sizing: border-box;"
+                                              @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
                                 </div>
                                 <div class="panel-footer">
                                     <div class="counter">@Content.Length characters</div>
@@ -236,7 +236,7 @@
                             <div class="panel-footer">
                                 <div class="counter">-</div>
                             </div>
-                         </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -277,7 +277,7 @@
     public required IJSRuntime JS { get; set; }
     [Inject]
     public required HttpClient HttpClient { get; set; }
-    private MarkdownJsInterop _jsInterop = null!;
+    private IJSObjectReference _jsModule = null!;
     private ElementReference TextAreaRef;
     private ElementReference MarkdownContainer;
     private DotNetObjectReference<Markdown>? objRef;
@@ -308,38 +308,37 @@
     {
         if (firstRender)
         {
-            _jsInterop = new MarkdownJsInterop(JS);
+            _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/Components/Markdown.razor.js");
             SetCurrent(Guid);
             registration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
             LastSavedState = Pinetree.DeepClone();
             objRef = DotNetObjectReference.Create(this);
             if (IsPublicView)
             {
-                await _jsInterop.SetupMarkdownClickListenerAsync(MarkdownContainer, objRef);
+                await _jsModule.InvokeVoidAsync("setupMarkdownClickListener", MarkdownContainer, objRef);
             }
             else
             {
-                await _jsInterop.SetupAllEventListenersAsync(MarkdownContainer, TextAreaRef, objRef);
-                await _jsInterop.ClearAllImagesFromIndexedDB();
+                await _jsModule.InvokeVoidAsync("setupAllEventListeners", MarkdownContainer, TextAreaRef, objRef);
+                await _jsModule.InvokeVoidAsync("clearAllImagesFromIndexedDB");
             }
-            await JS.InvokeVoidAsync("initResizers");
+            await _jsModule.InvokeVoidAsync("initResizers");
         }
     }
-    
+
     public async ValueTask DisposeAsync()
     {
         if (_isDisposed) return; // Prevent multiple disposal
         _isDisposed = true;
-
+        
         try
         {
             // Cleanup JavaScript event handlers first, before disposing objRef
-            if (objRef != null && _jsInterop != null)
+            if (objRef != null && _jsModule != null)
             {
                 try
                 {
-                    var module = await _jsInterop.GetModuleAsync();
-                    await module.InvokeVoidAsync("cleanupNavigationHandlers", objRef);
+                    await _jsModule.InvokeVoidAsync("cleanupNavigationHandlers", objRef);
                 }
                 catch (Exception ex)
                 {
@@ -350,29 +349,29 @@
             // Dispose registration first
             registration?.Dispose();
             _resetIconTimer?.Dispose();
-            
+
             // Clear JS resources before disposing objRef
-            if (_jsInterop != null)
+            if (_jsModule != null)
             {
                 try
                 {
-                    await _jsInterop.ClearAllImagesFromIndexedDB();
+                    await _jsModule.InvokeVoidAsync("clearAllImagesFromIndexedDB");
                 }
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine($"Error clearing images from IndexedDB: {ex.Message}");
                 }
-                
+
                 try
                 {
-                    await _jsInterop.DisposeAsync();
+                    await _jsModule.DisposeAsync();
                 }
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine($"Error disposing JS interop: {ex.Message}");
                 }
             }
-            
+
             // Dispose objRef last
             objRef?.Dispose();
         }
@@ -381,7 +380,7 @@
             Console.Error.WriteLine($"Error during DisposeAsync: {ex.Message}");
         }
     }
-    
+
     [JSInvokable]
     public void HandleMarkdownLinkClick(string idString)
     {
@@ -404,17 +403,17 @@
     {
         try
         {
-            if (_isDisposed) 
+            if (_isDisposed)
             {
                 Console.WriteLine("HasPendingChanges called on disposed component, returning false");
                 return false;
             }
-            
+
             if (Pinetree == null || LastSavedState == null)
             {
                 return false;
             }
-            
+
             return LastSavedState != Pinetree;
         }
         catch (ObjectDisposedException)
@@ -428,7 +427,7 @@
             return false; // On error, assume no pending changes
         }
     }
-    
+
     [JSInvokable]
     public async Task HandleUndoShortcut()
     {
@@ -458,18 +457,18 @@
     }
 
     [JSInvokable]
-    public async Task HandleDroppedFile(MarkdownJsInterop.ImageUploadResult result)
+    public async Task HandleDroppedFile(ImageUploadResult result)
     {
         if (string.IsNullOrEmpty(result.BlobUrl)) return;
 
 
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+        var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
 
         string markdownText = $"![{result.FileName}]({result.BlobUrl})\n\n";
-        await _jsInterop.ReplaceSelectionAsync(TextAreaRef, markdownText);
+        await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, markdownText);
 
         int newPosition = selection.Start + markdownText.Length;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, newPosition, newPosition);
+        await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, newPosition, newPosition);
 
         var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
@@ -480,9 +479,9 @@
         ViewMode = mode;
         StateHasChanged();
 
-        await JS.InvokeVoidAsync("initResizers");
+        await _jsModule.InvokeVoidAsync("initResizers");
     }
-    
+
     private async ValueTask OnLocationChanging(LocationChangingContext context)
     {
         try
@@ -572,7 +571,7 @@
             _isSaving = true;
             if (Content.Contains("blob:"))
             {
-                var updatedContent = await _jsInterop.ReplaceBlobUrlsInContentAsync(Content, Guid, TextAreaRef);
+                var updatedContent = await _jsModule.InvokeAsync<string>("replaceBlobUrlsInContent", Content, Guid.ToString(), TextAreaRef);
 
                 if (updatedContent != Content)
                 {
@@ -581,7 +580,7 @@
                     Current.Content = Content;
                 }
                 await ProcessAllNodesAsync(Pinetree);
-                await _jsInterop.ClearAllImagesFromIndexedDB();
+                await _jsModule.InvokeVoidAsync("clearAllImagesFromIndexedDB");
             }
 
             bool hasStructuralChanges = TreeStructureDetector.HasStructuralChanges(Pinetree, LastSavedState);
@@ -589,13 +588,13 @@
             var nodeDtos = ConvertToPineconeDtos(Pinetree);
 
             var request = new TreeUpdateRequest
-                {
-                    RootId = Pinetree.Guid,
-                    HasStructuralChanges = hasStructuralChanges,
-                    Nodes = hasStructuralChanges
+            {
+                RootId = Pinetree.Guid,
+                HasStructuralChanges = hasStructuralChanges,
+                Nodes = hasStructuralChanges
                         ? nodeDtos
                         : GetChangedNodes(Pinetree, LastSavedState)
-                };
+            };
 
             var response = await HttpClient.PostAsJsonAsync("/api/Pinecones/update-tree", request);
             if (response.IsSuccessStatusCode)
@@ -630,14 +629,14 @@
     private void ConvertNodeRecursively(PinetreeView node, Guid? parentGuid, List<PineconeDto> result)
     {
         var dto = new PineconeDto
-            {
-                Guid = node.Guid,
-                Title = node.Title,
-                Content = node.Content,
-                GroupGuid = node.GroupGuid,
-                ParentGuid = parentGuid,
-                Order = GetNodeOrder(node)
-            };
+        {
+            Guid = node.Guid,
+            Title = node.Title,
+            Content = node.Content,
+            GroupGuid = node.GroupGuid,
+            ParentGuid = parentGuid,
+            Order = GetNodeOrder(node)
+        };
 
         result.Add(dto);
 
@@ -707,14 +706,14 @@
         if (isChanged)
         {
             changedNodes.Add(new PineconeDto
-                {
-                    Guid = node.Guid,
-                    Title = node.Title,
-                    Content = node.Content,
-                    GroupGuid = node.GroupGuid,
-                    ParentGuid = parentGuid,
-                    Order = currentOrder
-                });
+            {
+                Guid = node.Guid,
+                Title = node.Title,
+                Content = node.Content,
+                GroupGuid = node.GroupGuid,
+                ParentGuid = parentGuid,
+                Order = currentOrder
+            });
         }
 
         for (int i = 0; i < node.Children.Count; i++)
@@ -727,7 +726,7 @@
     {
         if (node.Content.Contains("blob:"))
         {
-            var updatedContent = await _jsInterop.ReplaceBlobUrlsInContentAsync(node.Content, node.Guid);
+            var updatedContent = await _jsModule.InvokeAsync<string>("replaceBlobUrlsInContent", node.Content, node.Guid.ToString());
             if (updatedContent != node.Content)
             {
                 node.Content = updatedContent;
@@ -759,7 +758,7 @@
     {
         try
         {
-            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+            var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
             if (string.IsNullOrEmpty(selection.Text)) return;
 
             var defaultChildTitle = MarkdownUtil.GetChildTitle(selection.Text);
@@ -767,7 +766,7 @@
             if (string.IsNullOrWhiteSpace(childTitle)) return;
             var childId = await MarkdownUtil.AddChildAsync(Current, childTitle, selection.Text, JS, HttpClient, IsTry, IsProfessional);
             var linkText = $"[{childTitle}](//{childId})";
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, linkText);
+            await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, linkText);
             Current.Content = await JS.GetTextAreaValueAsync();
             SetCurrent(Guid);
             StateHasChanged();
@@ -777,30 +776,29 @@
             Console.Error.WriteLine($"Error creating child file: {ex.Message}");
         }
     }
-    
     private async Task FormatText(string prefix, string suffix)
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+        var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
         if (selection.Text.Length > 0)
         {
             // Trim whitespace from the selected text and preserve it outside the formatting
             var trimmedText = selection.Text.Trim();
             var leadingWhitespace = selection.Text.Substring(0, selection.Text.Length - selection.Text.TrimStart().Length);
             var trailingWhitespace = selection.Text.Substring(selection.Text.TrimEnd().Length);
-            
+
             var formattedText = $"{leadingWhitespace}{prefix}{trimmedText}{suffix}{trailingWhitespace}";
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, formattedText);
-            
+            await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, formattedText);
+
             // Position cursor after the prefix, inside the formatting
             int newStart = selection.Start + leadingWhitespace.Length + prefix.Length;
             int newEnd = newStart + trimmedText.Length;
-            await _jsInterop.SetCaretPositionAsync(TextAreaRef, newStart, newEnd);
+            await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, newStart, newEnd);
         }
         else
         {
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{prefix}{suffix}");
+            await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, $"{prefix}{suffix}");
             int start = selection.Start;
-            await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + prefix.Length, start + prefix.Length);
+            await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, start + prefix.Length, start + prefix.Length);
         }
         var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
@@ -808,7 +806,7 @@
 
     private async Task InsertList(string prefix)
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+        var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
         string result;
         var lines = selection.Text.Split('\n');
         if (selection.Text.Length > 0)
@@ -819,9 +817,9 @@
         {
             result = $"{prefix}";
         }
-        await _jsInterop.ReplaceSelectionAsync(TextAreaRef, result);
+        await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, result);
         var newCaretPosition = selection.End + prefix.Length * lines.Length;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, newCaretPosition, newCaretPosition);
+        await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, newCaretPosition, newCaretPosition);
 
         var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
@@ -829,17 +827,17 @@
 
     private async Task InsertLink()
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+        var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
         if (selection.Text.Length > 0)
         {
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"[{selection.Text}](https://)");
+            await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, $"[{selection.Text}](https://)");
         }
         else
         {
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"[](https://)");
+            await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, $"[](https://)");
         }
         int start = selection.Start;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + 1, start + 1);
+        await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, start + 1, start + 1);
         var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
     }
@@ -848,28 +846,28 @@
     {
         try
         {
-            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
-            var result = await _jsInterop.OpenFileDialogAndGetBlobUrlAsync();
+            var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
+            var result = await _jsModule.InvokeAsync<ImageUploadResult>("openFileDialogAndGetBlobUrl");
             if (!string.IsNullOrEmpty(result.BlobUrl))
             {
-                await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![{result.FileName}]({result.BlobUrl})");
+                await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, $"![{result.FileName}]({result.BlobUrl})");
 
                 int start = selection.Start;
-                await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + 2, start + 2 + result.FileName.Length);
+                await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, start + 2, start + 2 + result.FileName.Length);
             }
             else
             {
                 if (selection.Text.Length > 0)
                 {
-                    await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![{selection.Text}](https://)");
+                    await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, $"![{selection.Text}](https://)");
                 }
                 else
                 {
-                    await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"![](https://)");
+                    await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, $"![](https://)");
                 }
 
                 int start = selection.Start;
-                await _jsInterop.SetCaretPositionAsync(TextAreaRef, start + 2, start + 2);
+                await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, start + 2, start + 2);
             }
             var content = await JS.GetTextAreaValueAsync();
             UpdateContent(content);
@@ -879,7 +877,7 @@
             Console.Error.WriteLine(ex.Message);
         }
     }
-    
+
     private void InsertEmoji()
     {
         try
@@ -896,50 +894,47 @@
 
     private async Task OnEmojiSelected(string emoji)
     {
-        _isEmojiPickerVisible = false;
-        StateHasChanged();
+        _isEmojiPickerVisible = false; StateHasChanged();
 
         if (!string.IsNullOrEmpty(emoji))
         {
-            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, emoji);
+            var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
+            await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, emoji);
 
             int newPosition = selection.Start + emoji.Length;
-            await _jsInterop.SetCaretPositionAsync(TextAreaRef, newPosition, newPosition);
+            await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, newPosition, newPosition);
 
             var content = await JS.GetTextAreaValueAsync();
             UpdateContent(content);
         }
     }
-
     private async Task InsertGrid()
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
-        await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{selection.Text}\n| Column 1 | Column 2 | Column 3 |\n| --- | --- | --- |\n| text | text | text |\n");
+        var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
+        await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, $"{selection.Text}\n| Column 1 | Column 2 | Column 3 |\n| --- | --- | --- |\n| text | text | text |\n");
         int end = selection.End;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, end, end);
+        await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, end, end);
         var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
     }
 
     private async Task InsertLine()
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
-        await _jsInterop.ReplaceSelectionAsync(TextAreaRef, $"{selection.Text}\n---\n");
+        var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
+        await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, $"{selection.Text}\n---\n");
         int end = selection.End;
-        await _jsInterop.SetCaretPositionAsync(TextAreaRef, end, end);
+        await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, end, end);
         var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
     }
 
     private async Task UndoAsync()
     {
-        string? newContent = Current.Undo();
-        if (newContent == null) return;
+        string? newContent = Current.Undo(); if (newContent == null) return;
 
         Content = newContent;
         MarkdownText = MarkdownService.ToHtml(Content);
-        await _jsInterop.SetTextAreaValueAsync(TextAreaRef, Content, true);
+        await _jsModule.InvokeAsync<string>("setTextAreaValue", TextAreaRef, Content, true);
         StateHasChanged();
     }
 
@@ -950,48 +945,48 @@
 
         Content = newContent;
         MarkdownText = MarkdownService.ToHtml(Content);
-        await _jsInterop.SetTextAreaValueAsync(TextAreaRef, Content, true);
+        await _jsModule.InvokeAsync<string>("setTextAreaValue", TextAreaRef, Content, true);
         StateHasChanged();
-    }    
-    
+    }
+
     private async Task IncreaseIndent()
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
-        
+        var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
+
         if (selection.Text.Length > 0)
         {
             // Selection exists: indent all selected lines and maintain selection
             var lines = selection.Text.Split('\n');
             var indentedLines = lines.Select(line => "  " + line);
             var result = string.Join('\n', indentedLines);
-            
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, result);
-            
+
+            await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, result);
+
             // Maintain selection but adjust for added indentation
             int additionalChars = lines.Length * 2; // 2 spaces per line
-            await _jsInterop.SetCaretPositionAsync(TextAreaRef, selection.Start, selection.End + additionalChars);
+            await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, selection.Start, selection.End + additionalChars);
         }
         else
         {
             // No selection: insert 2 spaces and move cursor
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, "  ");
-            await _jsInterop.SetCaretPositionAsync(TextAreaRef, selection.Start + 2, selection.Start + 2);
+            await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, "  ");
+            await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, selection.Start + 2, selection.Start + 2);
         }
-        
+
         var content = await JS.GetTextAreaValueAsync();
         UpdateContent(content);
     }
 
     private async Task DecreaseIndent()
     {
-        var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
-        
+        var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
+
         if (selection.Text.Length > 0)
         {
             // Selection exists: unindent all selected lines and maintain selection
             var lines = selection.Text.Split('\n');
             int totalRemovedChars = 0;
-            var unindentedLines = lines.Select(line => 
+            var unindentedLines = lines.Select(line =>
             {
                 if (line.StartsWith("  "))
                 {
@@ -1011,13 +1006,13 @@
                 return line;
             });
             var result = string.Join('\n', unindentedLines);
-            
-            await _jsInterop.ReplaceSelectionAsync(TextAreaRef, result);
+
+            await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, result);
             UpdateContent(result);
 
             // Maintain selection but adjust for removed indentation
             int newEnd = Math.Max(selection.Start, selection.End - totalRemovedChars);
-            await _jsInterop.SetCaretPositionAsync(TextAreaRef, selection.Start, newEnd);
+            await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, selection.Start, newEnd);
         }
         else
         {
@@ -1025,7 +1020,7 @@
             var content = await JS.GetTextAreaValueAsync();
             var lines = content.Split('\n');
             var caretPos = selection.Start;
-            
+
             // Find current line
             int currentPos = 0;
             int lineIndex = 0;
@@ -1038,13 +1033,13 @@
                 }
                 currentPos += lines[i].Length + 1; // +1 for newline
             }
-            
+
             // Remove indentation from current line
             if (lineIndex < lines.Length)
             {
                 var currentLine = lines[lineIndex];
                 int removedChars = 0;
-                
+
                 if (currentLine.StartsWith("  "))
                 {
                     lines[lineIndex] = currentLine.Substring(2);
@@ -1057,21 +1052,20 @@
                 }
                 else if (currentLine.StartsWith(" "))
                 {
-                    lines[lineIndex] = currentLine.Substring(1);
-                    removedChars = 1;
+                    lines[lineIndex] = currentLine.Substring(1); removedChars = 1;
                 }
-                
+
                 if (removedChars > 0)
                 {
                     var newContent = string.Join('\n', lines);
-                    await _jsInterop.SetTextAreaValueAsync(TextAreaRef, newContent, false);
-                    
+                    await _jsModule.InvokeAsync<string>("setTextAreaValue", TextAreaRef, newContent, false);
+
                     // Adjust cursor position if it was after the removed indentation
                     int lineStartPos = currentPos - (lineIndex > 0 ? lines[lineIndex].Length + removedChars : lines[lineIndex].Length + removedChars);
                     int cursorPosInLine = caretPos - lineStartPos;
                     int newCursorPos = Math.Max(lineStartPos, caretPos - Math.Min(removedChars, cursorPosInLine));
-                    
-                    await _jsInterop.SetCaretPositionAsync(TextAreaRef, newCursorPos, newCursorPos);
+
+                    await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, newCursorPos, newCursorPos);
                     UpdateContent(newContent);
                 }
             }
@@ -1085,7 +1079,7 @@
         Current.Content = Content;
         StateHasChanged();
     }
-      
+
     private async Task AutoInsertEmoji()
     {
         // Only available in Edit mode, not in Playground/Try mode
@@ -1093,29 +1087,29 @@
         {
             return;
         }
-
         try
         {
-            var selection = await _jsInterop.GetSelectionAsync(TextAreaRef);
+            var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
             if (selection.Start == selection.End) return; // No selection
-            
+
             var selectedText = selection.Text;
             if (string.IsNullOrWhiteSpace(selectedText)) return;
-              // Call server API to get emoji suggestion
+            // Call server API to get emoji suggestion
             var requestBody = new { Text = selectedText };
-            var response = await HttpClient.PostAsJsonAsync("/api/aiemoji/suggest", requestBody);            if (response.IsSuccessStatusCode)
+            var response = await HttpClient.PostAsJsonAsync("/api/aiemoji/suggest", requestBody); if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<SuggestEmojiResponse>();
                 var suggestedEmoji = result?.Emoji;
-                
+
                 if (!string.IsNullOrEmpty(suggestedEmoji))
                 {
-                    // Insert emoji at the beginning of selection
-                    await _jsInterop.ReplaceSelectionAsync(TextAreaRef, suggestedEmoji + " " + selectedText);
+                    // Check if selected text starts with markdown symbols (# or -)
+                    var modifiedText = GetEmojiInsertedText(selectedText, suggestedEmoji);
+                    await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, modifiedText);
                     var content = await JS.GetTextAreaValueAsync();
                     UpdateContent(content);
                 }
-            }            
+            }
             else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
             {
                 // Handle rate limit error with detailed message
@@ -1143,10 +1137,100 @@
             await JS.InvokeVoidAsync("alert", "AI Emoji feature encountered an unexpected error. Please try again in a few moments.");
             Console.WriteLine($"Auto emoji error: {ex.Message}");
         }
-    }
+    }    
     
+    private string GetEmojiInsertedText(string selectedText, string emoji)
+    {
+        // Trim the text to handle leading/trailing whitespace
+        var trimmedText = selectedText.TrimStart();
+        
+        // Check if the text starts with markdown symbols
+        if (IsMarkdownSymbolStart(trimmedText))
+        {
+            var insertPosition = GetEmojiInsertPosition(trimmedText);
+            if (insertPosition > 0)
+            {
+                // Insert emoji after the symbol and space(s)
+                var prefix = trimmedText.Substring(0, insertPosition);
+                var suffix = trimmedText.Substring(insertPosition);
+                return selectedText.Substring(0, selectedText.Length - trimmedText.Length) + 
+                       prefix + emoji + " " + suffix;
+            }
+        }
+        
+        // Default behavior: insert emoji at the beginning
+        return emoji + " " + selectedText;
+    }
+
+    private bool IsMarkdownSymbolStart(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return false;
+        
+        // Check for various markdown patterns
+        return text.StartsWith("#") ||           // Heading
+               text.StartsWith("-") ||           // Bullet list or checkbox
+               text.StartsWith("- [ ]") ||       // Checkbox (unchecked)
+               text.StartsWith("- [x]") ||       // Checkbox (checked)
+               text.StartsWith("- [X]") ||       // Checkbox (checked, uppercase)
+               System.Text.RegularExpressions.Regex.IsMatch(text, @"^\d+\."); // Numbered list
+    }
+
+    private int GetEmojiInsertPosition(string text)
+    {
+        // Handle checkbox patterns first (more specific)
+        if (text.StartsWith("- [ ]") || text.StartsWith("- [x]") || text.StartsWith("- [X]"))
+        {
+            var afterCheckbox = text.StartsWith("- [ ]") ? 5 : 5; // "- [ ]" or "- [x]" length
+            // Skip any spaces after the checkbox
+            while (afterCheckbox < text.Length && text[afterCheckbox] == ' ')
+            {
+                afterCheckbox++;
+            }
+            return afterCheckbox;
+        }
+        
+        // Handle numbered list (e.g., "1. ", "12. ")
+        var numberedListMatch = System.Text.RegularExpressions.Regex.Match(text, @"^(\d+\.\s*)");
+        if (numberedListMatch.Success)
+        {
+            return numberedListMatch.Length;
+        }
+        
+        // Handle simple bullet list or heading
+        if (text.StartsWith("#") || text.StartsWith("-"))
+        {
+            var symbolIndex = text.StartsWith("#") ? text.IndexOf('#') : text.IndexOf('-');
+            if (symbolIndex >= 0)
+            {
+                var afterSymbol = symbolIndex + 1;
+                // Skip any spaces after the symbol
+                while (afterSymbol < text.Length && text[afterSymbol] == ' ')
+                {
+                    afterSymbol++;
+                }
+                return afterSymbol;
+            }
+        }
+        
+        return 0;
+    }
+
     public class SuggestEmojiResponse
     {
         public string Emoji { get; set; } = string.Empty;
+    }
+
+    // Data transfer objects for JavaScript interop
+    public class TextSelection
+    {
+        public string Text { get; set; } = "";
+        public int Start { get; set; }
+        public int End { get; set; }
+    }
+
+    public class ImageUploadResult
+    {
+        public string BlobUrl { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
     }
 }
