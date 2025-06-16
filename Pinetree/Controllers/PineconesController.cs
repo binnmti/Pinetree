@@ -6,7 +6,7 @@ using Pinetree.Data;
 using Pinetree.Services;
 using Pinetree.Shared.Model;
 
-namespace Pinetree.Components.Controllers;
+namespace Pinetree.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -59,9 +59,9 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
             counter++;
         }
 
-        var maxOrder = (await DbContext.Pinecone
+        var maxOrder = await DbContext.Pinecone
             .Where(p => p.UserName == userName && p.ParentGuid == null)
-            .MaxAsync(p => (int?)p.Order)) ?? -1;
+            .MaxAsync(p => (int?)p.Order) ?? -1;
         maxOrder += 1;
 
         var guid = Guid.NewGuid();

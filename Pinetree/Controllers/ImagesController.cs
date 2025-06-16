@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Pinetree.Services;
 
-namespace Pinetree.Components.Controllers;
+namespace Pinetree.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

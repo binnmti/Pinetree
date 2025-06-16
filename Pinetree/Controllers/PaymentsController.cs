@@ -6,7 +6,7 @@ using Pinetree.Shared;
 using Stripe;
 using Stripe.Checkout;
 
-namespace Pinetree.Components.Controllers;
+namespace Pinetree.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]

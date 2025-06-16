@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
-namespace Pinetree.Components.Controllers;
+namespace Pinetree.Controllers;
 
 [ApiController]
 [Route("api/discord")]
