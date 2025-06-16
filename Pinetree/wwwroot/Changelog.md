@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.4] - 2025-06-16
+
+### Features
+- Introduced secure logging that automatically masks sensitive data before logging.
+- Added a service to detect and mask sensitive data in objects and query strings.
+- Enhanced audit logging to mask sensitive information in query parameters.
+- Implemented additional HTTP security headers for improved security.
+
+---
+
 ## [0.9.3] - 2025-06-13
 
 ### Features
