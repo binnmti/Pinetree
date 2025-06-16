@@ -1103,8 +1103,9 @@
 
                 if (!string.IsNullOrEmpty(suggestedEmoji))
                 {
-                    // Insert emoji at the beginning of selection
-                    await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, suggestedEmoji + " " + selectedText);
+                    // Check if selected text starts with markdown symbols (# or -)
+                    var modifiedText = GetEmojiInsertedText(selectedText, suggestedEmoji);
+                    await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, modifiedText);
                     var content = await JS.GetTextAreaValueAsync();
                     UpdateContent(content);
                 }
@@ -1136,6 +1137,82 @@
             await JS.InvokeVoidAsync("alert", "AI Emoji feature encountered an unexpected error. Please try again in a few moments.");
             Console.WriteLine($"Auto emoji error: {ex.Message}");
         }
+    }    
+    
+    private string GetEmojiInsertedText(string selectedText, string emoji)
+    {
+        // Trim the text to handle leading/trailing whitespace
+        var trimmedText = selectedText.TrimStart();
+        
+        // Check if the text starts with markdown symbols
+        if (IsMarkdownSymbolStart(trimmedText))
+        {
+            var insertPosition = GetEmojiInsertPosition(trimmedText);
+            if (insertPosition > 0)
+            {
+                // Insert emoji after the symbol and space(s)
+                var prefix = trimmedText.Substring(0, insertPosition);
+                var suffix = trimmedText.Substring(insertPosition);
+                return selectedText.Substring(0, selectedText.Length - trimmedText.Length) + 
+                       prefix + emoji + " " + suffix;
+            }
+        }
+        
+        // Default behavior: insert emoji at the beginning
+        return emoji + " " + selectedText;
+    }
+
+    private bool IsMarkdownSymbolStart(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return false;
+        
+        // Check for various markdown patterns
+        return text.StartsWith("#") ||           // Heading
+               text.StartsWith("-") ||           // Bullet list or checkbox
+               text.StartsWith("- [ ]") ||       // Checkbox (unchecked)
+               text.StartsWith("- [x]") ||       // Checkbox (checked)
+               text.StartsWith("- [X]") ||       // Checkbox (checked, uppercase)
+               System.Text.RegularExpressions.Regex.IsMatch(text, @"^\d+\."); // Numbered list
+    }
+
+    private int GetEmojiInsertPosition(string text)
+    {
+        // Handle checkbox patterns first (more specific)
+        if (text.StartsWith("- [ ]") || text.StartsWith("- [x]") || text.StartsWith("- [X]"))
+        {
+            var afterCheckbox = text.StartsWith("- [ ]") ? 5 : 5; // "- [ ]" or "- [x]" length
+            // Skip any spaces after the checkbox
+            while (afterCheckbox < text.Length && text[afterCheckbox] == ' ')
+            {
+                afterCheckbox++;
+            }
+            return afterCheckbox;
+        }
+        
+        // Handle numbered list (e.g., "1. ", "12. ")
+        var numberedListMatch = System.Text.RegularExpressions.Regex.Match(text, @"^(\d+\.\s*)");
+        if (numberedListMatch.Success)
+        {
+            return numberedListMatch.Length;
+        }
+        
+        // Handle simple bullet list or heading
+        if (text.StartsWith("#") || text.StartsWith("-"))
+        {
+            var symbolIndex = text.StartsWith("#") ? text.IndexOf('#') : text.IndexOf('-');
+            if (symbolIndex >= 0)
+            {
+                var afterSymbol = symbolIndex + 1;
+                // Skip any spaces after the symbol
+                while (afterSymbol < text.Length && text[afterSymbol] == ' ')
+                {
+                    afterSymbol++;
+                }
+                return afterSymbol;
+            }
+        }
+        
+        return 0;
     }
 
     public class SuggestEmojiResponse
