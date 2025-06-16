@@ -35,6 +35,7 @@ builder.Services.AddScoped<EncryptionService>();
 builder.Services.AddScoped<VersionService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ISensitiveDataDetectorService, SensitiveDataDetectorService>();
+builder.Services.AddScoped<ISecureLoggerService, SecureLoggerService>();
 builder.Services.AddHostedService<AuditCleanupService>();
 builder.Services.AddHttpContextAccessor();
 
@@ -161,8 +162,6 @@ if (!string.IsNullOrEmpty(builder.Configuration.GetConnectionString("APPLICATION
 }
 var app = builder.Build();
 
-// Set up the service provider for LoggerExtensions
-Pinetree.Extensions.LoggerExtensions.SetServiceProvider(app.Services);
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();

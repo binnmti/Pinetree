@@ -1,95 +1,93 @@
 using Pinetree.Services;
-using System.Text.Json;
 
 namespace Pinetree.Extensions;
 
+/// <summary>
+/// Extension methods for ILogger that provide secure logging capabilities.
+/// These methods accept services as parameters to avoid static dependencies.
+/// </summary>
 public static class LoggerExtensions
 {
-    private static IServiceProvider? _serviceProvider;
-
-    public static void SetServiceProvider(IServiceProvider serviceProvider)
+    /// <summary>
+    /// Logs an object with secure masking using the provided SecureLoggerService.
+    /// </summary>
+    public static void LogSecure<T>(this ILogger logger, ISecureLoggerService secureLogger, T obj, string message, LogLevel logLevel = LogLevel.Information)
     {
-        _serviceProvider = serviceProvider;
+        secureLogger.LogSecure(logger, obj, message, logLevel);
     }
 
-    public static void LogSecure<T>(this ILogger logger, T obj, string message, LogLevel logLevel = LogLevel.Information)
+    /// <summary>
+    /// Logs an object with secure masking using the provided SensitiveDataDetectorService directly.
+    /// </summary>
+    public static void LogSecure<T>(this ILogger logger, ISensitiveDataDetectorService? detector, T obj, string message, LogLevel logLevel = LogLevel.Information)
     {
-        if (obj == null)
-        {
-            logger.Log(logLevel, "{Message} | Data: null", message);
-            return;
-        }
-
-        try
-        {
-            var detector = GetSensitiveDataDetector();
-            
-            if (detector != null)
-            {
-                var maskedObject = detector.MaskSensitiveObject(obj);
-                var maskedJson = JsonSerializer.Serialize(maskedObject, new JsonSerializerOptions 
-                { 
-                    WriteIndented = false,
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                });
-                
-                logger.Log(logLevel, "{Message} | Data: {MaskedData}", message, maskedJson);
-            }
-            else
-            {
-                // Fallback if service is not available - log basic information without sensitive data
-                var typeName = obj.GetType().Name;
-                logger.Log(logLevel, "{Message} | Data: [SENSITIVE_DATA_MASKED] Type: {TypeName}", message, typeName);
-            }
-        }
-        catch (Exception ex)
-        {
-            // If anything goes wrong with masking, don't log the original object
-            logger.LogError(ex, "Failed to mask sensitive data for logging. Message: {Message}", message);
-            logger.Log(logLevel, "{Message} | Data: [ERROR_MASKING_DATA]", message);
-        }
+        var secureLogger = new SecureLoggerService(detector);
+        secureLogger.LogSecure(logger, obj, message, logLevel);
     }
 
-    public static void LogSecureInformation<T>(this ILogger logger, T obj, string message)
+    public static void LogSecureInformation<T>(this ILogger logger, ISecureLoggerService secureLogger, T obj, string message)
     {
-        logger.LogSecure(obj, message, LogLevel.Information);
+        secureLogger.LogSecureInformation(logger, obj, message);
     }
 
-    public static void LogSecureWarning<T>(this ILogger logger, T obj, string message)
+    public static void LogSecureInformation<T>(this ILogger logger, ISensitiveDataDetectorService? detector, T obj, string message)
     {
-        logger.LogSecure(obj, message, LogLevel.Warning);
+        var secureLogger = new SecureLoggerService(detector);
+        secureLogger.LogSecureInformation(logger, obj, message);
     }
 
-    public static void LogSecureError<T>(this ILogger logger, T obj, string message)
+    public static void LogSecureWarning<T>(this ILogger logger, ISecureLoggerService secureLogger, T obj, string message)
     {
-        logger.LogSecure(obj, message, LogLevel.Error);
+        secureLogger.LogSecureWarning(logger, obj, message);
     }
 
-    public static void LogSecureDebug<T>(this ILogger logger, T obj, string message)
+    public static void LogSecureWarning<T>(this ILogger logger, ISensitiveDataDetectorService? detector, T obj, string message)
     {
-        logger.LogSecure(obj, message, LogLevel.Debug);
+        var secureLogger = new SecureLoggerService(detector);
+        secureLogger.LogSecureWarning(logger, obj, message);
     }
 
-    public static void LogSecureTrace<T>(this ILogger logger, T obj, string message)
+    public static void LogSecureError<T>(this ILogger logger, ISecureLoggerService secureLogger, T obj, string message)
     {
-        logger.LogSecure(obj, message, LogLevel.Trace);
+        secureLogger.LogSecureError(logger, obj, message);
     }
 
-    public static void LogSecureCritical<T>(this ILogger logger, T obj, string message)
+    public static void LogSecureError<T>(this ILogger logger, ISensitiveDataDetectorService? detector, T obj, string message)
     {
-        logger.LogSecure(obj, message, LogLevel.Critical);
+        var secureLogger = new SecureLoggerService(detector);
+        secureLogger.LogSecureError(logger, obj, message);
     }
 
-    private static ISensitiveDataDetectorService? GetSensitiveDataDetector()
+    public static void LogSecureDebug<T>(this ILogger logger, ISecureLoggerService secureLogger, T obj, string message)
     {
-        try
-        {
-            return _serviceProvider?.GetService<ISensitiveDataDetectorService>();
-        }
-        catch
-        {
-            // Return null if service cannot be retrieved
-            return null;
-        }
+        secureLogger.LogSecureDebug(logger, obj, message);
+    }
+
+    public static void LogSecureDebug<T>(this ILogger logger, ISensitiveDataDetectorService? detector, T obj, string message)
+    {
+        var secureLogger = new SecureLoggerService(detector);
+        secureLogger.LogSecureDebug(logger, obj, message);
+    }
+
+    public static void LogSecureTrace<T>(this ILogger logger, ISecureLoggerService secureLogger, T obj, string message)
+    {
+        secureLogger.LogSecureTrace(logger, obj, message);
+    }
+
+    public static void LogSecureTrace<T>(this ILogger logger, ISensitiveDataDetectorService? detector, T obj, string message)
+    {
+        var secureLogger = new SecureLoggerService(detector);
+        secureLogger.LogSecureTrace(logger, obj, message);
+    }
+
+    public static void LogSecureCritical<T>(this ILogger logger, ISecureLoggerService secureLogger, T obj, string message)
+    {
+        secureLogger.LogSecureCritical(logger, obj, message);
+    }
+
+    public static void LogSecureCritical<T>(this ILogger logger, ISensitiveDataDetectorService? detector, T obj, string message)
+    {
+        var secureLogger = new SecureLoggerService(detector);
+        secureLogger.LogSecureCritical(logger, obj, message);
     }
 }
