@@ -17,7 +17,7 @@ public class FontSettingsService
     {
         try
         {
-            var fontFamily = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", FontFamilyKey);
+            var fontFamily = await _jsRuntime.InvokeAsync<string>("getCookie", FontFamilyKey);
             return string.IsNullOrEmpty(fontFamily) ? "system-ui, -apple-system, sans-serif" : fontFamily;
         }
         catch
@@ -30,11 +30,11 @@ public class FontSettingsService
     {
         try
         {
-            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", FontFamilyKey, fontFamily);
+            await _jsRuntime.InvokeVoidAsync("setCookie", FontFamilyKey, fontFamily, 365);
         }
         catch
         {
-            // Ignore errors for localStorage operations
+            // Ignore errors for cookie operations
         }
     }
 
@@ -42,7 +42,7 @@ public class FontSettingsService
     {
         try
         {
-            var fontSize = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", FontSizeKey);
+            var fontSize = await _jsRuntime.InvokeAsync<string>("getCookie", FontSizeKey);
             return int.TryParse(fontSize, out var size) && size >= 10 && size <= 24 ? size : 14;
         }
         catch
@@ -57,12 +57,12 @@ public class FontSettingsService
         {
             if (fontSize >= 10 && fontSize <= 24)
             {
-                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", FontSizeKey, fontSize.ToString());
+                await _jsRuntime.InvokeVoidAsync("setCookie", FontSizeKey, fontSize.ToString(), 365);
             }
         }
         catch
         {
-            // Ignore errors for localStorage operations
+            // Ignore errors for cookie operations
         }
     }
 
@@ -72,12 +72,24 @@ public class FontSettingsService
         {
             "system-ui, -apple-system, sans-serif",
             "Georgia, serif",
-            "Times, serif", 
+            "Times, 'Times New Roman', serif", 
             "Arial, sans-serif",
             "Helvetica, sans-serif",
             "Verdana, sans-serif",
+            "Calibri, sans-serif",
+            "Segoe UI, sans-serif",
+            "Roboto, sans-serif",
+            "Open Sans, sans-serif",
+            "Lato, sans-serif",
+            "Montserrat, sans-serif",
+            "Poppins, sans-serif",
+            "Source Sans Pro, sans-serif",
             "Monaco, 'Courier New', monospace",
-            "'JetBrains Mono', 'Fira Code', monospace"
+            "'JetBrains Mono', 'Fira Code', monospace",
+            "'Cascadia Code', 'Consolas', monospace",
+            "'Source Code Pro', monospace",
+            "'Ubuntu Mono', monospace",
+            "'Roboto Mono', monospace"
         };
     }
 
@@ -87,12 +99,24 @@ public class FontSettingsService
         {
             "system-ui, -apple-system, sans-serif" => "System Default",
             "Georgia, serif" => "Georgia",
-            "Times, serif" => "Times",
+            "Times, 'Times New Roman', serif" => "Times",
             "Arial, sans-serif" => "Arial",
             "Helvetica, sans-serif" => "Helvetica", 
             "Verdana, sans-serif" => "Verdana",
+            "Calibri, sans-serif" => "Calibri",
+            "Segoe UI, sans-serif" => "Segoe UI",
+            "Roboto, sans-serif" => "Roboto",
+            "Open Sans, sans-serif" => "Open Sans",
+            "Lato, sans-serif" => "Lato",
+            "Montserrat, sans-serif" => "Montserrat",
+            "Poppins, sans-serif" => "Poppins",
+            "Source Sans Pro, sans-serif" => "Source Sans Pro",
             "Monaco, 'Courier New', monospace" => "Monaco",
             "'JetBrains Mono', 'Fira Code', monospace" => "JetBrains Mono",
+            "'Cascadia Code', 'Consolas', monospace" => "Cascadia Code",
+            "'Source Code Pro', monospace" => "Source Code Pro",
+            "'Ubuntu Mono', monospace" => "Ubuntu Mono",
+            "'Roboto Mono', monospace" => "Roboto Mono",
             _ => "System Default"
         };
     }

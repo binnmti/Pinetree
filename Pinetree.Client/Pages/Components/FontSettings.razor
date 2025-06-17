@@ -1,5 +1,5 @@
 @using Pinetree.Client.Services
-@inject FontSettingsService FontSettings
+@inject FontSettingsService FontSettingsService
 @inject IJSRuntime JS
 
 <div class="btn-group dropdown me-2" role="group" aria-label="Font settings">
@@ -55,8 +55,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _currentFontFamily = await FontSettings.GetFontFamilyAsync();
-        _currentFontSize = await FontSettings.GetFontSizeAsync();
+        _currentFontFamily = await FontSettingsService.GetFontFamilyAsync();
+        _currentFontSize = await FontSettingsService.GetFontSizeAsync();
         await NotifyFontSettingsChanged();
     }
 
@@ -64,7 +64,7 @@
     {
         var newFontFamily = e.Value?.ToString() ?? "system-ui, -apple-system, sans-serif";
         _currentFontFamily = newFontFamily;
-        await FontSettings.SetFontFamilyAsync(_currentFontFamily);
+        await FontSettingsService.SetFontFamilyAsync(_currentFontFamily);
         await NotifyFontSettingsChanged();
     }
 
@@ -73,7 +73,7 @@
         if (int.TryParse(e.Value?.ToString(), out int newSize))
         {
             _currentFontSize = newSize;
-            await FontSettings.SetFontSizeAsync(_currentFontSize);
+            await FontSettingsService.SetFontSizeAsync(_currentFontSize);
             await NotifyFontSettingsChanged();
         }
     }
@@ -82,8 +82,8 @@
     {
         _currentFontFamily = "system-ui, -apple-system, sans-serif";
         _currentFontSize = 14;
-        await FontSettings.SetFontFamilyAsync(_currentFontFamily);
-        await FontSettings.SetFontSizeAsync(_currentFontSize);
+        await FontSettingsService.SetFontFamilyAsync(_currentFontFamily);
+        await FontSettingsService.SetFontSizeAsync(_currentFontSize);
         await NotifyFontSettingsChanged();
         StateHasChanged();
     }
