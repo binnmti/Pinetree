@@ -16,6 +16,11 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Checkout PR branch
+        run: |
+          git fetch origin ${{ steps.pr.outputs.branch }}
+          git checkout ${{ steps.pr.outputs.branch }}
+
       - name: Update Changelog
         run: |
           # Get PR body
