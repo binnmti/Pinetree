@@ -72,24 +72,18 @@ public class FontSettingsService
         {
             "system-ui, -apple-system, sans-serif",
             "Georgia, serif",
-            "Times, 'Times New Roman', serif", 
+            "Times, 'Times New Roman', serif",
             "Arial, sans-serif",
             "Helvetica, sans-serif",
             "Verdana, sans-serif",
             "Calibri, sans-serif",
             "Segoe UI, sans-serif",
-            "Roboto, sans-serif",
-            "Open Sans, sans-serif",
-            "Lato, sans-serif",
-            "Montserrat, sans-serif",
-            "Poppins, sans-serif",
-            "Source Sans Pro, sans-serif",
+            "Tahoma, sans-serif",
+            "Trebuchet MS, sans-serif",
+            "Impact, sans-serif",
             "Monaco, 'Courier New', monospace",
-            "'JetBrains Mono', 'Fira Code', monospace",
-            "'Cascadia Code', 'Consolas', monospace",
-            "'Source Code Pro', monospace",
-            "'Ubuntu Mono', monospace",
-            "'Roboto Mono', monospace"
+            "Consolas, 'Courier New', monospace",
+            "'Courier New', monospace"
         };
     }
 
@@ -105,18 +99,12 @@ public class FontSettingsService
             "Verdana, sans-serif" => "Verdana",
             "Calibri, sans-serif" => "Calibri",
             "Segoe UI, sans-serif" => "Segoe UI",
-            "Roboto, sans-serif" => "Roboto",
-            "Open Sans, sans-serif" => "Open Sans",
-            "Lato, sans-serif" => "Lato",
-            "Montserrat, sans-serif" => "Montserrat",
-            "Poppins, sans-serif" => "Poppins",
-            "Source Sans Pro, sans-serif" => "Source Sans Pro",
+            "Tahoma, sans-serif" => "Tahoma",
+            "Trebuchet MS, sans-serif" => "Trebuchet MS",
+            "Impact, sans-serif" => "Impact",
             "Monaco, 'Courier New', monospace" => "Monaco",
-            "'JetBrains Mono', 'Fira Code', monospace" => "JetBrains Mono",
-            "'Cascadia Code', 'Consolas', monospace" => "Cascadia Code",
-            "'Source Code Pro', monospace" => "Source Code Pro",
-            "'Ubuntu Mono', monospace" => "Ubuntu Mono",
-            "'Roboto Mono', monospace" => "Roboto Mono",
+            "Consolas, 'Courier New', monospace" => "Consolas",
+            "'Courier New', monospace" => "Courier New",
             _ => "System Default"
         };
     }
