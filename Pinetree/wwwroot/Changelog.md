@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.5] - 2025-06-17
+
+### Features
+- Refactor
+
+---
+
 ## [0.9.4] - 2025-06-16
 
 ### Features

@@ -1,4 +1,5 @@
 [![ci/cd](https://github.com/binnmti/Pinetree/actions/workflows/production.yml/badge.svg)](https://github.com/binnmti/Pinetree/actions/workflows/production.yml)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/binnmti/Pinetree?utm_source=oss&utm_medium=github&utm_campaign=binnmti%2FPinetree&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 # <img src="Pinetree/wwwroot/Pinetree.png" alt="Pinetree Logo" width="24" height="24"/> Pinetree
 ## Pinetree is browser-based hierarchical markdown editor
