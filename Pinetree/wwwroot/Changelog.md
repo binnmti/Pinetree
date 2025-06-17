@@ -1,3 +1,17 @@
+## [0.9.5] - 2025-06-17 12:16:08
+
+### Features
+- changelog automation
+<!-- This is an auto-generated comment: release notes by coderabbit.ai -->
+## Summary by CodeRabbit
+- **Chores**
+  - Updated workflow name for changelog updates.
+- **Documentation**
+  - Added a new changelog entry for version 0.9.5 with a Features section placeholder.
+<!-- end of auto-generated comment: release notes by coderabbit.ai -->
+
+---
+
 ## [0.9.4] - 2025-06-16
 
 ### Features
