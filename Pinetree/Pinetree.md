@@ -1,13 +1,12 @@
 # TODO
-- stripe 
+- Toolbar Refactor
 
-- Refactor
+- stripe 
 - Changelog Discord
+
 - Staging Terafform
 - Layout CSS 100% Check
   - Smartphone Layout
-- Toolbar Refactor
-- Share Folder Refactor
 - Markdown Text Hidden
 
 - [carbon](https://www.carbonads.net/)
@@ -19,8 +18,7 @@
 - User Data Cancellation
 - mail@pinetree.site
 - Color Theme
-- Font / Font Size
-  - magnifying glass?
+- magnifying glass?
 
 # Bug
 - Automatically logged out on deployment?
