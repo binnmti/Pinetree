@@ -205,6 +205,7 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         var userName = User.Identity?.Name ?? "";
         var userId = await GetCurrentUserIdAsync();
         var documents = await GetUserTopList(userName)
+            .AsTracking()
             .OrderBy(p => p.Order)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
