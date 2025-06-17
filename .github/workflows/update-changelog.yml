@@ -1,8 +1,11 @@
 name: Update Changelog
 
+# on:
+#   issue_comment:
+#     types: [created]
 on:
-  issue_comment:
-    types: [created]
+  pull_request:
+    types: [opened,edited]
 
 permissions:
   contents: write
