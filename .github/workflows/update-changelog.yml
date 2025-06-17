@@ -18,7 +18,7 @@ jobs:
       (github.event.comment.author_association == 'MEMBER' || 
        github.event.comment.author_association == 'OWNER' ||
        github.event.comment.author_association == 'COLLABORATOR')
-      steps:
+    steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -115,7 +115,8 @@ jobs:
               }]
             }' \
             "${{ secrets.DISCORD_WEBHOOK_URL }}"
-        - name: Add success reaction to comment
+      
+      - name: Add success reaction to comment
         if: success()
         run: |
           curl -s \
