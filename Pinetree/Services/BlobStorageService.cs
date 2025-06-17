@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Pinetree.Data;
 using Pinetree.Models;
 using Pinetree.Shared.ViewModels;
+using Microsoft.AspNetCore.Identity;
 
 namespace Pinetree.Services;
 
@@ -12,15 +13,19 @@ public class BlobStorageService
     private readonly BlobServiceClient _blobServiceClient;
     private readonly string _containerName = "images";
     private readonly ApplicationDbContext _dbContext;
+    private readonly EncryptionService _encryptionService;
+    private readonly UserManager<ApplicationUser> _userManager;
     private const int DefaultQuotaInBytes = 1024 * 1024 * 3;
-
-    public BlobStorageService(IConfiguration configuration, ApplicationDbContext dbContext)
+    
+    public BlobStorageService(IConfiguration configuration, ApplicationDbContext dbContext, EncryptionService encryptionService, UserManager<ApplicationUser> userManager)
     {
         var connectionString = configuration.GetConnectionString("AzureStorage")
                             ?? throw new ArgumentNullException("Azure Storage connection string is missing from configuration");
 
         _blobServiceClient = new BlobServiceClient(connectionString);
         _dbContext = dbContext;
+        _encryptionService = encryptionService;
+        _userManager = userManager;
     }
 
     public async Task<string> UploadImageAsync(Stream content, string fileExtension, string userName, Guid pineconeGuid)
@@ -147,10 +152,17 @@ public class BlobStorageService
         var fullBlobPath = $"{folderPath}{blobName}";
         var blobClient = containerClient.GetBlobClient(fullBlobPath);
         return blobClient.Uri.ToString();
-    }
-
+    }    
+    
     public async Task<List<UserBlobViewModel>> GetUserBlobViewModelsAsync(string userName)
     {
+        // Get user ID for decryption
+        var user = await _userManager.FindByNameAsync(userName);
+        if (user == null)
+        {
+            throw new InvalidOperationException($"User not found: {userName}");
+        }
+        
         var results = await _dbContext.UserBlobInfos
             .Where(b => b.UserName == userName && !b.IsDeleted)
             .OrderByDescending(b => b.UploadedAt)
@@ -171,22 +183,47 @@ public class BlobStorageService
                     x.Blob.ContentType,
                     x.Blob.PineconeGuid,
                     PineconeTitle = pinecone != null ? pinecone.Title : "",
+                    PineconeIsPublic = pinecone != null ? pinecone.IsPublic : true,
                     x.Blob.UploadedAt
                 }
             )
             .ToListAsync();
         
-        return [.. results.Select(x => new UserBlobViewModel
+        var viewModels = new List<UserBlobViewModel>();
+        
+        foreach (var item in results)
         {
-            Id = x.Id,
-            BlobUrl = GenerateBlobUrl(x.UserName, x.BlobName),
-            FileName = x.BlobName,
-            SizeInBytes = x.SizeInBytes,
-            ContentType = x.ContentType,
-            PineconeGuid = x.PineconeGuid,
-            PineconeTitle = x.PineconeTitle,
-            UploadedAt = x.UploadedAt
-        })];
+            string decryptedTitle = "";
+            if (!string.IsNullOrEmpty(item.PineconeTitle))
+            {
+                try
+                {
+                    decryptedTitle = await _encryptionService.DecryptContentAsync(
+                        item.PineconeTitle, 
+                        item.PineconeIsPublic, 
+                        user.Id) ?? "";
+                }
+                catch (Exception)
+                {
+                    // If decryption fails, use empty string
+                    decryptedTitle = "";
+                }
+            }
+            
+            viewModels.Add(new UserBlobViewModel
+            {
+                Id = item.Id,
+                BlobUrl = GenerateBlobUrl(item.UserName, item.BlobName),
+                FileName = item.BlobName,
+                SizeInBytes = item.SizeInBytes,
+                ContentType = item.ContentType,
+                PineconeGuid = item.PineconeGuid,
+                PineconeTitle = decryptedTitle,
+                UploadedAt = item.UploadedAt
+            });
+        }
+        
+        return viewModels;
     }
 
     // Model to ViewModel conversion methods
