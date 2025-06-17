@@ -1,4 +1,4 @@
-name: Update Changelog and Notify Discord
+name: Update Changelog and Notify Discord2
 
 on:
   issue_comment:
