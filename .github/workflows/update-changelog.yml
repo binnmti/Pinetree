@@ -16,69 +16,30 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Get PR details
-        id: pr
-        run: |
-          # Fix: Use github.event.number instead of github.event.issue.number for PR events
-          pr_number=${{ github.event.number }}
-          pr_data=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/$pr_number")
-          
-          echo "number=$pr_number" >> $GITHUB_OUTPUT
-          echo "branch=$(echo "$pr_data" | jq -r '.head.ref')" >> $GITHUB_OUTPUT
-          echo "title=$(echo "$pr_data" | jq -r '.title')" >> $GITHUB_OUTPUT
-          
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "$pr_data" | jq -r '.body // ""' >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          
-          echo "author=$(echo "$pr_data" | jq -r '.user.login')" >> $GITHUB_OUTPUT
-          echo "url=$(echo "$pr_data" | jq -r '.html_url')" >> $GITHUB_OUTPUT
-      
-      - name: Checkout PR branch
-        run: |
-          git fetch origin ${{ steps.pr.outputs.branch }}
-          git checkout ${{ steps.pr.outputs.branch }}
-      
       - name: Update Changelog
-        id: changelog
         run: |
-          pr_body="${{ steps.pr.outputs.body }}"
+          # Get PR body
+          pr_body="${{ github.event.pull_request.body }}"
           
-          # Look for version number in PR body (format: [1.2.3] or Version: 1.2.3)
-          version_match=$(echo "$pr_body" | grep -o -E "(\[([0-9]+\.[0-9]+\.[0-9]+)\]|Version:\s*([0-9]+\.[0-9]+\.[0-9]+))" | head -1)
+          # Extract version (look for [1.2.3] format)
+          version=$(echo "$pr_body" | grep -o '\[[0-9]\+\.[0-9]\+\.[0-9]\+\]' | head -1 | tr -d '[]')
           
-          if [[ "$version_match" =~ \[([0-9]+\.[0-9]+\.[0-9]+)\] ]]; then
-            version_number="${BASH_REMATCH[1]}"
-          elif [[ "$version_match" =~ Version:\s*([0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            version_number="${BASH_REMATCH[1]}"
-          else
-            version_number="0.$(date +%m).$(date +%d)"
+          # If no version found, use date-based version
+          if [ -z "$version" ]; then
+            version="0.$(date +%m).$(date +%d)"
           fi
           
-          # Extract changelog content - simplified approach
-          changelog_content=""
+          # Extract changelog content (everything after version line)
+          changelog_content=$(echo "$pr_body" | sed -n '/^\[.*\]/,$ p' | tail -n +2 | sed '/^$/d')
           
-          if echo "$pr_body" | grep -q "\[.*\]"; then
-            # Extract everything after [version] line
-            changelog_content=$(echo "$pr_body" | sed -n '/^\[.*\]/,$ p' | tail -n +2)
-          elif echo "$pr_body" | grep -q "### "; then
-            # Extract all ### sections
-            changelog_content=$(echo "$pr_body" | grep -A 999 "### ")
-          else
-            # Fallback to PR title
-            changelog_content="### Features"$'\n'"- ${{ steps.pr.outputs.title }}"
+          # If no changelog content found, use PR title
+          if [ -z "$changelog_content" ]; then
+            changelog_content="### Features"$'\n'"- ${{ github.event.pull_request.title }}"
           fi
           
-          # Clean up changelog content
-          changelog_content=$(echo "$changelog_content" | sed '/^$/d' | sed '/^\s*$/d')
-          
-          # Create new changelog entry with timestamp
-          date_string=$(date +%Y-%m-%d)
-          time_string=$(date +%H:%M:%S)
-          
+          # Update changelog file
           {
-            echo "## [$version_number] - $date_string $time_string"
+            echo "## [$version] - $(date +%Y-%m-%d)"
             echo ""
             echo "$changelog_content"
             echo ""
@@ -88,20 +49,15 @@ jobs:
           } > temp_changelog.md
           
           mv temp_changelog.md Pinetree/wwwroot/Changelog.md
-          
-          echo "version=$version_number" >> $GITHUB_OUTPUT
-          echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
-          echo "$changelog_content" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
       
-      - name: Commit and push changelog
+      - name: Commit changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add Pinetree/wwwroot/Changelog.md
           git commit -m "docs: update changelog for v${{ steps.changelog.outputs.version }} (PR #${{ steps.pr.outputs.number }})"
           git push origin ${{ steps.pr.outputs.branch }}
-      
+     
       - name: Send Discord notification
         if: success()
         run: |
