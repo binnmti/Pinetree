@@ -14,13 +14,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目
 		.github\workflows\staging.yml = .github\workflows\staging.yml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Shared", "PinetreeModel\Pinetree.Shared.csproj", "{CA1DF661-E634-40DC-A733-5024174BE271}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Client", "Pinetree.Client\Pinetree.Client.csproj", "{CC166F25-F9EB-4521-972E-C5EFEE8AA07E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.TestProject", "Pinetree.TestProject\Pinetree.TestProject.csproj", "{73C16934-8C8E-44F5-B037-1567133D88E1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.UITests", "Pinetree.UITests\Pinetree.UITests.csproj", "{C3927299-352A-415B-AC2F-D7A339C69203}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Shared", "Pinetree.Shared\Pinetree.Shared.csproj", "{9DEE1BB4-7483-D091-A771-0E733E42588C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,10 +32,6 @@ Global
 		{5EB96147-1406-49D5-B5C8-6EA4F64ABDDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5EB96147-1406-49D5-B5C8-6EA4F64ABDDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5EB96147-1406-49D5-B5C8-6EA4F64ABDDC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CA1DF661-E634-40DC-A733-5024174BE271}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CA1DF661-E634-40DC-A733-5024174BE271}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CA1DF661-E634-40DC-A733-5024174BE271}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CA1DF661-E634-40DC-A733-5024174BE271}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CC166F25-F9EB-4521-972E-C5EFEE8AA07E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CC166F25-F9EB-4521-972E-C5EFEE8AA07E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC166F25-F9EB-4521-972E-C5EFEE8AA07E}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -48,6 +44,10 @@ Global
 		{C3927299-352A-415B-AC2F-D7A339C69203}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3927299-352A-415B-AC2F-D7A339C69203}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C3927299-352A-415B-AC2F-D7A339C69203}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DEE1BB4-7483-D091-A771-0E733E42588C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DEE1BB4-7483-D091-A771-0E733E42588C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DEE1BB4-7483-D091-A771-0E733E42588C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DEE1BB4-7483-D091-A771-0E733E42588C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

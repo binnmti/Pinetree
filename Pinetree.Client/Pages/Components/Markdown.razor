@@ -1,7 +1,7 @@
-﻿@using Pinetree.Client.VModel
+﻿@using Pinetree.Client.ViewModels
 @using Pinetree.Client.Services
 @using Pinetree.Client.Pages.Components
-@using Pinetree.Shared.Model
+@using Pinetree.Shared.ViewModels
 @using System.Text
 
 @implements IAsyncDisposable
@@ -618,24 +618,25 @@
             StateHasChanged();
         }
     }
-
-    private List<PineconeDto> ConvertToPineconeDtos(PinetreeView tree)
+    
+    private List<PineconeUpdateRequest> ConvertToPineconeDtos(PinetreeView tree)
     {
-        var result = new List<PineconeDto>();
+        var result = new List<PineconeUpdateRequest>();
         ConvertNodeRecursively(tree, null, result);
         return result;
     }
 
-    private void ConvertNodeRecursively(PinetreeView node, Guid? parentGuid, List<PineconeDto> result)
+    private void ConvertNodeRecursively(PinetreeView node, Guid? parentGuid, List<PineconeUpdateRequest> result)
     {
-        var dto = new PineconeDto
+        var dto = new PineconeUpdateRequest
         {
             Guid = node.Guid,
             Title = node.Title,
             Content = node.Content,
             GroupGuid = node.GroupGuid,
             ParentGuid = parentGuid,
-            Order = GetNodeOrder(node)
+            Order = GetNodeOrder(node),
+            IsPublic = node.IsPublic
         };
 
         result.Add(dto);
@@ -652,10 +653,10 @@
 
         return node.Parent.Children.IndexOf(node);
     }
-
-    private List<PineconeDto> GetChangedNodes(PinetreeView current, PinetreeView previous)
+    
+    private List<PineconeUpdateRequest> GetChangedNodes(PinetreeView current, PinetreeView previous)
     {
-        var changedNodes = new List<PineconeDto>();
+        var changedNodes = new List<PineconeUpdateRequest>();
         var previousNodeMap = IndexNodes(previous);
 
         FindChangedNodesRecursive(current, Guid.Empty, previousNodeMap, changedNodes);
@@ -684,7 +685,7 @@
         PinetreeView node,
         Guid parentGuid,
         Dictionary<Guid, (PinetreeView Node, int Order)> previousNodeMap,
-        List<PineconeDto> changedNodes)
+        List<PineconeUpdateRequest> changedNodes)
     {
         int currentOrder = GetNodeOrder(node);
         bool isChanged = false;
@@ -702,17 +703,18 @@
         {
             isChanged = true;
         }
-
+        
         if (isChanged)
         {
-            changedNodes.Add(new PineconeDto
+            changedNodes.Add(new PineconeUpdateRequest
             {
                 Guid = node.Guid,
                 Title = node.Title,
                 Content = node.Content,
                 GroupGuid = node.GroupGuid,
                 ParentGuid = parentGuid,
-                Order = currentOrder
+                Order = currentOrder,
+                IsPublic = node.IsPublic
             });
         }
 

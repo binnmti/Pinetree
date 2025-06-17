@@ -1,4 +1,4 @@
-using Pinetree.Client.VModel;
+using Pinetree.Client.ViewModels;
 
 namespace Pinetree.Client.Services;
 

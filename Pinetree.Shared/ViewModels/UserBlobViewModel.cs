@@ -11,3 +11,17 @@ public class UserBlobViewModel
     public string PineconeTitle { get; set; } = "";
     public DateTime UploadedAt { get; set; }
 }
+
+public class UserBlobUploadRequest
+{
+    public string Extension { get; set; } = "";
+    public Guid PineconeGuid { get; set; }
+    public string Base64Data { get; set; } = "";
+}
+
+public class UserBlobUploadResponse
+{
+    public string Url { get; set; } = "";
+    public int Id { get; set; }
+    public long SizeInBytes { get; set; }
+}

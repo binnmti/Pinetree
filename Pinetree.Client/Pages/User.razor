@@ -2,9 +2,8 @@
 @attribute [Authorize]
 
 @using Microsoft.AspNetCore.Authorization
-@using Pinetree.Client.VModel
+@using Pinetree.Client.ViewModels
 @using Pinetree.Client.Services
-@using Pinetree.Shared.Model
 @using Pinetree.Shared.ViewModels
 @using System.Net.Http
 
@@ -403,7 +402,7 @@
             TotalRecords = topCount;
             TotalPages = (int)Math.Ceiling(TotalRecords / (double)PageSize);
 
-            var list = await Http.GetFromJsonAsync<List<Pinecone>>($"/api/Pinecones/get-user-top-list?pageNumber={CurrentPage}&pageSize={PageSize}");
+            var list = await Http.GetFromJsonAsync<List<PineconeViewModel>>($"/api/Pinecones/get-user-top-list?pageNumber={CurrentPage}&pageSize={PageSize}");
             if (list != null)
             {
                 // Apply client-side filtering temporarily
@@ -479,7 +478,7 @@
         var response = await Http.PostAsJsonAsync("/api/Pinecones/add-top", new { });
         if (response.IsSuccessStatusCode)
         {
-            var pinecone = await response.Content.ReadFromJsonAsync<Pinecone>();
+            var pinecone = await response.Content.ReadFromJsonAsync<PineconeViewModel>();
             if (pinecone != null)
             {
                 var url = $"/Edit/{pinecone.Guid}";
@@ -633,10 +632,10 @@
         public int TotalRecords { get; set; }
         public int TotalPages { get; set; }
     }
-
+    
     private class UserDocumentsResponse
     {
-        public List<Pinecone> Documents { get; set; } = new();
+        public List<PineconeViewModel> Documents { get; set; } = new();
         public int TotalRecords { get; set; }
         public int TotalPages { get; set; }
         public int CurrentPage { get; set; }

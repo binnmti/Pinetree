@@ -1,6 +1,6 @@
-﻿namespace Pinetree.Client.VModel;
+﻿namespace Pinetree.Client.ViewModels;
 
-public static class PinetreeUpdater
+public static class PinetreeViewUpdater
 {
     public static bool IsEqual(this PinetreeView src, PinetreeView dst)
         => IsEqual(src.GetRoot(), dst.GetRoot());

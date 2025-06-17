@@ -1,4 +1,4 @@
-namespace Pinetree.Client.VModel;
+namespace Pinetree.Client.ViewModels;
 
 public static class PinetreeMoverExtention
 {

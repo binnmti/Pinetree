@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
-namespace Pinetree.Shared.Model;
+namespace Pinetree.Models;
 
 public class UserBlobInfo
 {
