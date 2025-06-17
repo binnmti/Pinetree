@@ -1,4 +1,4 @@
-name: Update Changelog and Notify Discord
+name: Update Changelog
 
 on:
   issue_comment:
@@ -22,103 +22,46 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Get PR details
-        id: pr
-        run: |
-          pr_number=${{ github.event.issue.number }}
-          pr_data=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/$pr_number")
-          
-          echo "number=$pr_number" >> $GITHUB_OUTPUT
-          echo "branch=$(echo "$pr_data" | jq -r '.head.ref')" >> $GITHUB_OUTPUT
-          echo "title=$(echo "$pr_data" | jq -r '.title')" >> $GITHUB_OUTPUT
-          
-          # Use multiline syntax for PR body to preserve newlines
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "$pr_data" | jq -r '.body // ""' >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          
-          echo "author=$(echo "$pr_data" | jq -r '.user.login')" >> $GITHUB_OUTPUT
-          echo "url=$(echo "$pr_data" | jq -r '.html_url')" >> $GITHUB_OUTPUT
-      
-      - name: Checkout PR branch
-        run: |
-          git fetch origin ${{ steps.pr.outputs.branch }}
-          git checkout ${{ steps.pr.outputs.branch }}
+          ref: ${{ github.head_ref }}  # Fix: Checkout the PR branch
       
       - name: Update Changelog
-        id: changelog
         run: |
-          # Extract changelog from PR body
-          pr_body="${{ steps.pr.outputs.body }}"
+          pr_body="${{ github.event.pull_request.body }}"
+          version=$(echo "$pr_body" | grep -o '\[[0-9]\+\.[0-9]\+\.[0-9]\+\]' | tr -d '[]' | head -1)
           
-          # Look for version number in PR body (format: Version: 1.2.3 or [1.2.3])
-          version_match=$(echo "$pr_body" | grep -o -E "(Version:\s*|Version\s+|^\[?)([0-9]+\.[0-9]+\.[0-9]+)" | head -1 | grep -o -E "[0-9]+\.[0-9]+\.[0-9]+")
+          [ -z "$version" ] && version="0.$(date +%m).$(date +%d)"
           
-          if [ -z "$version_match" ]; then
-            # If no version found, generate one based on current date
-            version_match="0.$(date +%m).$(date +%d)"
-          fi
-          
-          # Extract changelog content
-          if echo "$pr_body" | grep -q "### Features\|### Bug Fixes\|### Changes"; then
-            # Extract everything from first ### to end or next ##
-            changelog_section=$(echo "$pr_body" | sed -n '/^### /,/^## /p' | sed '$d' | sed '/^$/d')
-            if [ -z "$changelog_section" ]; then
-              changelog_section=$(echo "$pr_body" | sed -n '/^### /,$p')
-            fi
-          elif echo "$pr_body" | grep -q "## Changelog"; then
-            # Legacy format support
-            changelog_section=$(echo "$pr_body" | sed -n '/## Changelog/,/##/p' | head -n -1 | tail -n +2)
-          else
-            # Fallback to PR title
-            changelog_section="### Features\n- ${{ steps.pr.outputs.title }}"
-          fi
-          
-          # Create new changelog entry with timestamp
-          date_string=$(date +%Y-%m-%d)
-          time_string=$(date +%H:%M:%S)
+          changelog=$(echo "$pr_body" | sed -n '/^\[.*\]/,$ p' | tail -n +2 | sed '/^$/d')
+          [ -z "$changelog" ] && changelog="### Features"$'\n'"- ${{ github.event.pull_request.title }}"
           
           {
-            echo "## [$version_match] - $date_string $time_string"
+            echo "## [$version] - $(date +%Y-%m-%d)"
             echo ""
-            echo "$changelog_section"
+            echo "$changelog"
             echo ""
             echo "---"
             echo ""
             cat Pinetree/wwwroot/Changelog.md
-          } > temp_changelog.md
-          
-          mv temp_changelog.md Pinetree/wwwroot/Changelog.md
-          
-          # Prepare Discord notification content (escape for JSON)
-          discord_title="📝 Changelog Updated - v$version_match"
-          discord_description="**PR #${{ github.event.issue.number }}: ${{ steps.pr.outputs.title }}**\n\n$(echo "$changelog_section" | sed 's/"/\\"/g' | sed 's/$/\\n/' | tr -d '\n' | sed 's/\\n$//')"
-          
-          echo "version=$version_match" >> $GITHUB_OUTPUT
-          echo "discord_title=$discord_title" >> $GITHUB_OUTPUT
-          echo "discord_description<<EOF" >> $GITHUB_OUTPUT
-          echo "$discord_description" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          } > temp && mv temp Pinetree/wwwroot/Changelog.md
       
-      - name: Commit and push changelog
+      - name: Commit changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add Pinetree/wwwroot/Changelog.md
-          git commit -m "docs: update changelog for v${{ steps.changelog.outputs.version }} (PR #${{ github.event.issue.number }})"
-          git push origin ${{ steps.pr.outputs.branch }}
-      
+          git commit -m "Update changelog for v$version (PR #${{ github.event.number }})" || exit 0
+          git push origin ${{ github.head_ref }}  # Fix: Push to the correct branch
+     
       - name: Send Discord notification
         if: success()
         run: |
-          # Create properly escaped JSON payload
-          cat << 'EOF' > discord_payload.json
+          escaped_changelog=$(echo "${{ steps.changelog.outputs.changelog_content }}" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+          
+          payload=$(cat << EOF
           {
             "embeds": [{
-              "title": "${{ steps.changelog.outputs.discord_title }}",
-              "description": "${{ steps.changelog.outputs.discord_description }}",
+              "title": "📝 Changelog Updated - v${{ steps.changelog.outputs.version }}",
+              "description": "**PR #${{ steps.pr.outputs.number }}: ${{ steps.pr.outputs.title }}**\\n\\n${escaped_changelog}",
               "color": 3447003,
               "fields": [
                 {
@@ -128,7 +71,7 @@ jobs:
                 },
                 {
                   "name": "PR Number",
-                  "value": "#${{ github.event.issue.number }}",
+                  "value": "#${{ steps.pr.outputs.number }}",
                   "inline": true
                 },
                 {
@@ -142,29 +85,6 @@ jobs:
             }]
           }
           EOF
+          )
           
-          # Send to Discord
-          curl -H "Content-Type: application/json" \
-            -X POST \
-            -d @discord_payload.json \
-            "${{ secrets.DISCORD_WEBHOOK_URL }}"
-      
-      - name: Add success reaction to comment
-        if: success()
-        run: |
-          curl -s \
-            -H "Accept: application/vnd.github.squirrel-girl-preview+json" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -X POST \
-            "https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
-            -d '{"content":"rocket"}'
-      
-      - name: Add failure reaction to comment
-        if: failure()
-        run: |
-          curl -s \
-            -H "Accept: application/vnd.github.squirrel-girl-preview+json" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -X POST \
-            "https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
-            -d '{"content":"confused"}'
+          echo "$payload" | curl -H "Content-Type: application/json" -X POST -d @- "${{ secrets.DISCORD_WEBHOOK_URL }}"

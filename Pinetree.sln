@@ -12,6 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目
 		.github\workflows\PRValidation.yml = .github\workflows\PRValidation.yml
 		README.md = README.md
 		.github\workflows\staging.yml = .github\workflows\staging.yml
+		.github\workflows\update-changelog.yml = .github\workflows\update-changelog.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pinetree.Client", "Pinetree.Client\Pinetree.Client.csproj", "{CC166F25-F9EB-4521-972E-C5EFEE8AA07E}"
