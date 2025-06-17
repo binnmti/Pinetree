@@ -1,0 +1,98 @@
+@using Pinetree.Client.Services
+@inject FontSettingsService FontSettings
+@inject IJSRuntime JS
+
+<div class="btn-group dropdown me-2" role="group" aria-label="Font settings">
+    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+            id="fontSettingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" 
+            title="Font Settings">
+        <i class="bi bi-fonts"></i>
+    </button>
+    <ul class="dropdown-menu p-3" aria-labelledby="fontSettingsDropdown" style="min-width: 280px;">
+        <li>
+            <div class="mb-3">
+                <label for="fontFamilySelect" class="form-label small fw-bold">Font Family</label>
+                <select class="form-select form-select-sm" id="fontFamilySelect" @onchange="OnFontFamilyChanged">
+                    @foreach (var font in FontSettingsService.GetAvailableFontFamilies())
+                    {
+                        <option value="@font" selected="@(font == _currentFontFamily)">
+                            @FontSettingsService.GetFontDisplayName(font)
+                        </option>
+                    }
+                </select>
+            </div>
+        </li>
+        <li>
+            <div class="mb-2">
+                <label for="fontSizeRange" class="form-label small fw-bold">
+                    Font Size: @_currentFontSize px
+                </label>
+                <input type="range" class="form-range" id="fontSizeRange" 
+                       min="10" max="24" step="1" 
+                       @bind="_currentFontSize" @oninput="OnFontSizeChanged" />
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>10px</span>
+                    <span>24px</span>
+                </div>
+            </div>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+            <div class="text-center">
+                <button class="btn btn-sm btn-outline-primary" @onclick="ResetToDefaults">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                </button>
+            </div>
+        </li>
+    </ul>
+</div>
+
+@code {
+    [Parameter] public EventCallback<(string FontFamily, int FontSize)> OnFontSettingsChanged { get; set; }
+
+    private string _currentFontFamily = "system-ui, -apple-system, sans-serif";
+    private int _currentFontSize = 14;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _currentFontFamily = await FontSettings.GetFontFamilyAsync();
+        _currentFontSize = await FontSettings.GetFontSizeAsync();
+        await NotifyFontSettingsChanged();
+    }
+
+    private async Task OnFontFamilyChanged(ChangeEventArgs e)
+    {
+        var newFontFamily = e.Value?.ToString() ?? "system-ui, -apple-system, sans-serif";
+        _currentFontFamily = newFontFamily;
+        await FontSettings.SetFontFamilyAsync(_currentFontFamily);
+        await NotifyFontSettingsChanged();
+    }
+
+    private async Task OnFontSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int newSize))
+        {
+            _currentFontSize = newSize;
+            await FontSettings.SetFontSizeAsync(_currentFontSize);
+            await NotifyFontSettingsChanged();
+        }
+    }
+
+    private async Task ResetToDefaults()
+    {
+        _currentFontFamily = "system-ui, -apple-system, sans-serif";
+        _currentFontSize = 14;
+        await FontSettings.SetFontFamilyAsync(_currentFontFamily);
+        await FontSettings.SetFontSizeAsync(_currentFontSize);
+        await NotifyFontSettingsChanged();
+        StateHasChanged();
+    }
+
+    private async Task NotifyFontSettingsChanged()
+    {
+        if (OnFontSettingsChanged.HasDelegate)
+        {
+            await OnFontSettingsChanged.InvokeAsync((_currentFontFamily, _currentFontSize));
+        }
+    }
+}
