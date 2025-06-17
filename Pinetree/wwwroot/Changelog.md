@@ -1,3 +1,13 @@
+## [0.9.5] - 2025-06-17
+
+
+- **Chores**
+  - Updated workflow name for changelog updates.
+- **Documentation**
+  - Added a new changelog entry for version 0.9.5 with a Features section placeholder.
+
+---
+
 ## [0.9.4] - 2025-06-16
 
 ### Features
