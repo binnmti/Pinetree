@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Pinetree.Client\Pinetree.Client.csproj" />
     <ProjectReference Include="..\Pinetree\Pinetree.csproj" />
+    <ProjectReference Include="..\Pinetree.Shared\Pinetree.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
