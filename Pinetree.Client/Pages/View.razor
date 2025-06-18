@@ -1,14 +1,26 @@
 @page "/view/{User}/{Guid:guid}"
 @using Pinetree.Client.ViewModels
-@using Pinetree.Client.Services
+@using Pinetree.Client.Services  
 @using Pinetree.Client.Pages.Components
+@using Pinetree.Client.Components
 @using Pinetree.Shared.ViewModels
 
 @rendermode InteractiveAuto
 
-@if (Pinetree != null)
+@if (isLoading)
+{
+    <LoadingSpinner Message="Loading document..." />
+}
+else if (Pinetree != null)
 {
     <Markdown Pinetree="@(Pinetree)" Guid="@(Guid)" IsTry=false IsProfessional=false FileCount=@FileCount IsPublicView=true />
+}
+else
+{
+    <div class="alert alert-warning mt-3" role="alert">
+        <h4 class="alert-heading">Document Not Found</h4>
+        <p>The requested document could not be found or you don't have permission to view it.</p>
+    </div>
 }
 
 @code {
@@ -20,6 +32,7 @@
 
     private PinetreeView? Pinetree { get; set; }
     private int FileCount { get; set; }
+    private bool isLoading = true;
 
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
@@ -31,15 +44,27 @@
     {
         if (firstRender)
         {
-            var response = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"/api/Pinecones/get-view-include-child/{Guid}");
-            if (response == null || response.Guid == Guid.Empty)
+            try
             {
-                NavigationManager.NavigateTo("/");
-                return;
+                var response = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"/api/Pinecones/get-view-include-child/{Guid}");
+                if (response == null || response.Guid == Guid.Empty)
+                {
+                    NavigationManager.NavigateTo("/");
+                    return;
+                }
+                
+                (Pinetree, FileCount) = response.ToPinetreeIncludeChild();
             }
-            
-            (Pinetree, FileCount) = response.ToPinetreeIncludeChild();
-            StateHasChanged();
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading document: {ex.Message}");
+                // Pinetree remains null, will show error message
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
         }
     }
 }

@@ -6,14 +6,26 @@
 @using Microsoft.AspNetCore.Authorization
 @using Pinetree.Client.Services
 @using Pinetree.Client.ViewModels
+@using Pinetree.Client.Components
 @using Pinetree.Shared
 @using Pinetree.Shared.ViewModels
 
 @rendermode InteractiveWebAssembly
 
-@if (Pinetree != null)
+@if (isLoading)
+{
+    <LoadingSpinner Message="Loading document..." />
+}
+else if (Pinetree != null)
 {
     <Markdown Pinetree="@(Pinetree)" Guid="@(Guid)" IsTry=false IsProfessional=IsProfessional FileCount=@FileCount />
+}
+else
+{
+    <div class="alert alert-warning mt-3" role="alert">
+        <h4 class="alert-heading">Document Not Found</h4>
+        <p>The requested document could not be found or you don't have permission to edit it.</p>
+    </div>
 }
 
 @code {
@@ -25,6 +37,7 @@
     private PinetreeView? Pinetree { get; set; }
     private int FileCount { get; set; }
     private bool IsProfessional { get; set; }
+    private bool isLoading = true;
 
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
@@ -37,23 +50,35 @@
     {
         if (firstRender)
         {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-            if (!user.Identity?.IsAuthenticated ?? false)
+            try
             {
-                NavigationManager.NavigateTo("/");
-                return;
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                var user = authState.User;
+                if (!user.Identity?.IsAuthenticated ?? false)
+                {
+                    NavigationManager.NavigateTo("/");
+                    return;
+                }
+                var roleClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role);
+                IsProfessional = Roles.IsProfessional(roleClaim?.Value ?? "");
+                var hit = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"/api/Pinecones/get-include-child/{Guid}");
+                if (hit == null)
+                {
+                    NavigationManager.NavigateTo("/");
+                    return;
+                }
+                (Pinetree, FileCount) = hit.ToPinetreeIncludeChild();
             }
-            var roleClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role);
-            IsProfessional = Roles.IsProfessional(roleClaim?.Value ?? "");
-            var hit = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"/api/Pinecones/get-include-child/{Guid}");
-            if (hit == null)
+            catch (Exception ex)
             {
-                NavigationManager.NavigateTo("/");
-                return;
+                Console.WriteLine($"Error loading document: {ex.Message}");
+                // Pinetree remains null, will show error message
             }
-            (Pinetree, FileCount) = hit.ToPinetreeIncludeChild();
-            StateHasChanged();
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
         }
     }
 }
