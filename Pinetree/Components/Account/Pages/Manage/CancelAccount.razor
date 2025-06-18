@@ -1,0 +1,194 @@
+@page "/Account/Manage/CancelAccount"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using Pinetree.Data
+@using Pinetree.Services
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IdentityUserAccessor UserAccessor
+@inject UserDataDeletionService UserDataDeletionService
+@inject IdentityRedirectManager RedirectManager
+@inject ILogger<CancelAccount> Logger
+
+<PageTitle>Cancel Account</PageTitle>
+
+<StatusMessage Message="@message" />
+
+<h3>Cancel Your Account</h3>
+
+<div class="alert alert-danger" role="alert">
+    <h4 class="alert-heading">⚠️ This will permanently delete all your data!</h4>
+    <p>
+        <strong>This action cannot be undone.</strong> When you cancel your account, we will permanently delete:
+    </p>
+    <ul>
+        <li>Your account and profile information</li>
+        <li>All your content and documents (Pinecones)</li>
+        <li>All uploaded files and images</li>
+        <li>Storage usage records</li>
+        <li>Activity audit logs</li>
+        <li>Any other personal data associated with your account</li>
+    </ul>
+    <hr>
+    <p class="mb-0">
+        If you just want to download your data before leaving, you can 
+        <a href="Account/Manage/DownloadPersonalData" class="alert-link">download your personal data</a> first.
+    </p>
+</div>
+
+@if (!showConfirmation)
+{
+    <div class="row">
+        <div class="col-md-8">
+            <p>We're sorry to see you go. Before you cancel your account, please consider:</p>
+            <ul>
+                <li>Downloading your personal data if you want to keep a copy</li>
+                <li>Whether you might want to use the service again in the future</li>
+                <li>Contacting support if you're having technical issues that we might help resolve</li>
+            </ul>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <a href="Account/Manage/DownloadPersonalData" class="btn btn-outline-primary me-md-2">
+                    <i class="bi bi-download"></i> Download My Data First
+                </a>
+                <button class="btn btn-danger" @onclick="ShowConfirmation">
+                    <i class="bi bi-exclamation-triangle"></i> Continue with Account Cancellation
+                </button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-6">
+            <EditForm Model="Input" FormName="cancel-account" OnValidSubmit="OnValidSubmitAsync" method="post">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" role="alert" />
+                
+                @if (requirePassword)
+                {
+                    <div class="form-floating mb-3">
+                        <InputText type="password" @bind-Value="Input.Password" id="Input.Password" 
+                                   class="form-control" autocomplete="current-password" aria-required="true" 
+                                   placeholder="Please enter your password." />
+                        <label for="Input.Password" class="form-label">Confirm with your password</label>
+                        <ValidationMessage For="() => Input.Password" class="text-danger" />
+                    </div>
+                }
+                
+                <div class="form-check mb-3">
+                    <InputCheckbox @bind-Value="Input.ConfirmDeletion" class="form-check-input" id="confirmDeletion" />
+                    <label class="form-check-label" for="confirmDeletion">
+                        <strong>I understand that this action cannot be undone and all my data will be permanently deleted.</strong>
+                    </label>
+                    <ValidationMessage For="() => Input.ConfirmDeletion" class="text-danger" />
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                    <button type="button" class="btn btn-outline-secondary me-md-2" @onclick="HideConfirmation">
+                        <i class="bi bi-arrow-left"></i> Go Back
+                    </button>
+                    <button class="btn btn-danger btn-lg" type="submit" disabled="@isDeleting">
+                        @if (isDeleting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            <span>Deleting all data...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-trash"></i>
+                            <span>Yes, Delete Everything and Cancel My Account</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private string? message;
+    private ApplicationUser user = default!;
+    private bool requirePassword;
+    private bool showConfirmation = false;
+    private bool isDeleting = false;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        requirePassword = await UserManager.HasPasswordAsync(user);
+    }
+
+    private void ShowConfirmation()
+    {
+        showConfirmation = true;
+        StateHasChanged();
+    }
+
+    private void HideConfirmation()
+    {
+        showConfirmation = false;
+        message = null;
+        StateHasChanged();
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        if (!Input.ConfirmDeletion)
+        {
+            message = "Error: You must confirm that you understand this action cannot be undone.";
+            return;
+        }
+
+        if (requirePassword && !await UserManager.CheckPasswordAsync(user, Input.Password))
+        {
+            message = "Error: Incorrect password.";
+            return;
+        }
+
+        isDeleting = true;
+        StateHasChanged();
+
+        try
+        {
+            var success = await UserDataDeletionService.DeleteAllUserDataAsync(user);
+            
+            if (!success)
+            {
+                message = "Error: An unexpected error occurred while deleting your data. Please try again or contact support.";
+                isDeleting = false;
+                return;
+            }
+
+            Logger.LogInformation("User with ID '{UserId}' successfully cancelled their account and deleted all data.", user.Id);
+            
+            // Redirect to home page since user is signed out
+            RedirectManager.RedirectTo("/");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error occurred during account cancellation for user: {UserId}", user.Id);
+            message = "Error: An unexpected error occurred while deleting your data. Please try again or contact support.";
+            isDeleting = false;
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        [Required(ErrorMessage = "You must confirm that you understand this action cannot be undone.")]
+        [Range(typeof(bool), "true", "true", ErrorMessage = "You must confirm that you understand this action cannot be undone.")]
+        public bool ConfirmDeletion { get; set; } = false;
+    }
+}
