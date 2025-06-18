@@ -86,7 +86,11 @@
                 <i class="bi bi-question-circle ms-1 p-1 text-body" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" data-bs-custom-class="custom-tooltip"
                    title="<strong>AI Emoji Feature</strong><br>Select text and click the AI Emoji button to automatically suggest the most suitable emoji for your content.<br><br>Rate limits apply to prevent abuse. Please wait a moment if you reach the limit."></i>
             }
-        </div><div class="btn-group ms-2" role="group" aria-label="View mode">
+        </div>
+        <div class="btn-group me-2" role="group" aria-label="Font">
+            <FontSettings OnFontSettingsChanged="(settings) => OnFontSettingsChanged.InvokeAsync(settings)" />
+        </div>
+        <div class="btn-group ms-2" role="group" aria-label="View mode">
             <button type="button" class="btn btn-sm @(ViewMode == "split" ? "btn-primary" : "btn-outline-secondary")"
                     @onclick='() => OnSetViewMode.InvokeAsync("split")' title="Split view">
                 <i class="bi bi-layout-split"></i>
@@ -136,4 +140,5 @@
     [Parameter] public EventCallback OnAutoInsertEmoji { get; set; }
     [Parameter] public EventCallback<string> OnSetViewMode { get; set; }
     [Parameter] public EventCallback OnCopyDocumentId { get; set; }
+    [Parameter] public EventCallback<(string FontFamily, int FontSize)> OnFontSettingsChanged { get; set; }
 }
