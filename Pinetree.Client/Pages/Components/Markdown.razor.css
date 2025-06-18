@@ -151,14 +151,20 @@
     cursor: col-resize;
     transition: background-color 0.2s;
     flex-shrink: 0;
-    z-index: 20;
-}    
+    z-index: auto; /* No high z-index needed */
+}
 .resizer:hover, .resizer.resizing {
     background-color: #aaa;
 }
 
 /* Mobile responsive styles */
 @media (max-width: 768px) {
+    /* On mobile, navbar is hidden, so use full viewport */
+    .resizable-page {
+        top: 0 !important; /* Start from top since navbar is hidden */
+        height: 100vh !important; /* Full viewport height */
+    }
+    
     /* Hide tree panel and first resizer on mobile */
     #panel1,
     #resizer1 {
@@ -283,6 +289,10 @@
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
     }
+
+    .markdown-page-navbar {
+        display: none !important;
+    }
 }
 
 /* Additional styles for very small screens */
@@ -317,10 +327,9 @@
         font-size: 13px !important;
         padding: 8px !important;
     }
-    
-    /* Adjust top spacing for very small screens */
+      /* Adjust top spacing for very small screens */
     .resizable-page {
-        top: 2.5rem !important;
-        height: calc(100vh - 2.5rem) !important;
+        top: 0 !important; /* Full screen since navbar is hidden */
+        height: 100vh !important;
     }
 }
