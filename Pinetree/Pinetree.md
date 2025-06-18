@@ -1,12 +1,10 @@
 # TODO
-- Toolbar Refactor
-
 - stripe 
 - Changelog Discord
-
-- Staging Terafform
 - Layout CSS 100% Check
   - Smartphone Layout
+
+- Staging Terafform
 - Markdown Text Hidden
 
 - [carbon](https://www.carbonads.net/)
