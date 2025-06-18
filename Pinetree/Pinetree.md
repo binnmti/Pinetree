@@ -12,6 +12,7 @@
 - mail@pinetree.site
 - Color Theme
 - magnifying glass?
+- GUI Test(Image Update Bug)
 
 # Bug
 - Automatically logged out on deployment?
