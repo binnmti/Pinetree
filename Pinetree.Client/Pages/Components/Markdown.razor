@@ -18,7 +18,7 @@
             </div>
         </div>
     }
-    else
+    else if(!IsPublicView)
     {
         <div class="description-bar">
             <div class="alert alert-primary" role="alert">
@@ -100,29 +100,31 @@
                     </div>
                     @if (!IsPublicView)
                     {
-                        <MarkdownToolbar 
-                            CanUndo="@CanUndo" 
-                            CanRedo="@CanRedo" 
-                            IsTry="@IsTry" 
-                            ViewMode="@ViewMode" 
-                            CopyIconState="@_copyIconState" 
-                            CurrentGuid="@Current.Guid"
-                            OnExtractToChildFile="@ExtractToChildFile"
-                            OnUndo="@UndoAsync"
-                            OnRedo="@RedoAsync"
-                            OnFormatText="@HandleFormatText"
-                            OnInsertList="@HandleInsertList"
-                            OnDecreaseIndent="@DecreaseIndent"
-                            OnIncreaseIndent="@IncreaseIndent"
-                            OnInsertLink="@InsertLink"
-                            OnInsertImage="@InsertImage"
-                            OnInsertGrid="@InsertGrid"
-                            OnInsertLine="@InsertLine"
-                            OnInsertEmoji="@InsertEmoji"
-                            OnAutoInsertEmoji="@AutoInsertEmoji"
-                            OnSetViewMode="@HandleSetViewMode"
-                            OnCopyDocumentId="@CopyDocumentId"
-                            OnFontSettingsChanged="@OnFontSettingsChanged" />
+                        <div class="markdown-toolbar">
+                            <MarkdownToolbar CanUndo="@CanUndo"
+                                             CanRedo="@CanRedo"
+                                             IsTry="@IsTry"
+                                             ViewMode="@ViewMode"
+                                             CopyIconState="@_copyIconState"
+                                             CurrentGuid="@Current.Guid"
+                                             OnExtractToChildFile="@ExtractToChildFile"
+                                             OnUndo="@UndoAsync"
+                                             OnRedo="@RedoAsync"
+                                             OnFormatText="@HandleFormatText"
+                                             OnInsertList="@HandleInsertList"
+                                             OnDecreaseIndent="@DecreaseIndent"
+                                             OnIncreaseIndent="@IncreaseIndent"
+                                             OnInsertLink="@InsertLink"
+                                             OnInsertImage="@InsertImage"
+                                             OnInsertGrid="@InsertGrid"
+                                             OnInsertLine="@InsertLine"
+                                             OnInsertEmoji="@InsertEmoji"
+                                             OnAutoInsertEmoji="@AutoInsertEmoji"
+                                             OnSetViewMode="@HandleSetViewMode"
+                                             OnCopyDocumentId="@CopyDocumentId"
+                                             OnFontSettingsChanged="@OnFontSettingsChanged" />
+
+                        </div>
                     }
                 </div>
                 <div class="right-panels-container">

@@ -1,3 +1,11 @@
+## [0.9.5] - 2025-06-17
+
+### Features
+- Font Family Selection
+- Font Size Control
+
+---
+
 ## [0.9.4] - 2025-06-16
 
 ### Features

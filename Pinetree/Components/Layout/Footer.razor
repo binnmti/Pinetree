@@ -89,16 +89,12 @@
             return "footer-hidden";
         }
 
-        if (path.StartsWith("terms") ||
-            path.StartsWith("privacy") ||
-            path.StartsWith("changelog") ||
-            path.StartsWith("user") ||
-            path.StartsWith("home"))
+        if (path == "")
         {
-            return "";
+            return "footer-fixed";
         }
 
-        return "footer-fixed";
+        return "";
     }
 
     protected override async Task OnInitializedAsync()

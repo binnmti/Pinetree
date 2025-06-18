@@ -1,14 +1,7 @@
 # TODO
-- Toolbar Refactor
-
 - stripe 
 - Changelog Discord
-
 - Staging Terafform
-- Layout CSS 100% Check
-  - Smartphone Layout
-- Markdown Text Hidden
-
 - [carbon](https://www.carbonads.net/)
 - GuruGuru
 - monaco-editor
@@ -23,7 +16,8 @@
 # Bug
 - Automatically logged out on deployment?
 - A system where you can press the save button, log in from the popup, and return
-
+- Hamburger menu priority is broken on Markdown Page
+ 
 # Implementation Priority
 ## High Priority (Immediate Action)
 - [x] Access Audit Log

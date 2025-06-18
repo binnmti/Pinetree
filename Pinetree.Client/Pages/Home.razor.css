@@ -177,6 +177,53 @@
     .cta-container {
         margin-bottom: 60px;
     }
+
+    /* Mobile optimization for images and layout */
+    .slider-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+    
+    .slider {
+        height: auto;
+        min-height: 200px;
+    }
+    
+    .slide {
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .main-image {
+        max-width: 100%;
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+    }
+    
+    /* Center all content on mobile */
+    .hierarchical-emphasis {
+        margin: 0 auto;
+        text-align: center;
+    }
+    
+    .concept-box {
+        text-align: center;
+        justify-content: center;
+    }
+    
+    /* Ensure buttons stay centered */
+    .button-container {
+        justify-content: center;
+        text-align: center;
+    }
 }
 
 :global(.footer-container) {
@@ -187,7 +234,8 @@
 
 .slider-container {
     position: relative;
-    width: 800px;
+    width: 100%;
+    max-width: 800px;
     margin: 0 auto;
     overflow: hidden;
 }

@@ -1,7 +1,12 @@
 ﻿@using Microsoft.AspNetCore.Authorization
 @using Pinetree.Shared
+@inject NavigationManager NavigationManager
 
-<nav class="navbar navbar-expand-lg bg-body-tertiary bg-light">
+@{
+    bool isMarkdownPage = IsMarkdownPage();
+}
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary bg-light @(isMarkdownPage ? "markdown-page-navbar" : "")">
     <div class="container-fluid">
         <a class="navbar-brand" href="/">
             <img src="img/pinetree64.webp" alt="Pinetree logo" width="32" height="32">
@@ -18,7 +23,7 @@
                             <NavLink class="nav-link" href="/user">
                                 <i class="bi bi-card-list"></i> User
                             </NavLink>
-                        </li>                        
+                        </li>
                         <AuthorizeView Roles="@Roles.Admin" Context="adminContext">
                             <li class="nav-item">
                                 <NavLink class="nav-link" href="/audit">
@@ -74,3 +79,15 @@
         </div>
     </div>
 </nav>
+
+@code
+{
+    // TODO: Hamburger menu priority is broken on Markdown Page
+    private bool IsMarkdownPage()
+    {
+        var path = NavigationManager.ToBaseRelativePath(NavigationManager.Uri).ToLowerInvariant();
+        return path.StartsWith("play") ||
+               path.StartsWith("edit/") ||
+               path.StartsWith("view/");
+    }
+}
