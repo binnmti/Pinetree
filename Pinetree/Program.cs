@@ -3,12 +3,13 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Pinetree.Client.Services;
 using Pinetree.Components;
 using Pinetree.Components.Account;
 using Pinetree.Data;
+using Pinetree.Middleware;
 using Pinetree.Services;
 using Pinetree.Shared;
-using Pinetree.Middleware;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,7 @@ builder.Services.AddScoped<VersionService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ISensitiveDataDetectorService, SensitiveDataDetectorService>();
 builder.Services.AddScoped<ISecureLoggerService, SecureLoggerService>();
+builder.Services.AddScoped<FontSettingsService>();
 
 builder.Services.AddHostedService<AuditCleanupService>();
 builder.Services.AddHttpContextAccessor();
