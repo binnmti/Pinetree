@@ -2,22 +2,33 @@ using Microsoft.JSInterop;
 
 namespace Pinetree.Client.Services;
 
-public class FontSettingsService
+public class FontSettingsService : IAsyncDisposable
 {
     private readonly IJSRuntime _jsRuntime;
     private const string FontFamilyKey = "pinetree_font_family";
     private const string FontSizeKey = "pinetree_font_size";
+    private IJSObjectReference? _jsModule;
 
     public FontSettingsService(IJSRuntime jsRuntime)
     {
         _jsRuntime = jsRuntime;
     }
 
+    private async Task<IJSObjectReference> GetJsModuleAsync()
+    {
+        if (_jsModule == null)
+        {
+            _jsModule = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", "./Pages/Components/Markdown.razor.js");
+        }
+        return _jsModule;
+    }
+
     public async Task<string> GetFontFamilyAsync()
     {
         try
         {
-            var fontFamily = await _jsRuntime.InvokeAsync<string>("getCookie", FontFamilyKey);
+            var jsModule = await GetJsModuleAsync();
+            var fontFamily = await jsModule.InvokeAsync<string>("getCookie", FontFamilyKey);
             return string.IsNullOrEmpty(fontFamily) ? "system-ui, -apple-system, sans-serif" : fontFamily;
         }
         catch (JSException jsEx)
@@ -46,7 +57,8 @@ public class FontSettingsService
     {
         try
         {
-            await _jsRuntime.InvokeVoidAsync("setCookie", FontFamilyKey, fontFamily, 365);
+            var jsModule = await GetJsModuleAsync();
+            await jsModule.InvokeVoidAsync("setCookie", FontFamilyKey, fontFamily, 365);
         }
         catch (JSException jsEx)
         {
@@ -70,7 +82,8 @@ public class FontSettingsService
     {
         try
         {
-            var fontSize = await _jsRuntime.InvokeAsync<string>("getCookie", FontSizeKey);
+            var jsModule = await GetJsModuleAsync();
+            var fontSize = await jsModule.InvokeAsync<string>("getCookie", FontSizeKey);
             return int.TryParse(fontSize, out var size) && size >= 10 && size <= 24 ? size : 14;
         }
         catch (JSException jsEx)
@@ -101,7 +114,8 @@ public class FontSettingsService
         {
             if (fontSize >= 10 && fontSize <= 24)
             {
-                await _jsRuntime.InvokeVoidAsync("setCookie", FontSizeKey, fontSize.ToString(), 365);
+                var jsModule = await GetJsModuleAsync();
+                await jsModule.InvokeVoidAsync("setCookie", FontSizeKey, fontSize.ToString(), 365);
             }
         }
         catch (JSException jsEx)
@@ -151,7 +165,7 @@ public class FontSettingsService
             "Georgia, serif" => "Georgia",
             "Times, 'Times New Roman', serif" => "Times",
             "Arial, sans-serif" => "Arial",
-            "Helvetica, sans-serif" => "Helvetica", 
+            "Helvetica, sans-serif" => "Helvetica",
             "Verdana, sans-serif" => "Verdana",
             "Calibri, sans-serif" => "Calibri",
             "Segoe UI, sans-serif" => "Segoe UI",
@@ -163,5 +177,13 @@ public class FontSettingsService
             "'Courier New', monospace" => "Courier New",
             _ => "System Default"
         };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_jsModule != null)
+        {
+            await _jsModule.DisposeAsync();
+        }
     }
 }

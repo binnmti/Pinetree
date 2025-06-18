@@ -9,7 +9,7 @@ using Pinetree.Data;
 using Pinetree.Services;
 using Pinetree.Shared;
 using Pinetree.Middleware;
-using Pinetree.Client.Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,7 +36,7 @@ builder.Services.AddScoped<VersionService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ISensitiveDataDetectorService, SensitiveDataDetectorService>();
 builder.Services.AddScoped<ISecureLoggerService, SecureLoggerService>();
-builder.Services.AddScoped<FontSettingsService>();
+
 builder.Services.AddHostedService<AuditCleanupService>();
 builder.Services.AddHttpContextAccessor();
 

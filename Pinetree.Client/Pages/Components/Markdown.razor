@@ -1189,7 +1189,7 @@
         return 0;
     }
 
-    private async Task OnFontSettingsChanged((string FontFamily, int FontSize) settings)
+    private void OnFontSettingsChanged((string FontFamily, int FontSize) settings)
     {
         _currentFontFamily = settings.FontFamily;
         _currentFontSize = settings.FontSize;
