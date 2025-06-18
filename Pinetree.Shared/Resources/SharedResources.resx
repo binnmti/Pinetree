@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion. The mimetype is used for serialized objects.
+    For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  
+  <!-- Home Page Strings -->
+  <data name="SiteTitle" xml:space="preserve">
+    <value>Pinetree(Beta)</value>
+  </data>
+  <data name="SiteDescription" xml:space="preserve">
+    <value>Pinetree is a browser-based hierarchical markdown editor.Inspired by Amazon's One-Pager culture, Pinetree helps you create concise documents that everyone actually wants to read. While a one-page summary is ideal, sometimes details matter too.</value>
+  </data>
+  <data name="MainHeading" xml:space="preserve">
+    <value>Pinetree is browser-based {0} markdown editor</value>
+  </data>
+  <data name="Hierarchical" xml:space="preserve">
+    <value>hierarchical</value>
+  </data>
+  <data name="Playground" xml:space="preserve">
+    <value>Playground</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>Register</value>
+  </data>
+  <data name="WhatIsHierarchicalMarkdownEditor" xml:space="preserve">
+    <value>What is a {0} Markdown Editor?</value>
+  </data>
+  <data name="OnePagerConcept" xml:space="preserve">
+    <value>Pinetree draws inspiration from Amazon's "One Pager" culture, which focuses on condensing key points into a single page. People prefer concise, readable content, yet there are times when detailed information is necessary.</value>
+  </data>
+  <data name="HierarchicalStructure" xml:space="preserve">
+    <value>As documents grow more detailed, we typically organize them with rules and folders. However, traditional file structures lack physical connections between these documents. Pinetree allows you to express content in a "hierarchical" format and navigate via links, enabling readers to naturally understand the relationships between content.</value>
+  </data>
+  <data name="UseCases" xml:space="preserve">
+    <value>Pinetree is ideal for travel plans, resumes, reading notes, and any document requiring both "conciseness" and "detail." You can keep each piece of content as simple as possible while adding hierarchical details as needed. Experience this new writing style for yourself.</value>
+  </data>
+  <data name="CreateMultipleDocuments" xml:space="preserve">
+    <value>Create multiple documents when you {0} for an account.</value>
+  </data>
+  <data name="PinetreeOverviewDemo" xml:space="preserve">
+    <value>Pinetree Overview &amp; Demo</value>
+  </data>
+  <data name="VideoDescription" xml:space="preserve">
+    <value>This 9-minute video covers Pinetree's core concepts and includes a live demonstration of key features. We've implemented the main functionality we envisioned and are now releasing it as a beta version to gather valuable feedback from users.</value>
+  </data>
+  <data name="BetaVersionNotice" xml:space="preserve">
+    <value>Beta Version Notice:</value>
+  </data>
+  <data name="BetaVersionDescription" xml:space="preserve">
+    <value>Pinetree is currently in beta development. Please note that this is our first video production, so the quality may not be optimal. The presentation materials are in English with subtitles, but the narration is in Japanese. We appreciate your understanding as we continue to improve our content and service.</value>
+  </data>
+  <data name="ReadyToGetStarted" xml:space="preserve">
+    <value>Ready to get started?</value>
+  </data>
+  <data name="JoinCommunity" xml:space="preserve">
+    <value>Join our community of organized writers and thinkers today!</value>
+  </data>
+  <data name="Pricing" xml:space="preserve">
+    <value>Pricing</value>
+  </data>
+  <data name="BetaPhaseDescription" xml:space="preserve">
+    <value>We're currently in a phase where we want as many users as possible to try our service.</value>
+  </data>
+  <data name="StartWithPlayground" xml:space="preserve">
+    <value>Please start with {0} and we'd appreciate your {1} afterwards.</value>
+  </data>
+  <data name="Feedback" xml:space="preserve">
+    <value>feedback</value>
+  </data>
+  <data name="FreePassReward" xml:space="preserve">
+    <value>Users who provide valuable feedback will receive a permanent free pass!</value>
+  </data>
+</root>

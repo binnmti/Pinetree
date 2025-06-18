@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using System.Globalization;
 using Pinetree.Client.Services;
 using Pinetree.Components;
 using Pinetree.Components.Account;
@@ -10,6 +12,7 @@ using Pinetree.Data;
 using Pinetree.Middleware;
 using Pinetree.Services;
 using Pinetree.Shared;
+using Pinetree.Shared.Resources;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +41,16 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ISensitiveDataDetectorService, SensitiveDataDetectorService>();
 builder.Services.AddScoped<ISecureLoggerService, SecureLoggerService>();
 builder.Services.AddScoped<FontSettingsService>();
+
+// Configure localization
+builder.Services.AddLocalization();
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supportedCultures = new[] { "en", "ja" };
+    options.SetDefaultCulture("en")
+        .AddSupportedCultures(supportedCultures)
+        .AddSupportedUICultures(supportedCultures);
+});
 
 builder.Services.AddHostedService<AuditCleanupService>();
 builder.Services.AddHttpContextAccessor();
@@ -194,6 +207,9 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     await SeedData.Initialize(app.Services);
 }
 app.UseHttpsRedirection();
+
+// Add Request Localization Middleware
+app.UseRequestLocalization();
 
 // Add Security Headers Middleware
 app.Use(async (context, next) =>
