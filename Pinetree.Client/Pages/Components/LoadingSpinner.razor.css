@@ -1,0 +1,18 @@
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    padding: 2rem;
+}
+
+.loading-spinner .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+.loading-spinner p {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}

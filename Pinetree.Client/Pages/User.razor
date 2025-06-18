@@ -14,322 +14,324 @@
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
-<h1>User Dashboard</h1>
+@if (isLoading)
+{
+    <LoadingSpinner Message="Loading user dashboard..." />
+}
+else
+{
+    <h1>User Dashboard</h1>
 
-<div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col-md-2">
-            <!-- Tab navigation -->
-            <div class="list-group">
-                <button @onclick="() => SetActiveTab(0)" class="list-group-item list-group-item-action @(activeTab == 0 ? "active" : "")">
-                    <i class="bi bi-file-earmark-text"></i> My Documents
-                </button>
-                <button @onclick="() => SetActiveTab(1)" class="list-group-item list-group-item-action @(activeTab == 1 ? "active" : "")">
-                    <i class="bi bi-images"></i> My Image
-                </button>
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-md-2">
+                <!-- Tab navigation -->
+                <div class="list-group">
+                    <button @onclick="() => SetActiveTab(0)" class="list-group-item list-group-item-action @(activeTab == 0 ? "active" : "")">
+                        <i class="bi bi-file-earmark-text"></i> My Documents
+                    </button>
+                    <button @onclick="() => SetActiveTab(1)" class="list-group-item list-group-item-action @(activeTab == 1 ? "active" : "")">
+                        <i class="bi bi-images"></i> My Image
+                    </button>
+                </div>
             </div>
-        </div>
-        <div class="col-md-10">
-            <!-- Tab content -->
-            @if (activeTab == 0)
-            {
-                <!-- Documents Tab -->
-                <div class="editor-container">
-                    <!-- Search and Filter Controls -->
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                <input type="text" class="form-control" placeholder="Search documents..." 
-                                       @bind="searchQuery" @bind:event="oninput" @onkeyup="@(async (e) => { if (searchDebounceTimer != null) searchDebounceTimer.Dispose(); searchDebounceTimer = new Timer(async _ => await SearchDocuments(), null, 500, Timeout.Infinite); })" />
+            <div class="col-md-10">
+                <!-- Tab content -->
+                @if (activeTab == 0)
+                {
+                    <!-- Documents Tab -->
+                    <div class="editor-container">
+                        <!-- Search and Filter Controls -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" placeholder="Search documents..."
+                                           @bind="searchQuery" @bind:event="oninput" @onkeyup="@(async (e) => { if (searchDebounceTimer != null) searchDebounceTimer.Dispose(); searchDebounceTimer = new Timer(async _ => await SearchDocuments(), null, 500, Timeout.Infinite); })" />
+                                </div>
                             </div>
-                        </div>                        
-                        <div class="col-md-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="publicOnlyCheck" @bind="showPublicOnly" @bind:after="OnFilterChanged">
-                                <label class="form-check-label" for="publicOnlyCheck">
-                                    Public only
-                                </label>
+                            <div class="col-md-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="publicOnlyCheck" @bind="showPublicOnly" @bind:after="OnFilterChanged">
+                                    <label class="form-check-label" for="publicOnlyCheck">
+                                        Public only
+                                    </label>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="input-group">
-                                <label class="input-group-text">Sort by:</label>
-                                <select class="form-select" @bind="sortBy" @bind:after="OnSortChanged">
-                                    <option value="updatedat">Updated Date</option>
-                                    <option value="createdat">Created Date</option>
-                                    <option value="title">Title</option>
-                                </select>
-                                <button class="btn btn-outline-secondary" type="button" @onclick="ToggleSortDirection">
-                                    <i class="bi @(sortDescending ? "bi-sort-down" : "bi-sort-up")"></i>
-                                </button>
+                            <div class="col-md-3">
+                                <div class="input-group">
+                                    <label class="input-group-text">Sort by:</label>
+                                    <select class="form-select" @bind="sortBy" @bind:after="OnSortChanged">
+                                        <option value="updatedat">Updated Date</option>
+                                        <option value="createdat">Created Date</option>
+                                        <option value="title">Title</option>
+                                    </select>
+                                    <button class="btn btn-outline-secondary" type="button" @onclick="ToggleSortDirection">
+                                        <i class="bi @(sortDescending ? "bi-sort-down" : "bi-sort-up")"></i>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="input-group">
-                                <label class="input-group-text">Show:</label>
-                                <select class="form-select" @bind="PageSize" @bind:after="OnPageSizeChanged">
-                                    <option value="10">10</option>
-                                    <option value="20">20</option>
-                                    <option value="30">30</option>
-                                </select>
-                                <span class="input-group-text">items</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    @if (isLoading)
-                    {
-                        <div class="text-center mt-4">
-                            <div class="spinner-border" role="status">
-                                <span class="visually-hidden">Loading...</span>
+                            <div class="col-md-3">
+                                <div class="input-group">
+                                    <label class="input-group-text">Show:</label>
+                                    <select class="form-select" @bind="PageSize" @bind:after="OnPageSizeChanged">
+                                        <option value="10">10</option>
+                                        <option value="20">20</option>
+                                        <option value="30">30</option>
+                                    </select>
+                                    <span class="input-group-text">items</span>
+                                </div>
                             </div>
                         </div>
-                    }
-                    else
-                    {
-                        <div class="row">
-                            <div class="col">
-                                <div class="d-flex flex-wrap">
-                                    <!-- Add new file card at the beginning -->
-                                    <div class="card m-2" style="width:14rem; height: 16rem">
-                                        <div class="card-body d-flex flex-column justify-content-center align-items-center"
-                                             @onclick="() => CreateFile()" style="cursor:pointer">
-                                            <i class="bi bi-file-earmark-plus" style="font-size: 2rem;"></i>
-                                            <p class="mt-2">Create New File</p>
-                                        </div>
-                                    </div>
-                                    @foreach (var pinecone in PinetreeViews)
-                                    {
+                        @if (isLoading)
+                        {
+                            <LoadingSpinner Message="Loading documents..." />
+                        }
+                        else
+                        {
+                            <div class="row">
+                                <div class="col">
+                                    <div class="d-flex flex-wrap">
+                                        <!-- Add new file card at the beginning -->
                                         <div class="card m-2" style="width:14rem; height: 16rem">
-                                            <div class="card-body d-flex flex-column">
-                                                <div class="mt-1 d-flex align-items-center text-truncate">
-                                                    <i class="bi @(pinecone.IsPublic ? "bi-globe" : "bi-file-earmark-lock") border px-1 me-1" 
-                                                       @onclick="() => ToggleVisibility(pinecone.Guid, !pinecone.IsPublic)"
-                                                       title="@(pinecone.IsPublic ? "Public" : "Private")"
-                                                       style="cursor:pointer"></i>
-                                                    @if (pinecone.IsPublic)
-                                                    {
-                                                        <a href="@($"/View/{Username}/{pinecone.Guid}")" target="_blank" class="text-muted small text-truncate">@NavigationManager.ToAbsoluteUri($"/View/{Username}/{pinecone.Guid}")</a>
-                                                    }
-                                                    else
-                                                    {
-                                                        <small class="text-muted">Only me</small>
-                                                    }
-                                                </div>
-                                                <div class="d-flex justify-content-between">
-                                                    <strong class="card-title" @onclick="() => OpenFile(pinecone.Guid)" style="cursor:pointer">
-                                                        <i class="bi bi-file-earmark-text"></i>
-                                                        @pinecone.Title
-                                                    </strong>
-                                                    <div>
-                                                        <i @onclick="() => ConfirmDelete(pinecone.Guid)" class="bi bi-trash2 border px-1" style="cursor:pointer"></i>
-                                                    </div>
-                                                </div>                                                
-                                                <p class="card-text flex-grow-1 mt-1" @onclick="() => OpenFile(pinecone.Guid)" style="cursor:pointer">@((MarkupString)GetContent(pinecone.Content))</p>
+                                            <div class="card-body d-flex flex-column justify-content-center align-items-center"
+                                                 @onclick="() => CreateFile()" style="cursor:pointer">
+                                                <i class="bi bi-file-earmark-plus" style="font-size: 2rem;"></i>
+                                                <p class="mt-2">Create New File</p>
                                             </div>
                                         </div>
+                                        @foreach (var pinecone in PinetreeViews)
+                                        {
+                                            <div class="card m-2" style="width:14rem; height: 16rem">
+                                                <div class="card-body d-flex flex-column">
+                                                    <div class="mt-1 d-flex align-items-center text-truncate">
+                                                        <i class="bi @(pinecone.IsPublic ? "bi-globe" : "bi-file-earmark-lock") border px-1 me-1"
+                                                           @onclick="() => ToggleVisibility(pinecone.Guid, !pinecone.IsPublic)"
+                                                           title="@(pinecone.IsPublic ? "Public" : "Private")"
+                                                           style="cursor:pointer"></i>
+                                                        @if (pinecone.IsPublic)
+                                                        {
+                                                            <a href="@($"/View/{Username}/{pinecone.Guid}")" target="_blank" class="text-muted small text-truncate">@NavigationManager.ToAbsoluteUri($"/View/{Username}/{pinecone.Guid}")</a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <small class="text-muted">Only me</small>
+                                                        }
+                                                    </div>
+                                                    <div class="d-flex justify-content-between">
+                                                        <strong class="card-title" @onclick="() => OpenFile(pinecone.Guid)" style="cursor:pointer">
+                                                            <i class="bi bi-file-earmark-text"></i>
+                                                            @pinecone.Title
+                                                        </strong>
+                                                        <div>
+                                                            <i @onclick="() => ConfirmDelete(pinecone.Guid)" class="bi bi-trash2 border px-1" style="cursor:pointer"></i>
+                                                        </div>
+                                                    </div>
+                                                    <p class="card-text flex-grow-1 mt-1" @onclick="() => OpenFile(pinecone.Guid)" style="cursor:pointer">@((MarkupString)GetContent(pinecone.Content))</p>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pagination -->
+                            @if (TotalPages > 1)
+                            {
+                                <nav aria-label="Page navigation" class="mt-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <small class="text-muted">
+                                                Showing @(((CurrentPage - 1) * PageSize) + 1) to @(Math.Min(CurrentPage * PageSize, TotalRecords)) of @TotalRecords entries
+                                            </small>
+                                        </div>
+                                        <ul class="pagination mb-0">
+                                            <!-- First Page -->
+                                            <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                                                <button class="page-link" @onclick="() => LoadPage(1)" disabled="@(CurrentPage == 1)">
+                                                    <i class="bi bi-chevron-double-left"></i>
+                                                </button>
+                                            </li>
+                                            <!-- Previous Page -->
+                                            <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                                                <button class="page-link" @onclick="() => LoadPage(CurrentPage - 1)" disabled="@(CurrentPage == 1)">
+                                                    <i class="bi bi-chevron-left"></i>
+                                                </button>
+                                            </li>
+
+                                            <!-- Page Numbers -->
+                                            @{
+                                                int startPage = Math.Max(1, CurrentPage - 2);
+                                                int endPage = Math.Min(TotalPages, startPage + 4);
+                                                if (endPage - startPage < 4)
+                                                {
+                                                    startPage = Math.Max(1, endPage - 4);
+                                                }
+                                            }
+
+                                            @if (startPage > 1)
+                                            {
+                                                <li class="page-item">
+                                                    <button class="page-link" @onclick="() => LoadPage(1)">1</button>
+                                                </li>
+                                                @if (startPage > 2)
+                                                {
+                                                    <li class="page-item disabled">
+                                                        <span class="page-link">...</span>
+                                                    </li>
+                                                }
+                                            }
+
+                                            @for (int i = startPage; i <= endPage; i++)
+                                            {
+                                                int pageNum = i;
+                                                <li class="page-item @(i == CurrentPage ? "active" : "")">
+                                                    <button class="page-link" @onclick="() => LoadPage(pageNum)">@i</button>
+                                                </li>
+                                            }
+
+                                            @if (endPage < TotalPages)
+                                            {
+                                                @if (endPage < TotalPages - 1)
+                                                {
+                                                    <li class="page-item disabled">
+                                                        <span class="page-link">...</span>
+                                                    </li>
+                                                }
+                                                <li class="page-item">
+                                                    <button class="page-link" @onclick="() => LoadPage(TotalPages)">@TotalPages</button>
+                                                </li>
+                                            }
+
+                                            <!-- Next Page -->
+                                            <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                                                <button class="page-link" @onclick="() => LoadPage(CurrentPage + 1)" disabled="@(CurrentPage == TotalPages)">
+                                                    <i class="bi bi-chevron-right"></i>
+                                                </button>
+                                            </li>
+                                            <!-- Last Page -->
+                                            <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                                                <button class="page-link" @onclick="() => LoadPage(TotalPages)" disabled="@(CurrentPage == TotalPages)">
+                                                    <i class="bi bi-chevron-double-right"></i>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </nav>
+                            }
+                        }
+                    </div>
+                }
+                else if (activeTab == 1)
+                {
+                    <!-- Files Tab (former UserImageFiles.razor content) -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">Storage Usage</div>
+                                <div class="card-body">
+                                    @if (storageUsage != null)
+                                    {
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar"
+                                                 style="width: @storageUsage.percentage%;"
+                                                 aria-valuenow="@storageUsage.percentage"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100">
+                                                @storageUsage.percentage.ToString("0.0")%
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            Used: @FormatBytes(storageUsage.used) / @FormatBytes(storageUsage.quota)
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div>Loading...</div>
                                     }
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Pagination -->
-                        @if (TotalPages > 1)
-                        {
-                            <nav aria-label="Page navigation" class="mt-4">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <small class="text-muted">
-                                            Showing @(((CurrentPage - 1) * PageSize) + 1) to @(Math.Min(CurrentPage * PageSize, TotalRecords)) of @TotalRecords entries
-                                        </small>
-                                    </div>
-                                    <ul class="pagination mb-0">
-                                        <!-- First Page -->
-                                        <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
-                                            <button class="page-link" @onclick="() => LoadPage(1)" disabled="@(CurrentPage == 1)">
-                                                <i class="bi bi-chevron-double-left"></i>
-                                            </button>
-                                        </li>
-                                        <!-- Previous Page -->
-                                        <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
-                                            <button class="page-link" @onclick="() => LoadPage(CurrentPage - 1)" disabled="@(CurrentPage == 1)">
-                                                <i class="bi bi-chevron-left"></i>
-                                            </button>
-                                        </li>
-
-                                        <!-- Page Numbers -->
-                                        @{
-                                            int startPage = Math.Max(1, CurrentPage - 2);
-                                            int endPage = Math.Min(TotalPages, startPage + 4);
-                                            if (endPage - startPage < 4)
-                                            {
-                                                startPage = Math.Max(1, endPage - 4);
-                                            }
-                                        }
-
-                                        @if (startPage > 1)
-                                        {
-                                            <li class="page-item">
-                                                <button class="page-link" @onclick="() => LoadPage(1)">1</button>
-                                            </li>
-                                            @if (startPage > 2)
-                                            {
-                                                <li class="page-item disabled">
-                                                    <span class="page-link">...</span>
-                                                </li>
-                                            }
-                                        }
-
-                                        @for (int i = startPage; i <= endPage; i++)
-                                        {
-                                            int pageNum = i;
-                                            <li class="page-item @(i == CurrentPage ? "active" : "")">
-                                                <button class="page-link" @onclick="() => LoadPage(pageNum)">@i</button>
-                                            </li>
-                                        }
-
-                                        @if (endPage < TotalPages)
-                                        {
-                                            @if (endPage < TotalPages - 1)
-                                            {
-                                                <li class="page-item disabled">
-                                                    <span class="page-link">...</span>
-                                                </li>
-                                            }
-                                            <li class="page-item">
-                                                <button class="page-link" @onclick="() => LoadPage(TotalPages)">@TotalPages</button>
-                                            </li>
-                                        }
-
-                                        <!-- Next Page -->
-                                        <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
-                                            <button class="page-link" @onclick="() => LoadPage(CurrentPage + 1)" disabled="@(CurrentPage == TotalPages)">
-                                                <i class="bi bi-chevron-right"></i>
-                                            </button>
-                                        </li>
-                                        <!-- Last Page -->
-                                        <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
-                                            <button class="page-link" @onclick="() => LoadPage(TotalPages)" disabled="@(CurrentPage == TotalPages)">
-                                                <i class="bi bi-chevron-double-right"></i>
-                                            </button>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </nav>
-                        }
-                    }
-                </div>
-            }
-            else if (activeTab == 1)
-            {
-                <!-- Files Tab (former UserImageFiles.razor content) -->
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">Storage Usage</div>
-                            <div class="card-body">
-                                @if (storageUsage != null)
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Preview</th>
+                                    <th>Filename</th>
+                                    <th>Size</th>
+                                    <th>Upload Date</th>
+                                    <th>Document</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (files == null)
                                 {
-                                    <div class="progress">
-                                        <div class="progress-bar" role="progressbar"
-                                             style="width: @storageUsage.percentage%;"
-                                             aria-valuenow="@storageUsage.percentage"
-                                             aria-valuemin="0"
-                                             aria-valuemax="100">
-                                            @storageUsage.percentage.ToString("0.0")%
-                                        </div>
-                                    </div>
-                                    <div class="mt-2">
-                                        Used: @FormatBytes(storageUsage.used) / @FormatBytes(storageUsage.quota)
-                                    </div>
+                                    <tr>
+                                        <td colspan="6" class="text-center">Loading...</td>
+                                    </tr>
+                                }
+                                else if (!files.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center">No files found</td>
+                                    </tr>
                                 }
                                 else
                                 {
-                                    <div>Loading...</div>
+                                    @foreach (var file in files)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (IsImageFile(file.ContentType))
+                                                {
+                                                    <a href="@file.BlobUrl" target="_blank">
+                                                        <img src="@file.BlobUrl" style="max-height: 50px; max-width: 50px;" />
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a href="@file.BlobUrl" target="_blank">
+                                                        <i class="bi bi-file-earmark"></i>
+                                                    </a>
+                                                }
+                                            </td>
+                                            <td>@file.FileName</td>
+                                            <td>@FormatBytes(file.SizeInBytes)</td>
+                                            <td>@file.UploadedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
+                                            <td>
+                                                @if (string.IsNullOrEmpty(file.PineconeTitle))
+                                                {
+                                                    <span class="text-muted"><i class="bi bi-exclamation-circle"></i> Deleted Documents</span>
+                                                }
+                                                else
+                                                {
+                                                    <a href="/Edit/@file.PineconeGuid">/@file.PineconeTitle</a>
+                                                }
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteFile(file.Id)">
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
                                 }
-                            </div>
-                        </div>
+                            </tbody>
+                        </table>
                     </div>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Preview</th>
-                                <th>Filename</th>
-                                <th>Size</th>
-                                <th>Upload Date</th>
-                                <th>Document</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (files == null)
-                            {
-                                <tr>
-                                    <td colspan="6" class="text-center">Loading...</td>
-                                </tr>
-                            }
-                            else if (!files.Any())
-                            {
-                                <tr>
-                                    <td colspan="6" class="text-center">No files found</td>
-                                </tr>
-                            }
-                            else
-                            {
-                                @foreach (var file in files)
-                                {
-                                    <tr>
-                                        <td>
-                                            @if (IsImageFile(file.ContentType))
-                                            {
-                                                <a href="@file.BlobUrl" target="_blank">
-                                                    <img src="@file.BlobUrl" style="max-height: 50px; max-width: 50px;" />
-                                                </a>
-                                            }
-                                            else
-                                            {
-                                                <a href="@file.BlobUrl" target="_blank">
-                                                    <i class="bi bi-file-earmark"></i>
-                                                </a>
-                                            }
-                                        </td>
-                                        <td>@file.FileName</td>
-                                        <td>@FormatBytes(file.SizeInBytes)</td>
-                                        <td>@file.UploadedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
-                                        <td>
-                                            @if (string.IsNullOrEmpty(file.PineconeTitle))
-                                            {
-                                                <span class="text-muted"><i class="bi bi-exclamation-circle"></i> Deleted Documents</span>
-                                            }
-                                            else
-                                            {
-                                                <a href="/Edit/@file.PineconeGuid">/@file.PineconeTitle</a>
-                                            }
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteFile(file.Id)">
-                                                Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
+                }
+            </div>
         </div>
     </div>
-</div>
+}
 
 @code {
     // Tab and UI state
     private int activeTab = 0;
-    private bool isLoading = false;
+    private bool isLoading = true;
 
     // Data properties
     private List<PinetreeView> PinetreeViews { get; set; } = new List<PinetreeView>();
@@ -389,8 +391,8 @@
     {
         CurrentPage = pageNumber;
         await LoadDocuments();
-    }    
-      private async Task LoadDocuments()
+    }
+    private async Task LoadDocuments()
     {
         try
         {
@@ -410,7 +412,7 @@
 
                 if (!string.IsNullOrWhiteSpace(searchQuery))
                 {
-                    filteredList = filteredList.Where(p => 
+                    filteredList = filteredList.Where(p =>
                         p.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
                         p.Content.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
                 }
@@ -534,7 +536,7 @@
         PinetreeViews.Remove(itemToRemove);
         TotalRecords--;
         TotalPages = (int)Math.Ceiling(TotalRecords / (double)PageSize);
-        
+
         // If current page is empty and not the first page, go to previous page
         if (!PinetreeViews.Any() && CurrentPage > 1)
         {
@@ -632,7 +634,7 @@
         public int TotalRecords { get; set; }
         public int TotalPages { get; set; }
     }
-    
+
     private class UserDocumentsResponse
     {
         public List<PineconeViewModel> Documents { get; set; } = new();

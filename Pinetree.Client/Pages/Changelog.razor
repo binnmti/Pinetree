@@ -10,11 +10,7 @@
 
     @if (isLoading)
     {
-        <div class="text-center">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
+        <LoadingSpinner Message="Loading changelog..." />
     }
     else if (changelogEntries.Any())
     {
@@ -43,21 +39,25 @@
 @code {
     private bool isLoading = true;
     private List<ChangelogEntry> changelogEntries = new();
-
-    protected override async Task OnInitializedAsync()
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        try
+        if (firstRender)
         {
-            var content = await HttpClient.GetStringAsync("/Changelog.md");
-            changelogEntries = ParseChangelogContent(content);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading changelog: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
+            try
+            {
+                var content = await HttpClient.GetStringAsync("/Changelog.md");
+                changelogEntries = ParseChangelogContent(content);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading changelog: {ex.Message}");
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
         }
     }
 

@@ -1,14 +1,14 @@
 # TODO
 - stripe 
+- User Data Cancellation
+
 - Changelog Discord
 - Staging Terafform
 - [carbon](https://www.carbonads.net/)
-- GuruGuru
 - monaco-editor
 - Multilingualization, or rather Japaneseization
 - Browther Back
 - SEO/OGP
-- User Data Cancellation
 - mail@pinetree.site
 - Color Theme
 - magnifying glass?
