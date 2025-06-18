@@ -239,8 +239,35 @@
             objRef = DotNetObjectReference.Create(this);
             
             // Initialize font settings
-            _currentFontFamily = await FontSettingsService.GetFontFamilyAsync();
-            _currentFontSize = await FontSettingsService.GetFontSizeAsync();
+            try
+            {
+                _currentFontFamily = await FontSettingsService.GetFontFamilyAsync();
+                _currentFontSize = await FontSettingsService.GetFontSizeAsync();
+            }
+            catch (JSException jsEx)
+            {
+                Console.WriteLine($"JavaScript error initializing font settings: {jsEx.Message}");
+                _currentFontFamily = "system-ui, -apple-system, sans-serif";
+                _currentFontSize = 14;
+            }
+            catch (JSDisconnectedException jsDisconnectedEx)
+            {
+                Console.WriteLine($"JavaScript runtime disconnected while initializing font settings: {jsDisconnectedEx.Message}");
+                _currentFontFamily = "system-ui, -apple-system, sans-serif";
+                _currentFontSize = 14;
+            }
+            catch (InvalidOperationException invOpEx) when (invOpEx.Message.Contains("JavaScript"))
+            {
+                Console.WriteLine($"JavaScript not available while initializing font settings: {invOpEx.Message}");
+                _currentFontFamily = "system-ui, -apple-system, sans-serif";
+                _currentFontSize = 14;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to initialize font settings: {ex.Message}");
+                _currentFontFamily = "system-ui, -apple-system, sans-serif";
+                _currentFontSize = 14;
+            }
             
             if (IsPublicView)
             {

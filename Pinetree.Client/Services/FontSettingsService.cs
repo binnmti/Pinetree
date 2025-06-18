@@ -20,8 +20,24 @@ public class FontSettingsService
             var fontFamily = await _jsRuntime.InvokeAsync<string>("getCookie", FontFamilyKey);
             return string.IsNullOrEmpty(fontFamily) ? "system-ui, -apple-system, sans-serif" : fontFamily;
         }
-        catch
+        catch (JSException jsEx)
         {
+            Console.WriteLine($"JavaScript error getting font family: {jsEx.Message}");
+            return "system-ui, -apple-system, sans-serif";
+        }
+        catch (JSDisconnectedException jsDisconnectedEx)
+        {
+            Console.WriteLine($"JavaScript runtime disconnected while getting font family: {jsDisconnectedEx.Message}");
+            return "system-ui, -apple-system, sans-serif";
+        }
+        catch (InvalidOperationException invOpEx) when (invOpEx.Message.Contains("JavaScript"))
+        {
+            Console.WriteLine($"JavaScript not available while getting font family: {invOpEx.Message}");
+            return "system-ui, -apple-system, sans-serif";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting font family from cookie: {ex.Message}");
             return "system-ui, -apple-system, sans-serif";
         }
     }
@@ -32,9 +48,21 @@ public class FontSettingsService
         {
             await _jsRuntime.InvokeVoidAsync("setCookie", FontFamilyKey, fontFamily, 365);
         }
-        catch
+        catch (JSException jsEx)
         {
-            // Ignore errors for cookie operations
+            Console.WriteLine($"JavaScript error setting font family: {jsEx.Message}");
+        }
+        catch (JSDisconnectedException jsDisconnectedEx)
+        {
+            Console.WriteLine($"JavaScript runtime disconnected while setting font family: {jsDisconnectedEx.Message}");
+        }
+        catch (InvalidOperationException invOpEx) when (invOpEx.Message.Contains("JavaScript"))
+        {
+            Console.WriteLine($"JavaScript not available while setting font family: {invOpEx.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error setting font family cookie: {ex.Message}");
         }
     }
 
@@ -45,8 +73,24 @@ public class FontSettingsService
             var fontSize = await _jsRuntime.InvokeAsync<string>("getCookie", FontSizeKey);
             return int.TryParse(fontSize, out var size) && size >= 10 && size <= 24 ? size : 14;
         }
-        catch
+        catch (JSException jsEx)
         {
+            Console.WriteLine($"JavaScript error getting font size: {jsEx.Message}");
+            return 14;
+        }
+        catch (JSDisconnectedException jsDisconnectedEx)
+        {
+            Console.WriteLine($"JavaScript runtime disconnected while getting font size: {jsDisconnectedEx.Message}");
+            return 14;
+        }
+        catch (InvalidOperationException invOpEx) when (invOpEx.Message.Contains("JavaScript"))
+        {
+            Console.WriteLine($"JavaScript not available while getting font size: {invOpEx.Message}");
+            return 14;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting font size from cookie: {ex.Message}");
             return 14;
         }
     }
@@ -60,9 +104,21 @@ public class FontSettingsService
                 await _jsRuntime.InvokeVoidAsync("setCookie", FontSizeKey, fontSize.ToString(), 365);
             }
         }
-        catch
+        catch (JSException jsEx)
         {
-            // Ignore errors for cookie operations
+            Console.WriteLine($"JavaScript error setting font size: {jsEx.Message}");
+        }
+        catch (JSDisconnectedException jsDisconnectedEx)
+        {
+            Console.WriteLine($"JavaScript runtime disconnected while setting font size: {jsDisconnectedEx.Message}");
+        }
+        catch (InvalidOperationException invOpEx) when (invOpEx.Message.Contains("JavaScript"))
+        {
+            Console.WriteLine($"JavaScript not available while setting font size: {invOpEx.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error setting font size cookie: {ex.Message}");
         }
     }
 
