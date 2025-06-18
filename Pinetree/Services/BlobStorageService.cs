@@ -68,7 +68,6 @@ public class BlobStorageService
         _dbContext.UserBlobInfos.Add(blobInfo);
 
         var usage = await _dbContext.UserStorageUsages
-                                    .AsNoTracking()
                                     .SingleOrDefaultAsync(x => x.UserName == userName);
         if (usage == null)
         {
