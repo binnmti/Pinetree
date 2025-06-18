@@ -1,7 +1,5 @@
-@* Loading Spinner Component *@
-
 <div class="loading-spinner">
-    <div class="spinner-border text-primary" role="status">
+    <div class="spinner-border text-primary" role="status" aria-live="polite" aria-busy="true">
         <span class="visually-hidden">Loading...</span>
     </div>
     @if (!string.IsNullOrEmpty(Message))
