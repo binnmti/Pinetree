@@ -4,7 +4,6 @@ using Pinetree.Services;
 using Pinetree.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.DataProtection;
 using Moq;
 using Pinetree.Models;
 
@@ -14,7 +13,7 @@ namespace Pinetree.TestProject;
 public class PineconeViewModelTests
 {
     private ApplicationDbContext _context = null!;
-    private Mock<EncryptionService> _mockEncryptionService = null!;
+    private Mock<IEncryptionService> _mockEncryptionService = null!;
     private Mock<UserManager<ApplicationUser>> _mockUserManager = null!;
     private PineconesController _controller = null!;    [TestInitialize]
     public void Setup()
@@ -30,15 +29,8 @@ public class PineconeViewModelTests
         _mockUserManager = new Mock<UserManager<ApplicationUser>>(
             userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
 
-        // Mock EncryptionService with required constructor parameters
-        var mockDataProtectionProvider = new Mock<IDataProtectionProvider>();
-        var mockDataProtector = new Mock<IDataProtector>();
-        mockDataProtectionProvider.Setup(x => x.CreateProtector(It.IsAny<string>())).Returns(mockDataProtector.Object);
-        
-        _mockEncryptionService = new Mock<EncryptionService>(
-            mockDataProtectionProvider.Object, 
-            _mockUserManager.Object, 
-            _context);
+        // Mock IEncryptionService interface
+        _mockEncryptionService = new Mock<IEncryptionService>();
 
         _controller = new PineconesController(_context, _mockEncryptionService.Object, _mockUserManager.Object);
     }
@@ -77,7 +69,9 @@ public class PineconeViewModelTests
         pinecone.IsPublic = request.IsPublic;
         pinecone.UserName = userName;
         pinecone.Update = DateTime.UtcNow;
-    }    private static async Task<PineconeViewModelWithChildren> ToPineconeViewModelWithChildren(Pinecone model, EncryptionService encryptionService, string userId)
+    }
+    
+    private static async Task<PineconeViewModelWithChildren> ToPineconeViewModelWithChildren(Pinecone model, IEncryptionService encryptionService, string userId)
     {
         // For testing, we'll just return the content as-is without decryption
         var viewModel = new PineconeViewModelWithChildren
