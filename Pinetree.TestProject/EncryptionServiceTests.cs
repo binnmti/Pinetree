@@ -30,7 +30,7 @@ namespace Pinetree.TestProject
             var configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["Encryption:Key"] = _testKey
+                    ["ConnectionStrings:EncryptionKey"] = _testKey
                 })
                 .Build();
 

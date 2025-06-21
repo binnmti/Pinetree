@@ -75,7 +75,7 @@ public class EncryptionService : IEncryptionService
 
             using (CryptoStream csEncrypt = new(msEncrypt, encryptor, CryptoStreamMode.Write))
             {
-                using StreamWriter swEncrypt = new StreamWriter(csEncrypt, Encoding.UTF8);
+                using StreamWriter swEncrypt = new(csEncrypt, Encoding.UTF8);
                 swEncrypt.Write(plainText);
             }
 
@@ -117,29 +117,27 @@ public class EncryptionService : IEncryptionService
             var encryptedData = encryptedText.Substring(ENCRYPTION_VERSION.Length + VERSION_SEPARATOR.Length);
             var fullCipher = Convert.FromBase64String(encryptedData);
 
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = _key;
-                aes.Mode = CipherMode.CBC;
-                aes.Padding = PaddingMode.PKCS7;
+            using Aes aes = Aes.Create();
+            aes.Key = _key;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
 
-                // Extract IV from the beginning of the cipher text
-                var ivLength = aes.BlockSize / 8; // 16 bytes for AES
-                var iv = new byte[ivLength];
-                var cipher = new byte[fullCipher.Length - ivLength];
+            // Extract IV from the beginning of the cipher text
+            var ivLength = aes.BlockSize / 8; // 16 bytes for AES
+            var iv = new byte[ivLength];
+            var cipher = new byte[fullCipher.Length - ivLength];
 
-                Array.Copy(fullCipher, 0, iv, 0, ivLength);
-                Array.Copy(fullCipher, ivLength, cipher, 0, cipher.Length);
+            Array.Copy(fullCipher, 0, iv, 0, ivLength);
+            Array.Copy(fullCipher, ivLength, cipher, 0, cipher.Length);
 
-                aes.IV = iv;
+            aes.IV = iv;
 
-                ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+            ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
 
-                using MemoryStream msDecrypt = new(cipher);
-                using CryptoStream csDecrypt = new(msDecrypt, decryptor, CryptoStreamMode.Read);
-                using StreamReader srDecrypt = new(csDecrypt, Encoding.UTF8);
-                return srDecrypt.ReadToEnd();
-            }
+            using MemoryStream msDecrypt = new(cipher);
+            using CryptoStream csDecrypt = new(msDecrypt, decryptor, CryptoStreamMode.Read);
+            using StreamReader srDecrypt = new(csDecrypt, Encoding.UTF8);
+            return srDecrypt.ReadToEnd();
         }
         catch (Exception ex) when (ex is not InvalidOperationException)
         {
