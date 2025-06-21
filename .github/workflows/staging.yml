@@ -1,4 +1,4 @@
-name: staging
+name: Staging Deployment
 on:
   push:
     branches:
@@ -9,29 +9,47 @@ env:
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 9.0.x
   ASPNETCORE_ENVIRONMENT: Staging
+  ARTIFACT_RETENTION_DAYS: 2
 
 jobs:
   build-and-unit-tests:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
+    
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.nuget/packages
+          ${{ github.workspace }}/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    
     - name: Restore
       run: dotnet restore
+    
     - name: Build
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
+    
     - name: Run Unit Tests
       run: dotnet test Pinetree.TestProject/Pinetree.TestProject.csproj --no-build
+    
     - name: Publish
       run: dotnet publish Pinetree/Pinetree.csproj --configuration ${{ env.CONFIGURATION }} --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+    
     - name: Publish Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: webapp
+        name: webapp-staging-${{ github.sha }}
         path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
   migrate:
     runs-on: windows-latest
@@ -68,28 +86,28 @@ jobs:
           --resource-group "pinetree-staging" `
           --server "pinetree-staging" `
           --name "GithubActions-Temporary"
-
   deploy:
     runs-on: windows-latest
     needs: [build-and-unit-tests, migrate]
     steps:
-    - uses: actions/checkout@v4
     - name: Download artifact from build job
       uses: actions/download-artifact@v4
       with:
-        name: webapp
+        name: webapp-staging-${{ github.sha }}
         path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+    
     - name: Azure Login
       uses: azure/login@v2
       with:
         creds: ${{ secrets.Pinetree_SPN }}
+    
     - name: Deploy to Azure WebApp
       uses: azure/webapps-deploy@v2
       with:
         app-name: pinetree-staging
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+    
     - name: Configure Azure Web App Settings
       run: |
         az webapp config appsettings set --name pinetree-staging --resource-group pinetree-staging --settings ASPNETCORE_ENVIRONMENT=Staging
-      if: success()
 
