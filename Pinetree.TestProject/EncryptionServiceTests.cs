@@ -41,7 +41,7 @@ namespace Pinetree.TestProject
             var logger = serviceProvider.GetRequiredService<ILogger<EncryptionService>>();
 
             // Create encryption service
-            _encryptionService = new EncryptionService(configuration, logger);
+            _encryptionService = new EncryptionService(configuration);
         }
 
         [TestMethod]
