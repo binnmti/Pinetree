@@ -12,20 +12,57 @@ namespace Pinetree.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class PineconesController(ApplicationDbContext context, EncryptionService encryptionService, UserManager<ApplicationUser> userManager) : ControllerBase
+public class PineconesController(ApplicationDbContext context, IEncryptionService encryptionService, UserManager<ApplicationUser> userManager) : ControllerBase
 {
     private const string Untitled = "Untitled";
     private ApplicationDbContext DbContext { get; } = context;
-    private EncryptionService EncryptionService { get; } = encryptionService;
-    private UserManager<ApplicationUser> UserManager { get; } = userManager;
-
-    /// <summary>
+    private IEncryptionService EncryptionService { get; } = encryptionService;
+    private UserManager<ApplicationUser> UserManager { get; } = userManager;    /// <summary>
     /// Gets the current user ID for encryption operations
     /// </summary>
     private async Task<string> GetCurrentUserIdAsync()
     {
         var user = await UserManager.GetUserAsync(User);
         return user?.Id ?? throw new UnauthorizedAccessException("User not found");
+    }
+
+    /// <summary>
+    /// Helper method to encrypt content if it's private
+    /// </summary>
+    private string? EncryptContentIfPrivate(string? content, bool isPublic)
+    {
+        if (isPublic || string.IsNullOrEmpty(content))
+        {
+            return content;
+        }
+
+        // Check if already encrypted
+        if (EncryptionService.CanDecrypt(content))
+        {
+            return content;
+        }
+
+        return EncryptionService.Encrypt(content);
+    }
+
+    /// <summary>
+    /// Helper method to decrypt content if it's private and encrypted
+    /// </summary>
+    private string? DecryptContentIfPrivate(string? content, bool isPublic)
+    {
+        if (isPublic || string.IsNullOrEmpty(content))
+        {
+            return content;
+        }
+
+        // Check if encrypted
+        if (EncryptionService.CanDecrypt(content))
+        {
+            return EncryptionService.Decrypt(content);
+        }
+
+        // Legacy plain text data
+        return content;
     }
 
     /// <summary>
@@ -47,15 +84,15 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
             Update = model.Update
         };
     }
-
+    
     /// <summary>
     /// Converts Pinecone model with children to PineconeViewModelWithChildren for hierarchical data
     /// </summary>
-    private static async Task<PineconeViewModelWithChildren> ToPineconeViewModelWithChildren(Pinecone model, EncryptionService encryptionService, string userId)
+    private PineconeViewModelWithChildren ToPineconeViewModelWithChildren(Pinecone model)
     {
         // Decrypt content
-        var decryptedTitle = await encryptionService.DecryptContentAsync(model.Title, model.IsPublic, userId);
-        var decryptedContent = await encryptionService.DecryptContentAsync(model.Content, model.IsPublic, userId);
+        var decryptedTitle = DecryptContentIfPrivate(model.Title, model.IsPublic);
+        var decryptedContent = DecryptContentIfPrivate(model.Content, model.IsPublic);
 
         var viewModel = new PineconeViewModelWithChildren
         {
@@ -75,7 +112,7 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         // Convert children recursively
         foreach (var child in model.Children.OrderBy(c => c.Order))
         {
-            var childViewModel = await ToPineconeViewModelWithChildren(child, encryptionService, userId);
+            var childViewModel = ToPineconeViewModelWithChildren(child);
             viewModel.Children.Add(childViewModel);
         }
 
@@ -121,8 +158,8 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         var guid = Guid.NewGuid();
         var pinecone = new Pinecone
         {
-            Title = (await EncryptionService.EncryptContentAsync(title, false, userId))!, // New documents are private by default
-            Content = (await EncryptionService.EncryptContentAsync("", false, userId))!,
+            Title = EncryptContentIfPrivate(title, false)!, // New documents are private by default
+            Content = EncryptContentIfPrivate("", false)!,
             GroupGuid = guid,
             ParentGuid = null,
             Order = maxOrder,
@@ -134,10 +171,10 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         };
         await DbContext.Pinecone.AddAsync(pinecone);
         await DbContext.SaveChangesAsync();
-
+        
         // Return decrypted data to client
-        pinecone.Title = (await EncryptionService.DecryptContentAsync(pinecone.Title, pinecone.IsPublic, userId))!;
-        pinecone.Content = (await EncryptionService.DecryptContentAsync(pinecone.Content, pinecone.IsPublic, userId))!;
+        pinecone.Title = DecryptContentIfPrivate(pinecone.Title, pinecone.IsPublic)!;
+        pinecone.Content = DecryptContentIfPrivate(pinecone.Content, pinecone.IsPublic)!;
 
         return ToPineconeViewModel(pinecone);
     }
@@ -184,8 +221,8 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         var pinecone = await GetPineconeById(guid);
         var rootPinecone = await GetPineconeById(pinecone?.GroupGuid ?? Guid.Empty);
         if (rootPinecone == null) return null;
-        var loadedPinecone = await LoadChildrenRecursively(rootPinecone, userId);
-        return await ToPineconeViewModelWithChildren(loadedPinecone, EncryptionService, userId);
+        var loadedPinecone = await LoadChildrenRecursively(rootPinecone);
+        return ToPineconeViewModelWithChildren(loadedPinecone);
     }
     [HttpGet("get-view-include-child/{guid}")]
     [AllowAnonymous]
@@ -194,9 +231,9 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         var pinecone = await GetPineconeById(guid);
         if (pinecone == null || !pinecone.IsPublic) return null;
         var rootPinecone = await GetPineconeById(pinecone.GroupGuid);
-        if (rootPinecone == null) return null;        // For public content, we can use a dummy userId since public content is not encrypted
-        var loadedPinecone = await LoadChildrenRecursively(rootPinecone, "anonymous");
-        return await ToPineconeViewModelWithChildren(loadedPinecone, EncryptionService, "anonymous");
+        if (rootPinecone == null) return null;        // For public content, we can use the decryption helper
+        var loadedPinecone = await LoadChildrenRecursively(rootPinecone);
+        return ToPineconeViewModelWithChildren(loadedPinecone);
     }
 
     [HttpGet("get-user-top-list")]
@@ -209,14 +246,12 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
             .OrderBy(p => p.Order)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
-
-        // Decrypt content and convert to ViewModels
+            .ToListAsync();        // Decrypt content and convert to ViewModels
         var result = new List<PineconeViewModel>();
         foreach (var doc in documents)
         {
-            doc.Title = (await EncryptionService.DecryptContentAsync(doc.Title, doc.IsPublic, userId))!;
-            doc.Content = (await EncryptionService.DecryptContentAsync(doc.Content, doc.IsPublic, userId))!;
+            doc.Title = DecryptContentIfPrivate(doc.Title, doc.IsPublic)!;
+            doc.Content = DecryptContentIfPrivate(doc.Content, doc.IsPublic)!;
             result.Add(ToPineconeViewModel(doc));
         }
 
@@ -246,13 +281,13 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         // If changing from private to public, decrypt first
         // If changing from public to private, encrypt
         if (pinecone.IsPublic != request.IsPublic)
-        {
+        {            
             // Decrypt current content
-            var currentTitle = await EncryptionService.DecryptContentAsync(pinecone.Title, pinecone.IsPublic, userId);
-            var currentContent = await EncryptionService.DecryptContentAsync(pinecone.Content, pinecone.IsPublic, userId);
+            var currentTitle = DecryptContentIfPrivate(pinecone.Title, pinecone.IsPublic);
+            var currentContent = DecryptContentIfPrivate(pinecone.Content, pinecone.IsPublic);
             // Re-encrypt with new visibility setting
-            pinecone.Title = (await EncryptionService.EncryptContentAsync(currentTitle, request.IsPublic, userId))!;
-            pinecone.Content = (await EncryptionService.EncryptContentAsync(currentContent, request.IsPublic, userId))!;
+            pinecone.Title = EncryptContentIfPrivate(currentTitle, request.IsPublic)!;
+            pinecone.Content = EncryptContentIfPrivate(currentContent, request.IsPublic)!;
         }
 
         pinecone.IsPublic = request.IsPublic;
@@ -279,9 +314,8 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
             if (currentTree.UserName != userName)
             {
                 throw new UnauthorizedAccessException("You do not own this Pinecone.");
-            }
-            currentTree.Title = (await EncryptionService.EncryptContentAsync(rootNodeDto.Title, currentTree.IsPublic, userId))!;
-            currentTree.Content = (await EncryptionService.EncryptContentAsync(rootNodeDto.Content, currentTree.IsPublic, userId))!;
+            }            currentTree.Title = EncryptContentIfPrivate(rootNodeDto.Title, currentTree.IsPublic)!;
+            currentTree.Content = EncryptContentIfPrivate(rootNodeDto.Content, currentTree.IsPublic)!;
             currentTree.Update = DateTime.UtcNow;
 
             var currentNodeGuids = CollectNodeGuids(currentTree);
@@ -367,8 +401,8 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         if (existingPinecone != null && existingPinecone.UserName == userName)
         {
             pinecone = existingPinecone;
-            pinecone.Title = (await EncryptionService.EncryptContentAsync(nodeDto.Title, pinecone.IsPublic, userId))!;
-            pinecone.Content = (await EncryptionService.EncryptContentAsync(nodeDto.Content, pinecone.IsPublic, userId))!;
+            pinecone.Title = EncryptContentIfPrivate(nodeDto.Title, pinecone.IsPublic)!;
+            pinecone.Content = EncryptContentIfPrivate(nodeDto.Content, pinecone.IsPublic)!;
             pinecone.ParentGuid = parentGuid;
             pinecone.Order = nodeDto.Order;
             pinecone.Update = DateTime.UtcNow;
@@ -378,8 +412,8 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
             pinecone = new Pinecone
             {
                 Id = 0,
-                Title = (await EncryptionService.EncryptContentAsync(nodeDto.Title, false, userId))!, // New nodes are private by default
-                Content = (await EncryptionService.EncryptContentAsync(nodeDto.Content, false, userId))!,
+                Title = EncryptContentIfPrivate(nodeDto.Title, false)!, // New nodes are private by default
+                Content = EncryptContentIfPrivate(nodeDto.Content, false)!,
                 GroupGuid = groupGuid,
                 ParentGuid = parentGuid,
                 Order = nodeDto.Order,
@@ -416,8 +450,8 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
             {
                 continue;
             }
-            dbNode.Title = (await EncryptionService.EncryptContentAsync(node.Title, dbNode.IsPublic, userId))!;
-            dbNode.Content = (await EncryptionService.EncryptContentAsync(node.Content, dbNode.IsPublic, userId))!;
+            dbNode.Title = EncryptContentIfPrivate(node.Title, dbNode.IsPublic)!;
+            dbNode.Content = EncryptContentIfPrivate(node.Content, dbNode.IsPublic)!;
             dbNode.Order = node.Order;
             dbNode.Update = DateTime.UtcNow;
         }
@@ -435,29 +469,29 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
         {
             throw new UnauthorizedAccessException("You do not own this Pinecone.");
         }
-        return await LoadChildrenRecursively(parent, userId);
+        return await LoadChildrenRecursively(parent);
     }
 
     private IQueryable<Pinecone> GetUserTopList(string userName)
         => DbContext.Pinecone
             .Where(x => x.UserName == userName)
             .Where(x => x.ParentGuid == null);
-
-    private async Task<Pinecone> LoadChildrenRecursively(Pinecone parent, string userId)
+    
+    private async Task<Pinecone> LoadChildrenRecursively(Pinecone parent)
     {
         // Decrypt parent content
-        parent.Title = (await EncryptionService.DecryptContentAsync(parent.Title, parent.IsPublic, userId))!;
-        parent.Content = (await EncryptionService.DecryptContentAsync(parent.Content, parent.IsPublic, userId))!;
+        parent.Title = DecryptContentIfPrivate(parent.Title, parent.IsPublic)!;
+        parent.Content = DecryptContentIfPrivate(parent.Content, parent.IsPublic)!;
 
         await DbContext.Entry(parent)
             .Collection(p => p.Children)
             .Query()
             .OrderBy(x => x.Order)
             .LoadAsync();
-
+        
         foreach (var child in parent.Children)
         {
-            await LoadChildrenRecursively(child, userId);
+            await LoadChildrenRecursively(child);
         }
         return parent;
     }
@@ -512,11 +546,10 @@ public class PineconesController(ApplicationDbContext context, EncryptionService
             .ToListAsync();
         // Decrypt content and convert to ViewModels
         var userId = await GetCurrentUserIdAsync();
-        var documentViewModels = new List<PineconeViewModel>();
-        foreach (var doc in documents)
+        var documentViewModels = new List<PineconeViewModel>();        foreach (var doc in documents)
         {
-            doc.Title = (await EncryptionService.DecryptContentAsync(doc.Title, doc.IsPublic, userId))!;
-            doc.Content = (await EncryptionService.DecryptContentAsync(doc.Content, doc.IsPublic, userId))!;
+            doc.Title = DecryptContentIfPrivate(doc.Title, doc.IsPublic)!;
+            doc.Content = DecryptContentIfPrivate(doc.Content, doc.IsPublic)!;
             documentViewModels.Add(ToPineconeViewModel(doc));
         }
 

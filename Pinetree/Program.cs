@@ -32,7 +32,7 @@ builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuth
 builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<BlobStorageService>();
 builder.Services.AddSingleton<AIEmojiWithRateLimitService>();
-builder.Services.AddScoped<EncryptionService>();
+builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<VersionService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ISensitiveDataDetectorService, SensitiveDataDetectorService>();

@@ -13,11 +13,11 @@ public class BlobStorageService
     private readonly BlobServiceClient _blobServiceClient;
     private readonly string _containerName = "images";
     private readonly ApplicationDbContext _dbContext;
-    private readonly EncryptionService _encryptionService;
+    private readonly IEncryptionService _encryptionService;
     private readonly UserManager<ApplicationUser> _userManager;
     private const int DefaultQuotaInBytes = 1024 * 1024 * 3;
     
-    public BlobStorageService(IConfiguration configuration, ApplicationDbContext dbContext, EncryptionService encryptionService, UserManager<ApplicationUser> userManager)
+    public BlobStorageService(IConfiguration configuration, ApplicationDbContext dbContext, IEncryptionService encryptionService, UserManager<ApplicationUser> userManager)
     {
         var connectionString = configuration.GetConnectionString("AzureStorage")
                             ?? throw new ArgumentNullException("Azure Storage connection string is missing from configuration");
@@ -197,10 +197,19 @@ public class BlobStorageService
             {
                 try
                 {
-                    decryptedTitle = await _encryptionService.DecryptContentAsync(
-                        item.PineconeTitle, 
-                        item.PineconeIsPublic, 
-                        user.Id) ?? "";
+                    if (item.PineconeIsPublic || string.IsNullOrEmpty(item.PineconeTitle))
+                    {
+                        decryptedTitle = item.PineconeTitle ?? "";
+                    }
+                    else if (_encryptionService.CanDecrypt(item.PineconeTitle))
+                    {
+                        decryptedTitle = _encryptionService.Decrypt(item.PineconeTitle);
+                    }
+                    else
+                    {
+                        // Legacy plain text data
+                        decryptedTitle = item.PineconeTitle;
+                    }
                 }
                 catch (Exception)
                 {
