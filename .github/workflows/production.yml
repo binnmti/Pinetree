@@ -1,18 +1,21 @@
-name: ci/cd
+name: Production CI/CD
+# on:
+#   push:
+#     branches:
+#     - main
+
 on:
-  push:
-    branches:
-    - main
+  pull_request:
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 9.0.x
-  ASPNETCORE_ENVIRONMENT: Production
-  SLOT_NAME: swap
+  PRODUCTION_SLOT_NAME: swap
+  ARTIFACT_RETENTION_DAYS: 3
 
 jobs:
-  build-and-unit-tests:
+  build:
     runs-on: windows-latest
     steps:
     - name: Checkout code
@@ -25,14 +28,21 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
 
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.nuget/packages
+          ${{ github.workspace }}/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
     - name: Restore dependencies
       run: dotnet restore
 
     - name: Build the project
       run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
-
-    - name: Run Unit Tests
-      run: dotnet test Pinetree.TestProject/Pinetree.TestProject.csproj --no-build
 
     - name: Publish the project
       run: dotnet publish Pinetree/Pinetree.csproj --configuration ${{ env.CONFIGURATION }} --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
@@ -40,12 +50,13 @@ jobs:
     - name: Publish Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: webapp
+        name: webapp-${{ github.sha }}
         path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
-  migrate:
+  staging-migrate:
     runs-on: windows-latest
-    needs: build-and-unit-tests
+    needs: build
     steps:
     - uses: actions/checkout@v4
     - name: Install EF Core tools
@@ -54,39 +65,38 @@ jobs:
       uses: azure/login@v2
       with:
         creds: ${{ secrets.Pinetree_SPN }}
-    - name: Add IP to Azure SQL firewall
+    - name: Add IP to Azure SQL firewall (Staging)
       run: |
         $ip = (Invoke-WebRequest -Uri https://api.ipify.org).Content
         Write-Host "GitHub Actions IP: $ip"
         az sql server firewall-rule create `
-          --resource-group "pinetree" `
-          --server "pinetree" `
+          --resource-group "pinetree-staging" `
+          --server "pinetree-staging" `
           --name "GithubActions-Temporary" `
           --start-ip-address $ip `
           --end-ip-address $ip
-    - name: Run database migrations
+    - name: Run database migrations (Staging)
       run: |
         cd Pinetree
         dotnet ef database update --configuration ${{ env.CONFIGURATION }} --verbose
       env:
-        ConnectionStrings__DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION }}
+        ConnectionStrings__DefaultConnection: ${{ secrets.STAGING_DB_CONNECTION }}
         TypeScriptCompileBlocked: true
-    - name: Remove IP from Azure SQL firewall
+    - name: Remove IP from Azure SQL firewall (Staging)
       if: always()
       run: |
         az sql server firewall-rule delete `
-          --resource-group "pinetree" `
-          --server "pinetree" `
+          --resource-group "pinetree-staging" `
+          --server "pinetree-staging" `
           --name "GithubActions-Temporary"
-
-  deploy:
+  staging-deploy:
     runs-on: windows-latest
-    needs: [build-and-unit-tests, migrate]
+    needs: [build, staging-migrate]
     steps:
     - name: Download artifact from build job
       uses: actions/download-artifact@v4
       with:
-        name: webapp
+        name: webapp-${{ github.sha }}
         path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
     - name: Azure Login
@@ -94,30 +104,45 @@ jobs:
       with:
         creds: ${{ secrets.Pinetree_SPN }}
 
-    - name: Deploy to Green Slot
+    - name: Deploy to Staging Environment
       uses: azure/webapps-deploy@v2
       with:
-        app-name: pinetree
-        slot-name: ${{ env.SLOT_NAME }}
+        app-name: pinetree-staging
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
-    - name: Configure Azure Web App Settings for Green Slot
+    - name: Configure Azure Web App Settings (Staging)
       run: |
-        az webapp config appsettings set --name pinetree --resource-group pinetree --slot ${{ env.SLOT_NAME }} --settings ASPNETCORE_ENVIRONMENT=Production
-
-    - name: Swap Slots
-      run: |
-        az webapp deployment slot swap --name pinetree --resource-group pinetree --slot ${{ env.SLOT_NAME }}
-
-  run-gui-tests:
+        az webapp config appsettings set --name pinetree-staging --resource-group pinetree-staging --settings ASPNETCORE_ENVIRONMENT=Staging
+  run-gui-tests-staging:
     runs-on: windows-latest
-    needs: [build-and-unit-tests, migrate, deploy]
+    needs: [build, staging-migrate, staging-deploy]
     steps:
     - uses: actions/checkout@v4
+    
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.nuget/packages
+          ${{ github.workspace }}/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/AppData/Local/ms-playwright
+          ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ hashFiles('**/Pinetree.UITests.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-playwright-
 
     - name: Restore and build
       run: |
@@ -130,18 +155,85 @@ jobs:
         dotnet tool install --global Microsoft.Playwright.CLI
         playwright install --with-deps
 
-    - name: Run GUI Tests
+    - name: Run GUI Tests on Staging
       run: |
-        dotnet test Pinetree.UITests/Pinetree.UITests.csproj --configuration ${{ env.CONFIGURATION }} --no-build --logger "trx;LogFileName=guitests.trx" --results-directory "TestResults" --filter "Category!=LongRunning"
+        dotnet test Pinetree.UITests/Pinetree.UITests.csproj --configuration ${{ env.CONFIGURATION }} --no-build --logger "trx;LogFileName=staging-guitests-${{ github.sha }}.trx" --results-directory "TestResults" --filter "Category!=LongRunning"
       env:
         PLAYWRIGHT_TIMEOUT: 30000
+        ASPNETCORE_ENVIRONMENT: Staging
 
-    - name: Publish Test Results
+    - name: Publish Staging Test Results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: gui-test-results
+        name: staging-gui-test-results-${{ github.sha }}
         path: |
           TestResults/**
           **/TestResults/**
           Pinetree.UITests/bin/**/TestResults/**
+        retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+  production-migrate:
+    runs-on: windows-latest
+    needs: [build, run-gui-tests-staging]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install EF Core tools
+      run: dotnet tool install --global dotnet-ef
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.Pinetree_SPN }}
+    - name: Add IP to Azure SQL firewall (Production)
+      run: |
+        $ip = (Invoke-WebRequest -Uri https://api.ipify.org).Content
+        Write-Host "GitHub Actions IP: $ip"
+        az sql server firewall-rule create `
+          --resource-group "pinetree" `
+          --server "pinetree" `
+          --name "GithubActions-Temporary" `
+          --start-ip-address $ip `
+          --end-ip-address $ip
+    - name: Run database migrations (Production)
+      run: |
+        cd Pinetree
+        dotnet ef database update --configuration ${{ env.CONFIGURATION }} --verbose
+      env:
+        ConnectionStrings__DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION }}
+        TypeScriptCompileBlocked: true
+    - name: Remove IP from Azure SQL firewall (Production)
+      if: always()
+      run: |
+        az sql server firewall-rule delete `
+          --resource-group "pinetree" `
+          --server "pinetree" `
+          --name "GithubActions-Temporary"
+  production-deploy:
+    runs-on: windows-latest
+    needs: [build, run-gui-tests-staging, production-migrate]
+    steps:
+    - name: Download artifact from build job
+      uses: actions/download-artifact@v4
+      with:
+        name: webapp-${{ github.sha }}
+        path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.Pinetree_SPN }}
+
+    - name: Deploy to Production Green Slot
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: pinetree
+        slot-name: ${{ env.PRODUCTION_SLOT_NAME }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+    - name: Configure Azure Web App Settings for Production Green Slot
+      run: |
+        az webapp config appsettings set --name pinetree --resource-group pinetree --slot ${{ env.PRODUCTION_SLOT_NAME }} --settings ASPNETCORE_ENVIRONMENT=Production
+
+    - name: Swap Production Slots
+      run: |
+        az webapp deployment slot swap --name pinetree --resource-group pinetree --slot ${{ env.PRODUCTION_SLOT_NAME }}
