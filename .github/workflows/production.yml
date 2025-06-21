@@ -1,8 +1,8 @@
-name: Production CI/CD
+name: ci/cd
 on:
   push:
     branches:
-    - GUITestUpdate
+    - main
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: Pinetree\published
