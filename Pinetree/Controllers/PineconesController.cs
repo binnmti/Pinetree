@@ -281,12 +281,13 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         // If changing from private to public, decrypt first
         // If changing from public to private, encrypt
         if (pinecone.IsPublic != request.IsPublic)
-        {            // Decrypt current content
+        {            
+            // Decrypt current content
             var currentTitle = DecryptContentIfPrivate(pinecone.Title, pinecone.IsPublic);
             var currentContent = DecryptContentIfPrivate(pinecone.Content, pinecone.IsPublic);
             // Re-encrypt with new visibility setting
             pinecone.Title = EncryptContentIfPrivate(currentTitle, request.IsPublic)!;
-            pinecone.Content = EncryptContentIfPrivate(currentContent, request.IsPublic)!;;
+            pinecone.Content = EncryptContentIfPrivate(currentContent, request.IsPublic)!;
         }
 
         pinecone.IsPublic = request.IsPublic;
@@ -450,7 +451,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
                 continue;
             }
             dbNode.Title = EncryptContentIfPrivate(node.Title, dbNode.IsPublic)!;
-            dbNode.Content = EncryptContentIfPrivate(node.Content, dbNode.IsPublic)!;;
+            dbNode.Content = EncryptContentIfPrivate(node.Content, dbNode.IsPublic)!;
             dbNode.Order = node.Order;
             dbNode.Update = DateTime.UtcNow;
         }
