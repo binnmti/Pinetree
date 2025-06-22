@@ -1,3 +1,10 @@
+## [0.9.7] - 2025-06-22
+
+### Features
+- Added the ability to embed YouTube videos in the markdown editor using a toolbar button and custom markdown syntax.
+
+---
+
 ## [0.9.6] - 2025-06-18
 
 ### Features
