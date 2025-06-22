@@ -12,7 +12,8 @@
 @using Pinetree.Client.Pages.Components
 
 <div class="toolbar bg-light border-bottom d-flex align-items-center p-1">
-    <div class="btn-toolbar" role="toolbar" aria-label="Markdown editing toolbar">        <div class="btn-group me-2" role="group" aria-label="Special actions">
+    <div class="btn-toolbar" role="toolbar" aria-label="Markdown editing toolbar">
+        <div class="btn-group me-2" role="group" aria-label="Special actions">
             <button type="button" class="btn btn-sm btn-outline-success" title="Move selected text to child file" @onclick="() => OnExtractToChildFile.InvokeAsync()">
                 <i class="bi bi-file-earmark-arrow-down"></i> Extract to Child
             </button>
@@ -69,6 +70,9 @@
             <button type="button" class="btn btn-sm btn-outline-dark" title="Insert Image" @onclick="() => OnInsertImage.InvokeAsync()">
                 <i class="bi bi-image"></i>
             </button>
+            <button type="button" class="btn btn-sm btn-outline-success" title="Insert YouTube Video" @onclick="() => OnInsertVideo.InvokeAsync()">
+                <i class="bi bi-youtube"></i>
+            </button>
             <button type="button" class="btn btn-sm btn-outline-dark" title="Insert Grid" @onclick="() => OnInsertGrid.InvokeAsync()">
                 <i class="bi bi-grid-3x2"></i>
             </button>
@@ -124,7 +128,6 @@
     [Parameter] public bool CopyIconState { get; set; }
     [Parameter] public Guid CurrentGuid { get; set; }
 
-    // Event callbacks for parent component
     [Parameter] public EventCallback OnExtractToChildFile { get; set; }
     [Parameter] public EventCallback OnUndo { get; set; }
     [Parameter] public EventCallback OnRedo { get; set; }
@@ -134,6 +137,7 @@
     [Parameter] public EventCallback OnIncreaseIndent { get; set; }
     [Parameter] public EventCallback OnInsertLink { get; set; }
     [Parameter] public EventCallback OnInsertImage { get; set; }
+    [Parameter] public EventCallback OnInsertVideo { get; set; }
     [Parameter] public EventCallback OnInsertGrid { get; set; }
     [Parameter] public EventCallback OnInsertLine { get; set; }
     [Parameter] public EventCallback OnInsertEmoji { get; set; }
