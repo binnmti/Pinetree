@@ -11,3 +11,59 @@
 .tooltip.custom-tooltip {
     --bs-tooltip-bg: var(--bs-success);
 }
+
+/* YouTube Responsive Container for dynamic content */
+.youtube-container {
+    position: relative;
+    width: 100%;
+    max-width: 1600px;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+}
+
+.youtube-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #000;
+}
+
+@media (min-width: 1600px) {
+    .youtube-container {
+        max-width: 1400px;
+        margin: 3rem auto;
+    }
+}
+
+@media (min-width: 1200px) and (max-width: 1599px) {
+    .youtube-container {
+        max-width: 1200px;
+        margin: 2.5rem auto;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    .youtube-container {
+        max-width: 95%;
+        margin: 2rem auto;
+    }
+}
+
+@media (max-width: 767px) {
+    .youtube-container {
+        max-width: 100%;
+        margin: 1.5rem 0;
+        border-radius: 12px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+}
+
+@media (max-width: 480px) {
+    .youtube-container {
+        margin: 1rem 0;
+        border-radius: 8px;
+    }
+}

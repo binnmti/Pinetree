@@ -18,7 +18,7 @@
             </div>
         </div>
     }
-    else if(!IsPublicView)
+    else if (!IsPublicView)
     {
         <div class="description-bar">
             <div class="alert alert-primary" role="alert">
@@ -116,6 +116,7 @@
                                              OnIncreaseIndent="@IncreaseIndent"
                                              OnInsertLink="@InsertLink"
                                              OnInsertImage="@InsertImage"
+                                             OnInsertVideo="@InsertYouTubeVideo"
                                              OnInsertGrid="@InsertGrid"
                                              OnInsertLine="@InsertLine"
                                              OnInsertEmoji="@InsertEmoji"
@@ -132,7 +133,7 @@
                     {
                         <div id="panel2" class="panel"
                              style="display: @(ViewMode == "edit" || ViewMode == "split" ? "flex" : "none");
-                                    @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
+                                            @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
                             <div class="panel-content-wrapper">
                                 <div class="panel-content">
                                     <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize"
@@ -243,7 +244,7 @@
             _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/Components/Markdown.razor.js");
             registration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
             objRef = DotNetObjectReference.Create(this);
-            
+
             // Initialize font settings
             try
             {
@@ -274,7 +275,7 @@
                 _currentFontFamily = "system-ui, -apple-system, sans-serif";
                 _currentFontSize = 14;
             }
-            
+
             if (IsPublicView)
             {
                 await _jsModule.InvokeVoidAsync("setupMarkdownClickListener", MarkdownContainer, objRef);
@@ -292,7 +293,7 @@
     {
         if (_isDisposed) return; // Prevent multiple disposal
         _isDisposed = true;
-        
+
         try
         {
             // Cleanup JavaScript event handlers first, before disposing objRef
@@ -422,7 +423,6 @@
     public async Task HandleDroppedFile(ImageUploadResult result)
     {
         if (string.IsNullOrEmpty(result.BlobUrl)) return;
-
 
         var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
 
@@ -580,7 +580,7 @@
             StateHasChanged();
         }
     }
-    
+
     private List<PineconeUpdateRequest> ConvertToPineconeDtos(PinetreeView tree)
     {
         var result = new List<PineconeUpdateRequest>();
@@ -615,7 +615,7 @@
 
         return node.Parent.Children.IndexOf(node);
     }
-    
+
     private List<PineconeUpdateRequest> GetChangedNodes(PinetreeView current, PinetreeView previous)
     {
         var changedNodes = new List<PineconeUpdateRequest>();
@@ -665,7 +665,7 @@
         {
             isChanged = true;
         }
-        
+
         if (isChanged)
         {
             changedNodes.Add(new PineconeUpdateRequest
@@ -839,6 +839,22 @@
         catch (Exception ex)
         {
             Console.Error.WriteLine(ex.Message);
+        }
+    }
+
+    private async Task InsertYouTubeVideo()
+    {
+        try
+        {
+            var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
+            await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, "[youtube:youtubeID]");
+
+            var content = await JS.GetTextAreaValueAsync();
+            UpdateContent(content);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error inserting YouTube template: {ex.Message}");
         }
     }
 
@@ -1117,13 +1133,13 @@
             await JS.InvokeVoidAsync("alert", "AI Emoji feature encountered an unexpected error. Please try again in a few moments.");
             Console.WriteLine($"Auto emoji error: {ex.Message}");
         }
-    }    
-    
+    }
+
     private string GetEmojiInsertedText(string selectedText, string emoji)
     {
         // Trim the text to handle leading/trailing whitespace
         var trimmedText = selectedText.TrimStart();
-        
+
         // Check if the text starts with markdown symbols
         if (IsMarkdownSymbolStart(trimmedText))
         {
@@ -1133,11 +1149,11 @@
                 // Insert emoji after the symbol and space(s)
                 var prefix = trimmedText.Substring(0, insertPosition);
                 var suffix = trimmedText.Substring(insertPosition);
-                return selectedText.Substring(0, selectedText.Length - trimmedText.Length) + 
+                return selectedText.Substring(0, selectedText.Length - trimmedText.Length) +
                        prefix + emoji + " " + suffix;
             }
         }
-        
+
         // Default behavior: insert emoji at the beginning
         return emoji + " " + selectedText;
     }
@@ -1145,7 +1161,7 @@
     private bool IsMarkdownSymbolStart(string text)
     {
         if (string.IsNullOrEmpty(text)) return false;
-        
+
         // Check for various markdown patterns
         return text.StartsWith("#") ||           // Heading
                text.StartsWith("-") ||           // Bullet list or checkbox
@@ -1168,14 +1184,14 @@
             }
             return afterCheckbox;
         }
-        
+
         // Handle numbered list (e.g., "1. ", "12. ")
         var numberedListMatch = System.Text.RegularExpressions.Regex.Match(text, @"^(\d+\.\s*)");
         if (numberedListMatch.Success)
         {
             return numberedListMatch.Length;
         }
-        
+
         // Handle simple bullet list or heading
         if (text.StartsWith("#") || text.StartsWith("-"))
         {
@@ -1191,7 +1207,7 @@
                 return afterSymbol;
             }
         }
-        
+
         return 0;
     }
 
