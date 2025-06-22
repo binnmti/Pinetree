@@ -2,6 +2,120 @@
     resize: none !important;
 }
 
+/* Public view styles for better readability */
+.public-view-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.public-view-content {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Preview mode inherits public view styling for better readability */
+.preview-mode .public-view-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Public view header and title styles */
+.public-view-header {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.public-view-title {
+    justify-content: center !important;
+    width: 100%;
+}
+
+.public-title-container {
+    text-align: center;
+    width: 100%;
+}
+
+.public-user-name {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.public-title-container h1 {
+    margin: 0;
+    color: #333;
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.public-date {
+    font-size: 14px;
+    color: #888;
+    margin-top: 8px;
+}
+
+.public-dates {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    margin-top: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+    .public-dates .public-date {
+        margin-top: 0;
+    }
+
+/* Responsive adjustments for public view */
+@media (max-width: 992px) {
+    .public-view-container,
+    .public-view-header {
+        max-width: 100%;
+        padding: 0 15px;
+    }
+
+    .preview-mode .public-view-container {
+        max-width: 100%;
+        padding: 0 15px;
+    }
+
+    .public-title-container h1 {
+        font-size: 1.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .public-view-container,
+    .public-view-header {
+        padding: 0 10px;
+    }
+
+    .preview-mode .public-view-container {
+        padding: 0 10px;
+    }
+
+    .public-title-container h1 {
+        font-size: 1.5rem;
+    }
+
+    .public-user-name,
+    .public-date {
+        font-size: 13px;
+    }
+
+    /* Stack dates vertically on mobile for better readability */
+    .public-dates {
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
 .drag-over {
     border: 2px dashed #007bff !important;
     background-color: rgba(0, 123, 255, 0.1) !important;
@@ -28,11 +142,11 @@
     border-color: #343a40;
 }
 
-.btn-outline-dark:disabled {
-    background-color: #f8f9fa;
-    color: #adb5bd;
-    border-color: #ced4da;
-}
+    .btn-outline-dark:disabled {
+        background-color: #f8f9fa;
+        color: #adb5bd;
+        border-color: #ced4da;
+    }
 
 .btn-primary {
     background-color: #007bff;
@@ -40,13 +154,13 @@
     border-color: #007bff;
 }
 
-.btn-primary:disabled {
-    background-color: #e9ecef;
-    color: #6c757d;
-    border-color: #c6c8ca;
-    opacity: 0.65;
-    cursor: not-allowed;
-}
+    .btn-primary:disabled {
+        background-color: #e9ecef;
+        color: #6c757d;
+        border-color: #c6c8ca;
+        opacity: 0.65;
+        cursor: not-allowed;
+    }
 
 /**/
 .resizable-page {
@@ -153,6 +267,7 @@
     flex-shrink: 0;
     z-index: auto; /* No high z-index needed */
 }
+
 .resizer:hover, .resizer.resizing {
     background-color: #aaa;
 }
@@ -164,98 +279,98 @@
         top: 0 !important; /* Start from top since navbar is hidden */
         height: 100vh !important; /* Full viewport height */
     }
-    
+
     /* Hide tree panel and first resizer on mobile */
     #panel1,
     #resizer1 {
         display: none !important;
     }
-    
+
     /* Make the right panels take full width */
     .right-panels {
         width: 100% !important;
         flex: 1 !important;
         padding: 5px !important;
     }
-    
+
     /* Adjust panels row for mobile */
     .panels-row {
         flex-direction: column;
     }
-    
+
     /* Hide toolbar on mobile to save space */
     .markdown-toolbar {
         display: none !important;
     }
-    
+
     /* Adjust font size for mobile readability */
     .markdown-body {
         font-size: 14px !important;
         line-height: 1.6 !important;
         padding: 10px !important;
     }
-    
+
     /* Make textarea and preview panels stack vertically in split view */
     .right-panels-container {
         flex-direction: column !important;
     }
-    
+
     /* Hide the second resizer on mobile (for split view) */
     #resizer2 {
         display: none !important;
     }
-    
+
     /* Adjust panel sizes for mobile split view */
     #panel2,
     #panel3 {
         flex: 1 !important;
         min-height: 250px !important;
     }
-    
+
     /* Make title input smaller on mobile */
     .markdown-title {
         flex-direction: column !important;
         gap: 10px !important;
     }
-    
-    .markdown-title input {
-        font-size: 16px !important;
-        padding: 8px 12px !important;
-        width: 100% !important;
-    }
-    
-    .markdown-title h1 {
-        font-size: 1.5rem !important;
-        margin: 0 !important;
-    }
-    
+
+        .markdown-title input {
+            font-size: 16px !important;
+            padding: 8px 12px !important;
+            width: 100% !important;
+        }
+
+        .markdown-title h1 {
+            font-size: 1.5rem !important;
+            margin: 0 !important;
+        }
+
     /* Adjust description bar for mobile */
     .description-bar {
         padding: 5px !important;
     }
-    
-    .description-bar .alert {
-        font-size: 13px !important;
-        padding: 8px 12px !important;
-        margin-bottom: 5px !important;
-    }
-    
+
+        .description-bar .alert {
+            font-size: 13px !important;
+            padding: 8px 12px !important;
+            margin-bottom: 5px !important;
+        }
+
     /* Ensure panels content is properly sized on mobile */
     .panel-content {
         padding: 5px !important;
     }
-    
+
     /* Hide panel footer on mobile to save space */
     .panel-footer {
         display: none !important;
     }
-    
+
     /* Make save button smaller on mobile */
     .btn-sm {
         font-size: 12px !important;
         padding: 4px 8px !important;
     }
-    
+
     /* Adjust textarea for mobile */
     textarea.no-resize {
         font-size: 14px !important;
@@ -263,28 +378,28 @@
         border: 1px solid #ccc !important;
         border-radius: 4px !important;
     }
-    
+
     /* Adjust common header for mobile */
     .common-header {
         padding: 10px 5px !important;
     }
-    
+
     /* Make buttons wrap on mobile if needed */
     .markdown-title .d-flex:last-child {
         flex-wrap: wrap !important;
         gap: 5px !important;
     }
-    
+
     /* Optimize resizable page layout for mobile */
     .resizable-page {
         top: 3rem !important;
         height: calc(100vh - 3rem) !important;
     }
-      /* Ensure proper scrolling on mobile */
+    /* Ensure proper scrolling on mobile */
     .panel-content-wrapper {
         overflow: hidden !important;
     }
-    
+
     .panel-content {
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
@@ -302,32 +417,32 @@
         font-size: 13px !important;
         padding: 8px !important;
     }
-    
+
     .markdown-title input {
         font-size: 14px !important;
         padding: 6px 10px !important;
     }
-    
+
     .markdown-title h1 {
         font-size: 1.3rem !important;
     }
-    
+
     .description-bar .alert {
         font-size: 12px !important;
         padding: 6px 10px !important;
     }
-    
+
     /* Make panels more compact */
     #panel2,
     #panel3 {
         min-height: 200px !important;
     }
-    
+
     textarea.no-resize {
         font-size: 13px !important;
         padding: 8px !important;
     }
-      /* Adjust top spacing for very small screens */
+    /* Adjust top spacing for very small screens */
     .resizable-page {
         top: 0 !important; /* Full screen since navbar is hidden */
         height: 100vh !important;
