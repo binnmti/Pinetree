@@ -14,7 +14,6 @@
 - magnifying glass?
 
 # Bug
-- The save button suddenly becomes active
 - Automatically logged out on deployment?
 - A system where you can press the save button, log in from the popup, and return
 - Hamburger menu priority is broken on Markdown Page
