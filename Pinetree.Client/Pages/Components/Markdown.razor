@@ -230,14 +230,18 @@
         IsSidebarOpen = !IsSidebarOpen;
     }
 
+    protected override void OnInitialized()
+    {
+        SetCurrent(Guid);
+        LastSavedState = Pinetree.DeepClone();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/Components/Markdown.razor.js");
-            SetCurrent(Guid);
             registration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
-            LastSavedState = Pinetree.DeepClone();
             objRef = DotNetObjectReference.Create(this);
             
             // Initialize font settings

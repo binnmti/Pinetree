@@ -156,13 +156,87 @@ namespace Pinetree.UITests
             {
                 Console.WriteLine("Warning: Could not confirm save completion, continuing with test");
             }
-            
-            // Additional wait to ensure save is fully processed
+              // Additional wait to ensure save is fully processed
             await Page.WaitForTimeoutAsync(2000);
             
             // Verify URL is updated (should be the same since it's an existing file)
             var updatedUrl = Page.Url;
-            Assert.AreEqual(currentUrl, updatedUrl, "URL should remain the same after save");            // Step 6: Go back to file list and delete the created file
+            Assert.AreEqual(currentUrl, updatedUrl, "URL should remain the same after save");
+            
+            // Step 6: Go back to User page and then return to edit to verify Save button is disabled
+            await Page.ClickAsync("button.list-group-item:has-text('User')");
+            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            await Page.WaitForTimeoutAsync(Timeout);
+            
+            // Find the created file and click to edit again
+            var allCardsBeforeReEdit = await Page.QuerySelectorAllAsync(".card");
+            IElementHandle? targetCardForReEdit = null;
+            
+            foreach (var card in allCardsBeforeReEdit)
+            {
+                try
+                {
+                    var titleElement = await card.QuerySelectorAsync("strong.card-title");
+                    if (titleElement != null)
+                    {
+                        var title = await titleElement.TextContentAsync();
+                        if (title?.Contains("Test File with Image") == true)
+                        {
+                            targetCardForReEdit = card;
+                            break;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error finding card for re-edit: {ex.Message}");
+                }
+            }            Assert.IsNotNull(targetCardForReEdit, "Created test file should be found for re-editing");
+            
+            // Debug: Print card structure to understand available elements
+            var cardHtml = await targetCardForReEdit.InnerHTMLAsync();
+            Console.WriteLine($"Card HTML structure: {cardHtml}");
+            
+            // Click on the edit link/button within the card to enter edit mode again
+            var editLink = await targetCardForReEdit.QuerySelectorAsync("a[href*='/Edit/']");
+            if (editLink == null)
+            {
+                // Fallback: try to find edit button or icon
+                editLink = await targetCardForReEdit.QuerySelectorAsync("button:has-text('Edit')");
+                if (editLink == null)
+                {
+                    editLink = await targetCardForReEdit.QuerySelectorAsync("i.bi-pencil");
+                    if (editLink == null)
+                    {
+                        // Last resort: click on the card title which might be a link
+                        editLink = await targetCardForReEdit.QuerySelectorAsync("strong.card-title");
+                    }
+                }
+            }
+              Assert.IsNotNull(editLink, "Edit link or button should be found within the card");
+            await editLink.ClickAsync();
+            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            await Page.WaitForTimeoutAsync(Timeout);
+            
+            // Verify we're back on the edit page with a more robust check
+            var editPageUrl = Page.Url;
+            StringAssert.Contains(editPageUrl, "/Edit/", "Should be on edit page after clicking edit link");
+            
+            // Wait for the edit page to fully load
+            await Page.WaitForSelectorAsync("button[title='Save changes']", new() { Timeout = 5000 });
+            await Page.WaitForSelectorAsync("textarea", new() { Timeout = 5000 });
+            
+            Console.WriteLine($"Successfully navigated to edit page: {editPageUrl}");
+            
+            // Step 7: Verify Save button is disabled (no pending changes)
+            var saveButtonAfterReEntry = await Page.QuerySelectorAsync("button[title='Save changes']");
+            Assert.IsNotNull(saveButtonAfterReEntry, "Save button should be present");
+            
+            var isDisabledAfterReEntry = await saveButtonAfterReEntry.GetAttributeAsync("disabled");
+            Assert.IsNotNull(isDisabledAfterReEntry, "Save button should be disabled when no changes are made");
+            Console.WriteLine("✓ Save button is correctly disabled after re-entering edit mode");
+            
+            // Step 8: Go back to file list for deletion            // Step 8: Go back to file list for deletion
             await Page.ClickAsync("button.list-group-item:has-text('User')");
             await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
             await Page.WaitForTimeoutAsync(Timeout);
@@ -170,7 +244,7 @@ namespace Pinetree.UITests
             // Wait for the page to load completely
             await Page.WaitForSelectorAsync(".card:has(.card-title)", new() { Timeout = 10000 });
             
-            // Find and delete the test file
+            // Step 9: Find and delete the test file
             var allCards = await Page.QuerySelectorAllAsync(".card");
             IElementHandle? targetCard = null;
             
@@ -283,9 +357,9 @@ namespace Pinetree.UITests
                     Console.WriteLine($"Error checking card after deletion: {ex.Message}");
                 }
             }
-              Assert.IsFalse(fileStillExists, "Test file should be deleted from the list");
+            Assert.IsFalse(fileStillExists, "Test file should be deleted from the list");
             
-            // Step 7: Clean up images from image tab (optional since file deletion may cascade)
+            // Step 10: Clean up images from image tab (optional since file deletion may cascade)
             try
             {
                 await Page.ClickAsync("button.list-group-item:has-text('My Image')");
