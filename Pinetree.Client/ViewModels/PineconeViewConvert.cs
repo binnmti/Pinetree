@@ -5,7 +5,7 @@ namespace Pinetree.Client.ViewModels;
 public static class PineconeViewConvert
 {
     public static PinetreeView ToPinetree(this PineconeViewModel pinecone, PinetreeView? parent)
-        => new(pinecone.Guid, pinecone.Title, pinecone.Content, parent, pinecone.GroupGuid, pinecone.IsPublic);
+        => new(pinecone.Guid, pinecone.Title, pinecone.Content, parent, pinecone.GroupGuid, pinecone.IsPublic, pinecone.Create, pinecone.Update);
 
     public static (PinetreeView, int) ToPinetreeIncludeChild(this PineconeViewModelWithChildren pinecone)
     {
@@ -30,10 +30,10 @@ public static class PineconeViewConvert
             }
         }
     }
-
+    
     // Extension method for hierarchical ViewModels
     private static PinetreeView ToPinetree(this PineconeViewModelWithChildren pinecone, PinetreeView? parent)
-        => new(pinecone.Guid, pinecone.Title, pinecone.Content, parent, pinecone.GroupGuid, pinecone.IsPublic);
+        => new(pinecone.Guid, pinecone.Title, pinecone.Content, parent, pinecone.GroupGuid, pinecone.IsPublic, pinecone.Create, pinecone.Update);
 
     private static void CreateChildFromHierarchical(PinetreeView targetTree, PinetreeView parent, List<PineconeViewModelWithChildren> children, ref int fileCount, int currentDepth)
     {

@@ -1,6 +1,7 @@
 # TODO
 - stripe 
 - User Data Cancellation
+- User Icon
 
 - Changelog Discord
 - Staging Terafform

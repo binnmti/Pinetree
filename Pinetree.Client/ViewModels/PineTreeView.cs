@@ -1,6 +1,6 @@
 ﻿namespace Pinetree.Client.ViewModels;
 
-public class PinetreeView(Guid guid, string title, string content, PinetreeView? parent, Guid groupId, bool isPublic) : IEquatable<PinetreeView>
+public class PinetreeView(Guid guid, string title, string content, PinetreeView? parent, Guid groupId, bool isPublic, DateTime create = default, DateTime update = default) : IEquatable<PinetreeView>
 {
     public Guid Guid { get; } = guid;
     public string Title { get; set; } = title;
@@ -10,6 +10,8 @@ public class PinetreeView(Guid guid, string title, string content, PinetreeView?
     public bool IsCurrent { get; set; }
     public bool IsExpanded { get; set; }
     public bool IsPublic { get; set; } = isPublic;
+    public DateTime Create { get; set; } = create == default ? DateTime.UtcNow : create;
+    public DateTime Update { get; set; } = update == default ? DateTime.UtcNow : update;
 
     public List<PinetreeView> Children { get; } = [];
     public Stack<string> UndoStack { get; } = new();
@@ -90,11 +92,11 @@ public class PinetreeView(Guid guid, string title, string content, PinetreeView?
     }
 
     public static bool operator !=(PinetreeView? left, PinetreeView? right)
-        => !(left == right);
-
+        => !(left == right); 
+    
     public PinetreeView DeepClone()
     {
-        var clone = new PinetreeView(Guid, Title, Content, Parent, GroupGuid, IsPublic)
+        var clone = new PinetreeView(Guid, Title, Content, Parent, GroupGuid, IsPublic, Create, Update)
         {
             IsCurrent = IsCurrent,
             IsExpanded = IsExpanded
