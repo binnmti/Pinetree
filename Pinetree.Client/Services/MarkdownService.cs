@@ -67,6 +67,7 @@ public static class MarkdownService
         Sanitizer.AllowedTags.Add("img");
         Sanitizer.AllowedAttributes.Add("alt");
         Sanitizer.AllowedAttributes.Add("title");        // YouTube iframe settings
+        Sanitizer.AllowedAttributes.Add("src");        // YouTube iframe settings
         Sanitizer.AllowedTags.Add("iframe");
         Sanitizer.AllowedAttributes.Add("src");
         Sanitizer.AllowedAttributes.Add("width");
