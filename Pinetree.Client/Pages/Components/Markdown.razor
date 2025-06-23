@@ -71,7 +71,8 @@
                         {
                             <div class="public-title-container">
                                 <div class="public-user-name">@User</div>
-                                <h1>@Title</h1>                                <div class="public-dates">
+                                <h1>@Title</h1>
+                                <div class="public-dates">
                                     <div class="public-date">Created: @Current.Create.ToString("MMM dd, yyyy")</div>
                                     @if (Current.Update != Current.Create)
                                     {
@@ -142,7 +143,7 @@
                     {
                         <div id="panel2" class="panel"
                              style="display: @(ViewMode == "edit" || ViewMode == "split" ? "flex" : "none");
-                                                        @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
+                                                                @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
                             <div class="panel-content-wrapper">
                                 <div class="panel-content">
                                     <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize"
@@ -150,7 +151,7 @@
                                               @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
                                 </div>
                                 <div class="panel-footer">
-                                    <div class="counter">@Content.Length characters</div>
+                                    <div class="counter">@GetMarkdownContentCharacterCount() characters (content)</div>
                                 </div>
                             </div>
                         </div>
@@ -166,7 +167,7 @@
                                 </div>
                             </div>
                             <div class="panel-footer">
-                                <div class="counter">-</div>
+                                <div class="counter">@GetPlainTextCharacterCount() characters (preview)</div>
                             </div>
                         </div>
                     </div>
@@ -534,11 +535,13 @@
             Console.Error.WriteLine($"Error copying ID: {ex.Message}");
         }
     }
-
     private async Task SaveChanges()
     {
         if (IsTry) return;
-        if (await JS.CheckCharacterAsync(Content, IsProfessional)) return;
+
+        // Use markdown content character count (excluding markup) for limit check
+        var contentCharacterCount = GetMarkdownContentCharacterCount();
+        if (await LimitCheckService.CheckMarkdownContentCharacterAsync(JS, contentCharacterCount, IsProfessional)) return;
 
         try
         {
@@ -1247,5 +1250,110 @@
     {
         public string BlobUrl { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
+    }
+
+    private int GetPlainTextCharacterCount()
+    {
+        if (string.IsNullOrEmpty(MarkdownText))
+            return 0;
+
+        try
+        {
+            // Remove HTML tags and decode HTML entities to get plain text character count
+            var plainText = System.Text.RegularExpressions.Regex.Replace(MarkdownText, "<.*?>", string.Empty);
+
+            // Decode common HTML entities
+            plainText = plainText.Replace("&nbsp;", " ")
+                                .Replace("&lt;", "<")
+                                .Replace("&gt;", ">")
+                                .Replace("&amp;", "&")
+                                .Replace("&quot;", "\"")
+                                .Replace("&#39;", "'");
+
+            // Remove extra whitespaces and normalize line breaks
+            plainText = System.Text.RegularExpressions.Regex.Replace(plainText, @"\s+", " ").Trim();
+
+            return plainText.Length;
+        }
+        catch
+        {
+            // Fallback to content length if HTML parsing fails
+            return Content.Length;
+        }
+    }
+
+    private int GetMarkdownContentCharacterCount()
+    {
+        if (string.IsNullOrEmpty(Content))
+            return 0;
+
+        try
+        {
+            var content = Content;
+
+            // Remove various markdown syntax patterns
+            // Remove links: [text](url) -> text
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"\[([^\]]*)\]\([^\)]*\)", "$1");
+
+            // Remove images: ![alt](url) -> alt
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"!\[([^\]]*)\]\([^\)]*\)", "$1");
+
+            // Remove reference-style links: [text][ref] -> text
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"\[([^\]]*)\]\[[^\]]*\]", "$1");
+
+            // Remove reference definitions: [ref]: url "title" -> (remove entirely)
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"^\s*\[[^\]]+\]:\s*\S+.*$", "", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+            // Remove bold/italic markers: **text** or *text* -> text
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"\*{1,2}([^\*]+)\*{1,2}", "$1");
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"_{1,2}([^_]+)_{1,2}", "$1");
+
+            // Remove strikethrough: ~~text~~ -> text
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"~~([^~]+)~~", "$1");
+
+            // Remove inline code: `code` -> code
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"`([^`]+)`", "$1");
+
+            // Remove code blocks (fenced): ```...``` -> (remove entirely)
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"```[\s\S]*?```", "", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+            // Remove code blocks (indented): remove 4+ space indented lines
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"^[ ]{4,}.*$", "", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+            // Remove headers: # Header -> Header
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"^#{1,6}\s*(.*)$", "$1", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+            // Remove horizontal rules: --- or *** -> (remove entirely)
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"^[\s]*[-*_]{3,}[\s]*$", "", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+            // Remove list markers: - item or * item or 1. item -> item
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"^[\s]*[-*+]\s+(.*)$", "$1", System.Text.RegularExpressions.RegexOptions.Multiline);
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"^[\s]*\d+\.\s+(.*)$", "$1", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+            // Remove blockquote markers: > text -> text
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"^[\s]*>\s*(.*)$", "$1", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+            // Remove table syntax: | col1 | col2 | -> col1 col2
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"\|", " ");
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"^[\s]*[-:|\s]+[\s]*$", "", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+            // Remove YouTube video syntax: [youtube:ID] -> (remove entirely)
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"\[youtube:[^\]]+\]", "");
+
+            // Remove checkbox markers: - [ ] task or - [x] task -> task
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"^[\s]*-\s*\[[x\s]\]\s*(.*)$", "$1", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+            // Clean up extra whitespace and empty lines
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"\n\s*\n", "\n");
+            content = System.Text.RegularExpressions.Regex.Replace(content, @"[ \t]+", " ");
+            content = content.Trim();
+
+            return content.Length;
+        }
+        catch
+        {
+            // Fallback to original content length if parsing fails
+            return Content.Length;
+        }
     }
 }

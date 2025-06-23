@@ -49,13 +49,13 @@ public static class LimitCheckService
         return false;
     }
 
-    public static async Task<bool> CheckCharacterAsync(this IJSRuntime jsRuntime, string character, bool isProfessional)
+    public static async Task<bool> CheckMarkdownContentCharacterAsync(this IJSRuntime jsRuntime, int characterCount, bool isProfessional)
     {
         if (!isProfessional)
         {
-            if (character.Length >= FreeMaxCharacter)
+            if (characterCount >= FreeMaxCharacter)
             {
-                await jsRuntime.AlertAsync($"You cannot write more than {FreeMaxCharacter} characters in the free version.");
+                await jsRuntime.AlertAsync($"You cannot write more than {FreeMaxCharacter} content characters in the free version.");
                 return true;
             }
         }
