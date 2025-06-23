@@ -143,7 +143,7 @@
                     {
                         <div id="panel2" class="panel"
                              style="display: @(ViewMode == "edit" || ViewMode == "split" ? "flex" : "none");
-                                                                    @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
+                                                                        @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
                             <div class="panel-content-wrapper">
                                 <div class="panel-content">
                                     <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize"
@@ -182,7 +182,7 @@
                                 }
                             </div>
                             <div class="panel-footer">
-                                <div class="counter">@GetPlainTextCharacterCount() characters (preview)</div>
+                                <div class="counter">@GetPlainTextCharacterCount() characters@(IsPublicView ? "" : " (preview)")</div>
                             </div>
                         </div>
                     </div>
