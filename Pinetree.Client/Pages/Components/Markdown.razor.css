@@ -34,7 +34,7 @@
 }
 
 .public-title-container {
-    text-align: center;
+    text-align: left;
     width: 100%;
 }
 
@@ -64,13 +64,12 @@
     flex-direction: row;
     gap: 16px;
     margin-top: 8px;
-    justify-content: center;
     flex-wrap: wrap;
 }
 
-    .public-dates .public-date {
-        margin-top: 0;
-    }
+.public-dates .public-date {
+    margin-top: 0;
+}
 
 /* Responsive adjustments for public view */
 @media (max-width: 992px) {
