@@ -143,7 +143,7 @@
                     {
                         <div id="panel2" class="panel"
                              style="display: @(ViewMode == "edit" || ViewMode == "split" ? "flex" : "none");
-                                                                @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
+                                                                    @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
                             <div class="panel-content-wrapper">
                                 <div class="panel-content">
                                     <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize"
@@ -160,11 +160,26 @@
                     <div id="panel3" class="panel" style="display: @(IsPublicView || ViewMode == "preview" || ViewMode == "split" ? "flex" : "none"); @(IsPublicView ? "flex: 1 !important; width: 100% !important;" : "")">
                         <div class="panel-content-wrapper">
                             <div class="panel-content @(IsPublicView || ViewMode == "preview" ? "public-view-content" : "")">
-                                <div @ref="MarkdownContainer"
-                                     class="border markdown-body p-3 @(IsPublicView || ViewMode == "preview" ? "public-view-container" : "")"
-                                     style="width:100%; height:99%; overflow:auto;">
-                                    @((MarkupString)MarkdownText)
-                                </div>
+                                @if (IsPublicView || ViewMode == "preview")
+                                {
+                                    <!-- Public view with proper scrollbar positioning -->
+                                    <div class="public-view-scroll-container" style="width:100%; height:99%; overflow:auto;">
+                                        <div @ref="MarkdownContainer"
+                                             class="border markdown-body p-3 public-view-centered-content"
+                                             style="max-width: 800px; margin: 0 auto; padding: 20px; box-sizing: border-box;">
+                                            @((MarkupString)MarkdownText)
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <!-- Normal editor view -->
+                                    <div @ref="MarkdownContainer"
+                                         class="border markdown-body p-3"
+                                         style="width:100%; height:99%; overflow:auto;">
+                                        @((MarkupString)MarkdownText)
+                                    </div>
+                                }
                             </div>
                             <div class="panel-footer">
                                 <div class="counter">@GetPlainTextCharacterCount() characters (preview)</div>

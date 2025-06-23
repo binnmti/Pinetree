@@ -3,10 +3,25 @@
 }
 
 /* Public view styles for better readability */
+.public-view-scroll-container {
+    width: 100% !important;
+    height: 100% !important;
+    overflow: auto !important;
+}
+
+.public-view-centered-content {
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
+    box-sizing: border-box !important;
+}
+
+/* Legacy container - reset to avoid conflicts */
 .public-view-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 0 20px;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .public-view-content {
@@ -15,10 +30,17 @@
 }
 
 /* Preview mode inherits public view styling for better readability */
-.preview-mode .public-view-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 0 20px;
+.preview-mode .public-view-scroll-container {
+    width: 100% !important;
+    height: 100% !important;
+    overflow: auto !important;
+}
+
+.preview-mode .public-view-centered-content {
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
+    box-sizing: border-box !important;
 }
 
 /* Public view header and title styles */
@@ -67,21 +89,17 @@
     flex-wrap: wrap;
 }
 
-.public-dates .public-date {
-    margin-top: 0;
-}
+    .public-dates .public-date {
+        margin-top: 0;
+    }
 
 /* Responsive adjustments for public view */
 @media (max-width: 992px) {
-    .public-view-container,
+    .public-view-centered-content,
+    .preview-mode .public-view-centered-content,
     .public-view-header {
-        max-width: 100%;
-        padding: 0 15px;
-    }
-
-    .preview-mode .public-view-container {
-        max-width: 100%;
-        padding: 0 15px;
+        max-width: 100% !important;
+        padding: 15px !important;
     }
 
     .public-title-container h1 {
@@ -90,13 +108,10 @@
 }
 
 @media (max-width: 768px) {
-    .public-view-container,
+    .public-view-centered-content,
+    .preview-mode .public-view-centered-content,
     .public-view-header {
-        padding: 0 10px;
-    }
-
-    .preview-mode .public-view-container {
-        padding: 0 10px;
+        padding: 10px !important;
     }
 
     .public-title-container h1 {
@@ -267,9 +282,9 @@
     z-index: auto; /* No high z-index needed */
 }
 
-.resizer:hover, .resizer.resizing {
-    background-color: #aaa;
-}
+    .resizer:hover, .resizer.resizing {
+        background-color: #aaa;
+    }
 
 /* Mobile responsive styles */
 @media (max-width: 768px) {
