@@ -13,7 +13,7 @@ public class Pinecone
     // From a database perspective, it is more convenient to set this to NULL, so we decided to allow long?
     public required Guid? ParentGuid { get; set; }
     
-    [MaxLength(200)]
+    [MaxLength(1000)]
     public required string Title { get; set; }
     public required string Content { get; set; }
     public required int Order { get; set; }

@@ -40,11 +40,11 @@
                     {
                         if (Pinetree.IsExpanded)
                         {
-                            <i class="bi bi-caret-down" @onclick="OnClickExpanded" style="cursor:pointer"></i>
+                            <i class="bi bi-caret-down" @onclick="HandleExpandClick" style="cursor:pointer"></i>
                         }
                         else
                         {
-                            <i class="bi bi-caret-right" @onclick="OnClickExpanded" style="cursor:pointer"></i>
+                            <i class="bi bi-caret-right" @onclick="HandleExpandClick" style="cursor:pointer"></i>
                         }
                     }
                     else
@@ -55,11 +55,11 @@
                 </div>
                 @if (Pinetree.IsCurrent)
                 {
-                    <div class="title px-1 flex-grow-1 border" @onclick="ActivePinetree" style="font-weight: bold; background-color:aliceblue">@Pinetree.Title</div>
+                    <div class="title px-1 flex-grow-1 border" @onclick="HandleTitleClick" style="font-weight: bold; background-color:aliceblue; cursor:pointer">@Pinetree.Title</div>
                 }
-                else
+                        else
                 {
-                    <div class="title px-1 flex-grow-1" @onclick="ActivePinetree">@Pinetree.Title</div>
+                    <div class="title px-1 flex-grow-1" @onclick="HandleTitleClick" style="cursor:pointer">@Pinetree.Title</div>
                 }
                 @if (!IsPublicView)
                 {
@@ -112,13 +112,13 @@
 
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
-    
+
     [Inject]
     public required HttpClient HttpClient { get; set; }
-    
+
     [Inject]
     public required IJSRuntime JS { get; set; }
-    
+
     private ElementReference treeViewContainer;
     private DotNetObjectReference<TreeView>? objRef;
     private IJSObjectReference? jsModule;
@@ -224,7 +224,7 @@
         }
         return false;
     }
-    
+
     private bool MoveNodeBefore(PinetreeView sourceNode, PinetreeView targetNode)
     {
         if (targetNode.Parent == null)
@@ -247,7 +247,7 @@
             {
                 targetIndex--;
             }
-            
+
             sourceNode.Parent.Children.Remove(sourceNode);
         }
 
@@ -281,7 +281,7 @@
             {
                 targetIndex--;
             }
-            
+
             sourceNode.Parent.Children.Remove(sourceNode);
         }
 
@@ -498,5 +498,16 @@
         }
 
         return null;
+    }
+    private void HandleExpandClick()
+    {
+        // Allow expand/collapse in both edit and public view modes
+        OnClickExpanded();
+    }
+
+    private async Task HandleTitleClick()
+    {
+        // Allow navigation in both edit and public view modes
+        await ActivePinetree();
     }
 }

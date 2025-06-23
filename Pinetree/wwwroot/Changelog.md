@@ -1,3 +1,12 @@
+## [0.9.8] - 2025-06-23
+
+### Features
+- Added real-time character counters for titles and markdown content, with visual feedback when limits are approached or exceeded.
+- Save button is now disabled if the title exceeds the character limit, with dynamic tooltips reflecting this state.
+- Markdown preview layout improved for public and preview modes, with better centering and scroll handling.
+
+---
+
 ## [0.9.7] - 2025-06-22
 
 ### Features
