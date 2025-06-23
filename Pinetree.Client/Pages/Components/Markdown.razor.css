@@ -462,3 +462,14 @@
         height: 100vh !important;
     }
 }
+
+/* Character limit styling */
+.counter.over-limit {
+    color: #dc3545 !important;
+    font-weight: bold;
+}
+
+.counter.near-limit {
+    color: #ffc107 !important;
+    font-weight: bold;
+}

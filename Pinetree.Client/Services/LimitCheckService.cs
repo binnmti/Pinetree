@@ -9,7 +9,7 @@ public static class LimitCheckService
     private const int FreeMaxChildFileCount = 33;
     // TODO:At this point, I would be grateful if you could create a file full of files.
     //private const int FreeMaxFileCount = 333;
-    private const int FreeMaxCharacter = 3333;
+    public const int FreeMaxCharacter = 3333;
 
     private const int ProMaxDepth = 9;
 

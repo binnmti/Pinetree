@@ -143,15 +143,32 @@
                     {
                         <div id="panel2" class="panel"
                              style="display: @(ViewMode == "edit" || ViewMode == "split" ? "flex" : "none");
-                                                                        @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
+                                                                                @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
                             <div class="panel-content-wrapper">
                                 <div class="panel-content">
                                     <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize"
                                               style="width:100%; height:99%; padding-bottom: 50vh; box-sizing: border-box; font-family: @_currentFontFamily; font-size: @(_currentFontSize)px;"
                                               @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
-                                </div>
-                                <div class="panel-footer">
-                                    <div class="counter">@GetMarkdownContentCharacterCount() characters (content)</div>
+                                </div>                                <div class="panel-footer">
+                                    @{
+                                        var contentCharCount = GetMarkdownContentCharacterCount();
+                                        var maxChars = LimitCheckService.FreeMaxCharacter;
+                                        var isOverLimit = !IsProfessional && contentCharCount > maxChars;
+                                        var isNearLimit = !IsProfessional && contentCharCount > maxChars * 0.9;
+                                        var counterClass = "";
+                                        if (isOverLimit) counterClass = "over-limit";
+                                        else if (isNearLimit) counterClass = "near-limit";
+                                    }
+                                    @if (!IsProfessional)
+                                    {
+                                        <div class="counter @counterClass">
+                                            @contentCharCount / @maxChars characters (content)
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="counter">@contentCharCount characters (content)</div>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -181,9 +198,12 @@
                                     </div>
                                 }
                             </div>
-                            <div class="panel-footer">
-                                <div class="counter">@GetPlainTextCharacterCount() characters@(IsPublicView ? "" : " (preview)")</div>
-                            </div>
+                            @if (!IsPublicView)
+                            {
+                                <div class="panel-footer">
+                                    <div class="counter">@GetPlainTextCharacterCount() characters (preview)</div>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
