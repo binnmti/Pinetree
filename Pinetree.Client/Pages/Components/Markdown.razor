@@ -161,7 +161,8 @@
                                     <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize"
                                               style="width:100%; height:99%; padding-bottom: 50vh; box-sizing: border-box; font-family: @_currentFontFamily; font-size: @(_currentFontSize)px;"
                                               @oninput="OnInputChange" placeholder="Write your markdown here..."></textarea>
-                                </div>                                <div class="panel-footer">
+                                </div>
+                                <div class="panel-footer">
                                     @{
                                         var contentCharCount = GetMarkdownContentCharacterCount();
                                         var maxChars = LimitCheckService.FreeMaxCharacter;
