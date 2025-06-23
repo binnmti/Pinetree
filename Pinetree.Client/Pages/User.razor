@@ -99,12 +99,11 @@ else
                                                 <i class="bi bi-file-earmark-plus" style="font-size: 2rem;"></i>
                                                 <p class="mt-2">Create New File</p>
                                             </div>
-                                        </div>
-                                        @foreach (var pinecone in PinetreeViews)
+                                        </div>                                        @foreach (var pinecone in PinetreeViews)
                                         {
-                                            <div class="card m-2" style="width:14rem; height: 16rem">
-                                                <div class="card-body d-flex flex-column">
-                                                    <div class="mt-1 d-flex align-items-center text-truncate">
+                                            <div class="card m-2" style="width:14rem; height: 16rem; display: flex; flex-direction: column;">
+                                                <div class="card-body" style="padding: 0.75rem; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+                                                    <div class="d-flex align-items-center text-truncate mb-2" style="flex-shrink: 0;">
                                                         <i class="bi @(pinecone.IsPublic ? "bi-globe" : "bi-file-earmark-lock") border px-1 me-1"
                                                            @onclick="() => ToggleVisibility(pinecone.Guid, !pinecone.IsPublic)"
                                                            title="@(pinecone.IsPublic ? "Public" : "Private")"
@@ -118,8 +117,8 @@ else
                                                             <small class="text-muted">Only me</small>
                                                         }
                                                     </div>
-                                                    <div class="d-flex justify-content-between">
-                                                        <strong class="card-title" @onclick="() => OpenFile(pinecone.Guid)" style="cursor:pointer">
+                                                    <div class="d-flex justify-content-between mb-2" style="flex-shrink: 0;">
+                                                        <strong class="card-title text-truncate" @onclick="() => OpenFile(pinecone.Guid)" style="cursor:pointer">
                                                             <i class="bi bi-file-earmark-text"></i>
                                                             @pinecone.Title
                                                         </strong>
@@ -127,7 +126,21 @@ else
                                                             <i @onclick="() => ConfirmDelete(pinecone.Guid)" class="bi bi-trash2 border px-1" style="cursor:pointer"></i>
                                                         </div>
                                                     </div>
-                                                    <p class="card-text flex-grow-1 mt-1" @onclick="() => OpenFile(pinecone.Guid)" style="cursor:pointer">@((MarkupString)GetContent(pinecone.Content))</p>
+                                                    <div class="card-text" @onclick="() => OpenFile(pinecone.Guid)" style="cursor:pointer; flex: 1; overflow: hidden; margin-bottom: 0.5rem;">@((MarkupString)GetContent(pinecone.Content))</div>
+                                                    @{
+                                                        string dateText = sortBy switch
+                                                        {
+                                                            "updatedat" => pinecone.Update.ToString("MMM dd, yyyy"),
+                                                            "createdat" => pinecone.Create.ToString("MMM dd, yyyy"),
+                                                            _ => ""
+                                                        };
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(dateText))
+                                                    {
+                                                        <div class="text-muted small" style="flex-shrink: 0; margin-top: auto;">
+                                                            @dateText
+                                                        </div>
+                                                    }
                                                 </div>
                                             </div>
                                         }
