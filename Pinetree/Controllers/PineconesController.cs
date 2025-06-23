@@ -235,6 +235,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         var loadedPinecone = await LoadChildrenRecursively(rootPinecone);
         return ToPineconeViewModelWithChildren(loadedPinecone);
     }
+
     [HttpGet("get-user-top-list")]
     public async Task<List<PineconeViewModel>> GetUserTopList(
         [FromQuery] int pageNumber,
@@ -247,21 +248,9 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         var userName = User.Identity?.Name ?? "";
         var userId = await GetCurrentUserIdAsync();
 
-        var query = GetUserTopList(userName);
+        var query = ApplyFilters(GetUserTopList(userName), searchQuery, publicOnly);
 
-        // Apply search filter
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            query = query.Where(p =>
-                EF.Functions.Like(p.Title, $"%{searchQuery}%") ||
-                EF.Functions.Like(p.Content, $"%{searchQuery}%"));
-        }
-
-        // Apply public-only filter
-        if (publicOnly)
-        {
-            query = query.Where(p => p.IsPublic);
-        }        // Apply sorting with secondary sort key for stability
+        // Apply sorting with secondary sort key for stability
         query = sortBy?.ToLower() switch
         {
             "title" => sortDescending
@@ -277,9 +266,9 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
                 ? query.OrderByDescending(p => p.Update).ThenByDescending(p => p.Id)
                 : query.OrderBy(p => p.Update).ThenBy(p => p.Id)
         };
-
+        
         var documents = await query
-            .AsTracking()
+            .AsNoTracking()
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -302,21 +291,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         [FromQuery] bool publicOnly = false)
     {
         var userName = User.Identity?.Name ?? "";
-        var query = GetUserTopList(userName);
-
-        // Apply search filter
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            query = query.Where(p =>
-                EF.Functions.Like(p.Title, $"%{searchQuery}%") ||
-                EF.Functions.Like(p.Content, $"%{searchQuery}%"));
-        }
-
-        // Apply public-only filter
-        if (publicOnly)
-        {
-            query = query.Where(p => p.IsPublic);
-        }
+        var query = ApplyFilters(GetUserTopList(userName), searchQuery, publicOnly);
 
         return await query.CountAsync();
     }
@@ -556,4 +531,25 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
     private async Task<Pinecone?> GetPineconeById(Guid guid)
         => await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Guid == guid);
 
+    /// <summary>
+    /// Apply common filters (search and public-only) to a Pinecone query
+    /// </summary>
+    private static IQueryable<Pinecone> ApplyFilters(IQueryable<Pinecone> query, string searchQuery, bool publicOnly)
+    {
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.Where(p =>
+                EF.Functions.Like(p.Title, $"%{searchQuery}%") ||
+                EF.Functions.Like(p.Content, $"%{searchQuery}%"));
+        }
+
+        // Apply public-only filter
+        if (publicOnly)
+        {
+            query = query.Where(p => p.IsPublic);
+        }
+
+        return query;
+    }
 }
