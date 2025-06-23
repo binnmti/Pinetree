@@ -286,6 +286,27 @@
         background-color: #aaa;
     }
 
+/* Character limit styling */
+.counter.over-limit {
+    color: #dc3545 !important;
+    font-weight: bold;
+}
+
+.counter.near-limit {
+    color: #ffc107 !important;
+    font-weight: bold;
+}
+
+/* Title character counter styling */
+.title-counter {
+    font-size: 11px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 3px;
+    padding: 2px 4px;
+    pointer-events: none;
+    z-index: 10;
+}
+
 /* Mobile responsive styles */
 @media (max-width: 768px) {
     /* On mobile, navbar is hidden, so use full viewport */

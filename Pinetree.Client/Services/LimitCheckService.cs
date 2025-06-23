@@ -10,6 +10,7 @@ public static class LimitCheckService
     // TODO:At this point, I would be grateful if you could create a file full of files.
     //private const int FreeMaxFileCount = 333;
     public const int FreeMaxCharacter = 3333;
+    public const int TitleMaxCharacter = 150; // Database constraint: nvarchar(1000) with AES-256-CBC encryption overhead
 
     private const int ProMaxDepth = 9;
 

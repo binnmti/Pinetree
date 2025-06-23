@@ -83,13 +83,25 @@
                         }
                         else
                         {
-                            <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" class="mx-1 flex-grow-1" />
+                            <div class="position-relative flex-grow-1 mx-1">
+                                <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" class="w-100 pe-5" />
+                                <small class="position-absolute end-0 top-50 translate-middle-y me-2 text-muted title-counter">
+                                    @{
+                                        var titleLength = Title?.Length ?? 0;
+                                        var titleMaxLength = LimitCheckService.TitleMaxCharacter;
+                                        var titleOverLimit = titleLength > titleMaxLength;
+                                    }
+                                    <span class="@(titleOverLimit ? "text-danger fw-bold" : "")">@titleLength/@titleMaxLength</span>
+                                </small>
+                            </div>
                         }
                         <div class="d-flex align-items-center ms-2">
                             @if (!IsPublicView)
                             {
-                                <button @onclick="SaveChanges" disabled="@(!HasPendingChanges() || IsTry || _isSaving)"
-                                        class="btn btn-sm btn-primary me-2" title="Save changes">
+                                var titleLength = Title?.Length ?? 0;
+                                var isTitleOverLimit = titleLength > LimitCheckService.TitleMaxCharacter;
+                                <button @onclick="SaveChanges" disabled="@(!HasPendingChanges() || IsTry || _isSaving || isTitleOverLimit)"
+                                        class="btn btn-sm btn-primary me-2" title="@(isTitleOverLimit ? "Title exceeds character limit" : "Save changes")">
                                     @if (_isSaving)
                                     {
                                         <span class="d-flex align-items-center">
