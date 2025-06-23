@@ -412,38 +412,35 @@ else
             isLoading = true;
             StateHasChanged();
 
-            // For now, use existing API endpoints until backend is updated
-            var topCount = await Http.GetFromJsonAsync<int>($"/api/Pinecones/get-user-top-count");
+            // Build query parameters for API call
+            var queryParams = new List<string>
+            {
+                $"pageNumber={CurrentPage}",
+                $"pageSize={PageSize}",
+                $"sortBy={sortBy}",
+                $"sortDescending={sortDescending.ToString().ToLower()}",
+                $"searchQuery={Uri.EscapeDataString(searchQuery ?? "")}",
+                $"publicOnly={showPublicOnly.ToString().ToLower()}"
+            };
+            var queryString = string.Join("&", queryParams);
+
+            // Get count with same filters
+            var countParams = new List<string>
+            {
+                $"searchQuery={Uri.EscapeDataString(searchQuery ?? "")}",
+                $"publicOnly={showPublicOnly.ToString().ToLower()}"
+            };
+            var countQueryString = string.Join("&", countParams);
+
+            var topCount = await Http.GetFromJsonAsync<int>($"/api/Pinecones/get-user-top-count?{countQueryString}");
             TotalRecords = topCount;
             TotalPages = (int)Math.Ceiling(TotalRecords / (double)PageSize);
 
-            var list = await Http.GetFromJsonAsync<List<PineconeViewModel>>($"/api/Pinecones/get-user-top-list?pageNumber={CurrentPage}&pageSize={PageSize}");
+            var list = await Http.GetFromJsonAsync<List<PineconeViewModel>>($"/api/Pinecones/get-user-top-list?{queryString}");
             if (list != null)
             {
-                // Apply client-side filtering temporarily
-                var filteredList = list.AsQueryable();
-
-                if (!string.IsNullOrWhiteSpace(searchQuery))
-                {
-                    filteredList = filteredList.Where(p =>
-                        p.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
-                        p.Content.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
-                }
-
-                if (showPublicOnly)
-                {
-                    filteredList = filteredList.Where(p => p.IsPublic);
-                }
-
-                // Apply sorting
-                filteredList = sortBy switch
-                {
-                    "title" => sortDescending ? filteredList.OrderByDescending(p => p.Title) : filteredList.OrderBy(p => p.Title),
-                    "createdat" => sortDescending ? filteredList.OrderByDescending(p => p.Create) : filteredList.OrderBy(p => p.Create),
-                    _ => sortDescending ? filteredList.OrderByDescending(p => p.Update) : filteredList.OrderBy(p => p.Update)
-                };
-
-                PinetreeViews = filteredList.Select(x => x.ToPinetree(PinetreeView.Nothing)).ToList();
+                // No client-side filtering needed as API handles everything
+                PinetreeViews = list.Select(x => x.ToPinetree(PinetreeView.Nothing)).ToList();
             }
         }
         catch (Exception ex)

@@ -18,8 +18,8 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
     private ApplicationDbContext DbContext { get; } = context;
     private IEncryptionService EncryptionService { get; } = encryptionService;
     private UserManager<ApplicationUser> UserManager { get; } = userManager;    /// <summary>
-    /// Gets the current user ID for encryption operations
-    /// </summary>
+                                                                                /// Gets the current user ID for encryption operations
+                                                                                /// </summary>
     private async Task<string> GetCurrentUserIdAsync()
     {
         var user = await UserManager.GetUserAsync(User);
@@ -84,7 +84,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
             Update = model.Update
         };
     }
-    
+
     /// <summary>
     /// Converts Pinecone model with children to PineconeViewModelWithChildren for hierarchical data
     /// </summary>
@@ -171,7 +171,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         };
         await DbContext.Pinecone.AddAsync(pinecone);
         await DbContext.SaveChangesAsync();
-        
+
         // Return decrypted data to client
         pinecone.Title = DecryptContentIfPrivate(pinecone.Title, pinecone.IsPublic)!;
         pinecone.Content = DecryptContentIfPrivate(pinecone.Content, pinecone.IsPublic)!;
@@ -235,18 +235,56 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         var loadedPinecone = await LoadChildrenRecursively(rootPinecone);
         return ToPineconeViewModelWithChildren(loadedPinecone);
     }
-
     [HttpGet("get-user-top-list")]
-    public async Task<List<PineconeViewModel>> GetUserTopList([FromQuery] int pageNumber, [FromQuery] int pageSize)
+    public async Task<List<PineconeViewModel>> GetUserTopList(
+        [FromQuery] int pageNumber,
+        [FromQuery] int pageSize,
+        [FromQuery] string sortBy = "updatedat",
+        [FromQuery] bool sortDescending = true,
+        [FromQuery] string searchQuery = "",
+        [FromQuery] bool publicOnly = false)
     {
         var userName = User.Identity?.Name ?? "";
         var userId = await GetCurrentUserIdAsync();
-        var documents = await GetUserTopList(userName)
+
+        var query = GetUserTopList(userName);
+
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.Where(p =>
+                EF.Functions.Like(p.Title, $"%{searchQuery}%") ||
+                EF.Functions.Like(p.Content, $"%{searchQuery}%"));
+        }
+
+        // Apply public-only filter
+        if (publicOnly)
+        {
+            query = query.Where(p => p.IsPublic);
+        }        // Apply sorting with secondary sort key for stability
+        query = sortBy?.ToLower() switch
+        {
+            "title" => sortDescending
+                ? query.OrderByDescending(p => p.Title).ThenByDescending(p => p.Id)
+                : query.OrderBy(p => p.Title).ThenBy(p => p.Id),
+            "createdat" => sortDescending
+                ? query.OrderByDescending(p => p.Create).ThenByDescending(p => p.Id)
+                : query.OrderBy(p => p.Create).ThenBy(p => p.Id),
+            "updatedat" => sortDescending
+                ? query.OrderByDescending(p => p.Update).ThenByDescending(p => p.Id)
+                : query.OrderBy(p => p.Update).ThenBy(p => p.Id),
+            _ => sortDescending
+                ? query.OrderByDescending(p => p.Update).ThenByDescending(p => p.Id)
+                : query.OrderBy(p => p.Update).ThenBy(p => p.Id)
+        };
+
+        var documents = await query
             .AsTracking()
-            .OrderBy(p => p.Order)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();        // Decrypt content and convert to ViewModels
+            .ToListAsync();
+
+        // Decrypt content and convert to ViewModels
         var result = new List<PineconeViewModel>();
         foreach (var doc in documents)
         {
@@ -259,10 +297,28 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
     }
 
     [HttpGet("get-user-top-count")]
-    public async Task<int> GetUserTopCount()
+    public async Task<int> GetUserTopCount(
+        [FromQuery] string searchQuery = "",
+        [FromQuery] bool publicOnly = false)
     {
         var userName = User.Identity?.Name ?? "";
-        return await GetUserTopList(userName).CountAsync();
+        var query = GetUserTopList(userName);
+
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.Where(p =>
+                EF.Functions.Like(p.Title, $"%{searchQuery}%") ||
+                EF.Functions.Like(p.Content, $"%{searchQuery}%"));
+        }
+
+        // Apply public-only filter
+        if (publicOnly)
+        {
+            query = query.Where(p => p.IsPublic);
+        }
+
+        return await query.CountAsync();
     }
 
     [HttpPut("toggle-visibility/{guid}")]
@@ -281,7 +337,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         // If changing from private to public, decrypt first
         // If changing from public to private, encrypt
         if (pinecone.IsPublic != request.IsPublic)
-        {            
+        {
             // Decrypt current content
             var currentTitle = DecryptContentIfPrivate(pinecone.Title, pinecone.IsPublic);
             var currentContent = DecryptContentIfPrivate(pinecone.Content, pinecone.IsPublic);
@@ -314,7 +370,8 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
             if (currentTree.UserName != userName)
             {
                 throw new UnauthorizedAccessException("You do not own this Pinecone.");
-            }            currentTree.Title = EncryptContentIfPrivate(rootNodeDto.Title, currentTree.IsPublic)!;
+            }
+            currentTree.Title = EncryptContentIfPrivate(rootNodeDto.Title, currentTree.IsPublic)!;
             currentTree.Content = EncryptContentIfPrivate(rootNodeDto.Content, currentTree.IsPublic)!;
             currentTree.Update = DateTime.UtcNow;
 
@@ -476,7 +533,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         => DbContext.Pinecone
             .Where(x => x.UserName == userName)
             .Where(x => x.ParentGuid == null);
-    
+
     private async Task<Pinecone> LoadChildrenRecursively(Pinecone parent)
     {
         // Decrypt parent content
@@ -488,7 +545,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
             .Query()
             .OrderBy(x => x.Order)
             .LoadAsync();
-        
+
         foreach (var child in parent.Children)
         {
             await LoadChildrenRecursively(child);
@@ -499,86 +556,4 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
     private async Task<Pinecone?> GetPineconeById(Guid guid)
         => await DbContext.Pinecone.SingleOrDefaultAsync(x => x.Guid == guid);
 
-    [HttpGet("get-user-documents")]
-    public async Task<UserDocumentsResponse> GetUserDocuments([FromQuery] UserDocumentsRequest request)
-    {
-        var userName = User.Identity?.Name ?? "";
-        var query = GetUserTopList(userName);
-
-        // Apply search filter
-        if (!string.IsNullOrWhiteSpace(request.Search))
-        {
-            query = query.Where(p =>
-                EF.Functions.Like(p.Title, $"%{request.Search}%") ||
-                EF.Functions.Like(p.Content, $"%{request.Search}%"));
-        }
-
-        // Apply public-only filter
-        if (request.PublicOnly)
-        {
-            query = query.Where(p => p.IsPublic);
-        }
-
-        // Apply sorting
-        query = request.SortBy?.ToLower() switch
-        {
-            "title" => request.SortDescending
-                ? query.OrderByDescending(p => p.Title)
-                : query.OrderBy(p => p.Title),
-            "createdat" => request.SortDescending
-                ? query.OrderByDescending(p => p.Create)
-                : query.OrderBy(p => p.Create),
-            "updatedat" => request.SortDescending
-                ? query.OrderByDescending(p => p.Update)
-                : query.OrderBy(p => p.Update),
-            _ => request.SortDescending
-                ? query.OrderByDescending(p => p.Update)
-                : query.OrderBy(p => p.Update)
-        };
-
-        // Get total count before pagination
-        var totalRecords = await query.CountAsync();
-
-        // Apply pagination
-        var documents = await query
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .ToListAsync();
-        // Decrypt content and convert to ViewModels
-        var userId = await GetCurrentUserIdAsync();
-        var documentViewModels = new List<PineconeViewModel>();        foreach (var doc in documents)
-        {
-            doc.Title = DecryptContentIfPrivate(doc.Title, doc.IsPublic)!;
-            doc.Content = DecryptContentIfPrivate(doc.Content, doc.IsPublic)!;
-            documentViewModels.Add(ToPineconeViewModel(doc));
-        }
-
-        return new UserDocumentsResponse
-        {
-            Documents = documentViewModels,
-            TotalRecords = totalRecords,
-            TotalPages = (int)Math.Ceiling(totalRecords / (double)request.PageSize),
-            CurrentPage = request.PageNumber,
-            PageSize = request.PageSize
-        };
-    }
-
-    public class UserDocumentsRequest
-    {
-        public string Search { get; set; } = "";
-        public bool PublicOnly { get; set; } = false;
-        public string SortBy { get; set; } = "updatedat";
-        public bool SortDescending { get; set; } = true;
-        public int PageNumber { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
-    }
-
-    public class UserDocumentsResponse
-    {
-        public List<PineconeViewModel> Documents { get; set; } = new();
-        public int TotalRecords { get; set; }
-        public int TotalPages { get; set; }
-        public int CurrentPage { get; set; }
-        public int PageSize { get; set; }
-    }
 }
