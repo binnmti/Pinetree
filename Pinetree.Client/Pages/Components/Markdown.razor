@@ -70,7 +70,19 @@
                         @if (IsPublicView)
                         {
                             <div class="public-title-container">
-                                <div class="public-user-name">@User</div>
+                                <div class="public-user-name d-flex align-items-center">
+                                    @if (!string.IsNullOrEmpty(UserProfileIconUrl))
+                                    {
+                                        <img src="@UserProfileIconUrl" alt="@User" class="rounded-circle me-2" style="width: 24px; height: 24px; object-fit: cover;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px;">
+                                            <i class="bi bi-person-fill text-white" style="font-size: 0.75rem;"></i>
+                                        </div>
+                                    }
+                                    @User
+                                </div>
                                 <h1>@Title</h1>
                                 <div class="public-dates">
                                     <div class="public-date">Created: @Current.Create.ToString("MMM dd, yyyy")</div>
@@ -155,7 +167,7 @@
                     {
                         <div id="panel2" class="panel"
                              style="display: @(ViewMode == "edit" || ViewMode == "split" ? "flex" : "none");
-                                                                                    @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
+                                                                                        @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
                             <div class="panel-content-wrapper">
                                 <div class="panel-content">
                                     <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize"
@@ -248,9 +260,12 @@
 
     [Parameter]
     public bool IsPublicView { get; set; } = false;
-
+    
     [Parameter]
     public string User { get; set; } = "";
+
+    [Parameter]
+    public string? UserProfileIconUrl { get; set; }
 
     [Inject]
     public required NavigationManager NavigationManager { get; set; }

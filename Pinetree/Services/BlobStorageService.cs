@@ -17,6 +17,9 @@ public class BlobStorageService
     private readonly UserManager<ApplicationUser> _userManager;
     private const int DefaultQuotaInBytes = 1024 * 1024 * 3;
     
+    // Profile icon uses a special GUID for identification
+    public static readonly Guid ProfileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
+    
     public BlobStorageService(IConfiguration configuration, ApplicationDbContext dbContext, IEncryptionService encryptionService, UserManager<ApplicationUser> userManager)
     {
         var connectionString = configuration.GetConnectionString("AzureStorage")
@@ -244,5 +247,74 @@ public class BlobStorageService
             QuotaInBytes = model.QuotaInBytes,
             LastUpdated = model.LastUpdated
         };
+    }
+
+    public async Task<(bool Success, bool WasProfileIcon)> DeleteBlobWithProfileCheckAsync(int blobInfoId, string userName)
+    {
+        // First, check if this blob is a profile icon
+        var blobInfo = await _dbContext.UserBlobInfos
+            .FirstOrDefaultAsync(b => b.Id == blobInfoId && b.UserName == userName && !b.IsDeleted);
+
+        if (blobInfo == null)
+        {
+            return (false, false);
+        }
+
+        var profileIconGuid = ProfileIconGuid;
+        bool isProfileIcon = blobInfo.PineconeGuid == profileIconGuid;
+
+        // Delete the blob using the existing method
+        bool deleteResult = await DeleteBlobAsync(blobInfoId, userName);
+
+        return (deleteResult, isProfileIcon);
+    }
+
+    public async Task<bool> ClearUserProfileIconAsync(string userName)
+    {
+        try
+        {
+            var user = await _userManager.FindByNameAsync(userName);
+            if (user != null && !string.IsNullOrEmpty(user.ProfileIconUrl))
+            {
+                user.ProfileIconUrl = null;
+                var result = await _userManager.UpdateAsync(user);
+                return result.Succeeded;
+            }
+            return true; // Nothing to clear
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteProfileIconAsync(string userName)
+    {
+        try
+        {
+            // Find the profile icon blob
+            var profileIconGuid = ProfileIconGuid;
+            var blobInfo = await _dbContext.UserBlobInfos
+                .FirstOrDefaultAsync(b => b.UserName == userName &&
+                                         b.PineconeGuid == profileIconGuid &&
+                                         !b.IsDeleted);
+
+            if (blobInfo != null)
+            {
+                // Delete the blob
+                var deleteResult = await DeleteBlobAsync(blobInfo.Id, userName);
+                if (!deleteResult)
+                {
+                    return false;
+                }
+            }
+
+            // Clear the profile icon URL from the user
+            return await ClearUserProfileIconAsync(userName);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

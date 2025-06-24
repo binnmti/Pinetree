@@ -1,3 +1,10 @@
+## [0.9.9] - 2025-06-24
+
+### Features
+- Added support for user profile icons, allowing users to upload, display, and manage their profile images throughout the application.
+
+---
+
 ## [0.9.8] - 2025-06-23
 
 ### Features

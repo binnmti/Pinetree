@@ -1,15 +1,30 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Pinetree.Data;
 using Pinetree.Services;
+using Pinetree.Shared.ViewModels;
 
 namespace Pinetree.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ImagesController(BlobStorageService blobStorageService) : ControllerBase
+public class ImagesController : ControllerBase
 {
-    private readonly BlobStorageService _blobStorageService = blobStorageService;
+    private readonly BlobStorageService _blobStorageService;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationDbContext _dbContext;
+
+    public ImagesController(
+        BlobStorageService blobStorageService, 
+        UserManager<ApplicationUser> userManager, 
+        ApplicationDbContext dbContext)
+    {
+        _blobStorageService = blobStorageService;
+        _userManager = userManager;
+        _dbContext = dbContext;
+    }
 
     [HttpPost("upload")]
     public async Task<IActionResult> Upload([FromQuery] string extension, [FromQuery] Guid pineconeGuid)
@@ -39,7 +54,7 @@ public class ImagesController(BlobStorageService blobStorageService) : Controlle
             {
                 return BadRequest(new { error = "Storage quota exceeded" });
             }
-
+            
             var url = await _blobStorageService.UploadImageAsync(stream, extension, userName, pineconeGuid);
             return Ok(new { url });
         }
@@ -48,7 +63,7 @@ public class ImagesController(BlobStorageService blobStorageService) : Controlle
             return StatusCode(500, new { error = $"Error uploading image: {ex.Message}" });
         }
     }
-
+    
     [HttpGet("list")]
     public async Task<IActionResult> ListUserImages()
     {
@@ -62,7 +77,7 @@ public class ImagesController(BlobStorageService blobStorageService) : Controlle
 
         return Ok(images);
     }
-    
+
     [HttpGet("usage")]
     public async Task<IActionResult> GetStorageUsage()
     {
@@ -83,7 +98,7 @@ public class ImagesController(BlobStorageService blobStorageService) : Controlle
             isOverQuota = usage.IsOverQuota
         });
     }
-
+    
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteImage(int id)
     {
@@ -93,12 +108,38 @@ public class ImagesController(BlobStorageService blobStorageService) : Controlle
             return Unauthorized();
         }
 
-        var result = await _blobStorageService.DeleteBlobAsync(id, userName);
-        if (!result)
+        // Delete the blob and check if it was a profile icon
+        var (success, wasProfileIcon) = await _blobStorageService.DeleteBlobWithProfileCheckAsync(id, userName);
+        if (!success)
         {
             return NotFound();
         }
 
+        // If this was the profile icon, clear it from the user profile
+        if (wasProfileIcon)
+        {
+            await _blobStorageService.ClearUserProfileIconAsync(userName);
+        }
+
         return Ok();
+    }
+
+    [HttpGet("user-profile-icon/{userName}")]
+    [AllowAnonymous] // Public view should be accessible without authentication
+    public async Task<IActionResult> GetUserProfileIcon(string userName)
+    {
+        try
+        {
+            var user = await _userManager.FindByNameAsync(userName);            if (user == null)
+            {
+                return NotFound(new UserProfileIconViewModel { Url = null });
+            }
+
+            return Ok(new UserProfileIconViewModel { Url = user.ProfileIconUrl });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error retrieving profile icon", error = ex.Message });
+        }
     }
 }
