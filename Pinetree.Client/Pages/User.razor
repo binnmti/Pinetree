@@ -315,7 +315,11 @@ else
                                             <td>@FormatBytes(file.SizeInBytes)</td>
                                             <td>@file.UploadedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
                                             <td>
-                                                @if (string.IsNullOrEmpty(file.PineconeTitle))
+                                                @if (IsProfileIcon(file))
+                                                {
+                                                    <span class="text-info"><i class="bi bi-person-circle"></i> Profile Icon</span>
+                                                }
+                                                else if (string.IsNullOrEmpty(file.PineconeTitle))
                                                 {
                                                     <span class="text-muted"><i class="bi bi-exclamation-circle"></i> Deleted Documents</span>
                                                 }
@@ -325,9 +329,18 @@ else
                                                 }
                                             </td>
                                             <td>
-                                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteFile(file.Id)">
-                                                    Delete
-                                                </button>
+                                                @if (IsProfileIcon(file))
+                                                {
+                                                    <button class="btn btn-sm btn-warning" @onclick="() => DeleteFile(file.Id)" title="Remove from profile and delete file">
+                                                        <i class="bi bi-exclamation-triangle"></i> Remove Profile Icon
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteFile(file.Id)">
+                                                        <i class="bi bi-trash"></i> Delete
+                                                    </button>
+                                                }
                                             </td>
                                         </tr>
                                     }
@@ -351,6 +364,7 @@ else
     private List<UserBlobViewModel>? files;
     private UserFiles? storageUsage;
     private string Username { get; set; } = "";
+    private string? ProfileIconUrl { get; set; }
 
     // Pagination properties
     private int CurrentPage { get; set; } = 1;
@@ -384,7 +398,6 @@ else
         var c = (content.Length < 100) ? content : content[..100];
         return MarkdownService.ToHtml(c);
     }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -398,6 +411,12 @@ else
             Username = identity.Name ?? "";
             await LoadDocuments();
         }
+    }
+    private bool IsProfileIcon(UserBlobViewModel file)
+    {
+        // Profile icons use a special GUID: 00000000-0000-0000-0000-000000000001
+        var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        return file.PineconeGuid == profileIconGuid;
     }
 
     private async Task LoadPage(int pageNumber)
@@ -587,7 +606,20 @@ else
 
     private async Task DeleteFile(int id)
     {
-        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this file?");
+        var fileToDelete = files?.FirstOrDefault(f => f.Id == id);
+        if (fileToDelete == null) return;
+
+        string confirmMessage;
+        if (IsProfileIcon(fileToDelete))
+        {
+            confirmMessage = "This is your profile icon. Deleting it will also remove it from your profile. Are you sure you want to continue?";
+        }
+        else
+        {
+            confirmMessage = "Are you sure you want to delete this file?";
+        }
+
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
         if (!confirmed) return;
 
         try
@@ -595,6 +627,7 @@ else
             var response = await Http.DeleteAsync($"api/Images/{id}");
             if (response.IsSuccessStatusCode)
             {
+                // Profile icon status will be automatically updated on next file list load
                 await LoadFilesAsync();
                 await LoadStorageUsageAsync();
             }

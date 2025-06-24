@@ -3,13 +3,11 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
 @using Pinetree.Data
-@using Microsoft.EntityFrameworkCore
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
 @inject Pinetree.Services.BlobStorageService BlobStorageService
-@inject Pinetree.Data.ApplicationDbContext DbContext
 
 <PageTitle>Profile</PageTitle>
 
@@ -107,24 +105,49 @@
 
     [SupplyParameterFromForm]
     private DeleteIconModel DeleteInput { get; set; } = new();
-    
     protected override async Task OnInitializedAsync()
     {
-        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
-        username = await UserManager.GetUserNameAsync(user);
-        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+        try
+        {
+            // Sequential execution to avoid DbContext conflicts
+            user = await UserAccessor.GetRequiredUserAsync(HttpContext);
 
-        Input ??= new InputModel();
-        Input.PhoneNumber ??= phoneNumber;
+            // Execute these sequentially, not in parallel
+            username = await UserManager.GetUserNameAsync(user);
+            phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+
+            Input ??= new InputModel();
+            Input.PhoneNumber ??= phoneNumber;
+        }
+        catch (Exception)
+        {
+            // Log error and set default values
+            statusMessage = "Error loading profile data. Please refresh the page.";
+            statusClass = "alert-warning";
+
+            // Set safe defaults
+            Input ??= new InputModel();
+            username ??= "Unknown";
+            phoneNumber ??= "";
+        }
     }
-
     protected override async Task OnParametersSetAsync()
     {
-        Input ??= new InputModel();
-        FileInput ??= new FileUploadModel();
-        DeleteInput ??= new DeleteIconModel();
+        try
+        {
+            // Ensure models are initialized
+            Input ??= new InputModel();
+            FileInput ??= new FileUploadModel();
+            DeleteInput ??= new DeleteIconModel();
 
-        await base.OnParametersSetAsync();
+            await base.OnParametersSetAsync();
+        }
+        catch (Exception)
+        {
+            // Handle any initialization errors gracefully
+            statusMessage = "Error initializing form models.";
+            statusClass = "alert-warning";
+        }
     }
 
     private async Task OnValidSubmitAsync()
@@ -261,24 +284,27 @@
 
             if (!string.IsNullOrEmpty(user.ProfileIconUrl))
             {
-                // Find and delete the blob for the profile icon
-                var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
-                var blobInfo = await DbContext.UserBlobInfos
-                    .FirstOrDefaultAsync(b => b.UserName == userName &&
-                                             b.PineconeGuid == profileIconGuid &&
-                                             !b.IsDeleted);
-
-                if (blobInfo != null)
+                // Use the dedicated profile icon deletion method
+                var success = await BlobStorageService.DeleteProfileIconAsync(userName);
+                if (success)
                 {
-                    await BlobStorageService.DeleteBlobAsync(blobInfo.Id, userName);
+                    // Update local user object
+                    user.ProfileIconUrl = null;
+                    statusMessage = "Profile icon deleted successfully";
+                    statusClass = "alert-success";
                 }
-
-                user.ProfileIconUrl = null;
-                await UserManager.UpdateAsync(user);
+                else
+                {
+                    statusMessage = "Error: Failed to delete profile icon";
+                    statusClass = "alert-danger";
+                }
+            }
+            else
+            {
+                statusMessage = "No profile icon to delete";
+                statusClass = "alert-info";
             }
 
-            statusMessage = "Profile icon deleted successfully";
-            statusClass = "alert-success";
             StateHasChanged();
         }
         catch (Exception ex)

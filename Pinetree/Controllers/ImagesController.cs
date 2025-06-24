@@ -75,7 +75,7 @@ public class ImagesController : ControllerBase
 
         return Ok(images);
     }
-    
+
     [HttpGet("usage")]
     public async Task<IActionResult> GetStorageUsage()
     {
@@ -96,7 +96,6 @@ public class ImagesController : ControllerBase
             isOverQuota = usage.IsOverQuota
         });
     }
-
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteImage(int id)
     {
@@ -106,10 +105,17 @@ public class ImagesController : ControllerBase
             return Unauthorized();
         }
 
-        var result = await _blobStorageService.DeleteBlobAsync(id, userName);
-        if (!result)
+        // Delete the blob and check if it was a profile icon
+        var (success, wasProfileIcon) = await _blobStorageService.DeleteBlobWithProfileCheckAsync(id, userName);
+        if (!success)
         {
             return NotFound();
+        }
+
+        // If this was the profile icon, clear it from the user profile
+        if (wasProfileIcon)
+        {
+            await _blobStorageService.ClearUserProfileIconAsync(userName);
         }
 
         return Ok();
@@ -149,11 +155,11 @@ public class ImagesController : ControllerBase
 
             using var stream = file.OpenReadStream();
             var extension = Path.GetExtension(file.FileName);
-            
+
             // Use existing UploadImageAsync with a special GUID for profile icons
             var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
             var imageUrl = await _blobStorageService.UploadImageAsync(stream, extension, userName, profileIconGuid);
-            
+
             // Update user profile
             var user = await _userManager.FindByIdAsync(userId);
             if (user != null)
@@ -161,7 +167,7 @@ public class ImagesController : ControllerBase
                 user.ProfileIconUrl = imageUrl;
                 await _userManager.UpdateAsync(user);
             }
-            
+
             return Ok(new { url = imageUrl });
         }
         catch (Exception ex)
@@ -176,7 +182,7 @@ public class ImagesController : ControllerBase
         var user = await _userManager.FindByIdAsync(userId);
         if (user?.ProfileIconUrl == null)
             return NotFound();
-          return Ok(new { url = user.ProfileIconUrl });
+        return Ok(new { url = user.ProfileIconUrl });
     }
 
     [HttpDelete("user-icon")]
@@ -198,21 +204,21 @@ public class ImagesController : ControllerBase
                     // Profile icons use a special GUID: 00000000-0000-0000-0000-000000000001
                     var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
                     var blobInfo = await _dbContext.UserBlobInfos
-                        .FirstOrDefaultAsync(b => b.UserName == userName && 
-                                                 b.PineconeGuid == profileIconGuid && 
+                        .FirstOrDefaultAsync(b => b.UserName == userName &&
+                                                 b.PineconeGuid == profileIconGuid &&
                                                  !b.IsDeleted);
-                    
+
                     if (blobInfo != null)
                     {
                         await _blobStorageService.DeleteBlobAsync(blobInfo.Id, userName);
                     }
                 }
-                
+
                 // Update user profile
                 user.ProfileIconUrl = null;
                 await _userManager.UpdateAsync(user);
             }
-            
+
             return Ok();
         }
         catch (Exception ex)
