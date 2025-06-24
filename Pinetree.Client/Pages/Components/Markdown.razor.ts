@@ -430,42 +430,259 @@ export function setupScrollSync(textArea: HTMLTextAreaElement, previewContainer:
 
     let isScrolling = false;
     let scrollTimeout: number | null = null;
+    let lineToElementMap: Map<number, HTMLElement> = new Map();
 
+    // Helper function to get line number and progress from scroll position
+    function getScrollPosition(textarea: HTMLTextAreaElement): { line: number; progress: number; pixelPosition: number } {
+        const computedStyle = getComputedStyle(textarea);
+        const lineHeight = parseFloat(computedStyle.lineHeight) || parseFloat(computedStyle.fontSize) * 1.2;
+        const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+        
+        const scrollTop = textarea.scrollTop;
+        const adjustedScrollTop = Math.max(0, scrollTop - paddingTop);
+        
+        // Get the line that is currently at the top of the visible area
+        const topVisibleLine = Math.floor(adjustedScrollTop / lineHeight);
+        
+        // Calculate what percentage through the line we are for more precise positioning
+        const lineProgress = (adjustedScrollTop % lineHeight) / lineHeight;
+        
+        // Calculate the exact pixel position within the viewport
+        const pixelPosition = lineProgress * lineHeight;
+        
+        return { 
+            line: Math.max(0, topVisibleLine), 
+            progress: lineProgress,
+            pixelPosition: pixelPosition
+        };
+    }
+
+    // Helper function to get line number from scroll position (backward compatibility)
+    function getLineNumberFromScrollPosition(textarea: HTMLTextAreaElement): number {
+        return getScrollPosition(textarea).line;
+    }
+
+    // Helper function to create mapping between markdown lines and preview elements
+    function createLineToElementMapping(): void {
+        lineToElementMap.clear();
+        
+        const lines = textArea.value.split('\n');
+        const previewElements = previewContainer.querySelectorAll('h1, h2, h3, h4, h5, h6, p, ul, ol, li, blockquote, pre, img, table, hr, .math');
+        
+        let elementIndex = 0;
+        let inCodeBlock = false;
+        let inTable = false;
+        let codeBlockStartLine = -1;
+        let listStartLine = -1;
+        let inList = false;
+        
+        for (let i = 0; i < lines.length && elementIndex < previewElements.length; i++) {
+            const line = lines[i];
+            const trimmedLine = line.trim();
+            
+            // Handle code blocks
+            if (trimmedLine.startsWith('```')) {
+                if (!inCodeBlock) {
+                    inCodeBlock = true;
+                    codeBlockStartLine = i;
+                } else {
+                    inCodeBlock = false;
+                    // Map the entire code block to its preview element
+                    if (elementIndex < previewElements.length) {
+                        for (let j = codeBlockStartLine; j <= i; j++) {
+                            lineToElementMap.set(j, previewElements[elementIndex] as HTMLElement);
+                        }
+                        elementIndex++;
+                    }
+                }
+                continue;
+            }
+            
+            if (inCodeBlock) continue;
+            
+            // Handle table detection
+            if (trimmedLine.includes('|') && trimmedLine.split('|').length > 2) {
+                if (!inTable) {
+                    inTable = true;
+                    if (elementIndex < previewElements.length) {
+                        lineToElementMap.set(i, previewElements[elementIndex] as HTMLElement);
+                        elementIndex++;
+                    }
+                }
+                continue;
+            } else if (inTable && trimmedLine === '') {
+                inTable = false;
+                continue;
+            } else if (inTable) {
+                continue;
+            }
+            
+            // Skip empty lines unless they end a paragraph or list
+            if (trimmedLine === '') {
+                if (inList) {
+                    inList = false;
+                }
+                continue;
+            }
+            
+            // Headers
+            if (trimmedLine.match(/^#{1,6}\s/)) {
+                if (elementIndex < previewElements.length) {
+                    lineToElementMap.set(i, previewElements[elementIndex] as HTMLElement);
+                    elementIndex++;
+                }
+                inList = false;
+                continue;
+            }
+            
+            // Images
+            if (trimmedLine.match(/^!\[.*\]\(.*\)/)) {
+                if (elementIndex < previewElements.length) {
+                    lineToElementMap.set(i, previewElements[elementIndex] as HTMLElement);
+                    elementIndex++;
+                }
+                inList = false;
+                continue;
+            }
+            
+            // Horizontal rules
+            if (trimmedLine.match(/^[-*_]{3,}$/)) {
+                if (elementIndex < previewElements.length) {
+                    lineToElementMap.set(i, previewElements[elementIndex] as HTMLElement);
+                    elementIndex++;
+                }
+                inList = false;
+                continue;
+            }
+            
+            // Lists
+            if (trimmedLine.match(/^[-*+]\s/) || trimmedLine.match(/^\d+\.\s/)) {
+                if (!inList) {
+                    inList = true;
+                    listStartLine = i;
+                    if (elementIndex < previewElements.length) {
+                        lineToElementMap.set(i, previewElements[elementIndex] as HTMLElement);
+                        elementIndex++;
+                    }
+                } else {
+                    // Map additional list items to the same list element
+                    if (lineToElementMap.has(listStartLine)) {
+                        lineToElementMap.set(i, lineToElementMap.get(listStartLine)!);
+                    }
+                }
+                continue;
+            }
+            
+            // Blockquotes
+            if (trimmedLine.match(/^>\s/)) {
+                if (elementIndex < previewElements.length) {
+                    lineToElementMap.set(i, previewElements[elementIndex] as HTMLElement);
+                    elementIndex++;
+                }
+                inList = false;
+                continue;
+            }
+            
+            // Regular paragraphs
+            if (trimmedLine.length > 0) {
+                // Check if this is the start of a new paragraph
+                const prevLine = i > 0 ? lines[i - 1].trim() : '';
+                if (prevLine === '' || i === 0 || !inList) {
+                    if (elementIndex < previewElements.length) {
+                        lineToElementMap.set(i, previewElements[elementIndex] as HTMLElement);
+                        elementIndex++;
+                    }
+                }
+                inList = false;
+            }
+        }
+    }
+
+    // Helper function to find corresponding element in preview for a given line
+    function findPreviewElementForLine(lineNumber: number): HTMLElement | null {
+        // Try exact match first
+        if (lineToElementMap.has(lineNumber)) {
+            return lineToElementMap.get(lineNumber) || null;
+        }
+        
+        // Find the closest mapped line before the target line
+        let closestLine = -1;
+        for (const [mappedLine] of lineToElementMap) {
+            if (mappedLine <= lineNumber && mappedLine > closestLine) {
+                closestLine = mappedLine;
+            }
+        }
+        
+        return closestLine >= 0 ? lineToElementMap.get(closestLine) || null : null;
+    }
+
+    // Helper function to scroll preview to show specific element at precise position
+    function scrollPreviewToElement(element: HTMLElement | null, scrollPos: { line: number; progress: number; pixelPosition: number }): void {
+        if (!element) return;
+        
+        // Get the element's position within the preview container
+        const elementTop = element.offsetTop;
+        
+        // For headers and other block elements, we want them to appear at the top of the viewport
+        // with a small offset that matches the line progress in the textarea
+        const targetScrollTop = elementTop - scrollPos.pixelPosition;
+        
+        // Ensure we don't scroll beyond the container bounds
+        const maxScrollTop = previewContainer.scrollHeight - previewContainer.clientHeight;
+        const clampedScrollTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
+        
+        previewContainer.scrollTop = clampedScrollTop;
+    }
+
+    // Enhanced scroll handler for textarea (one-way sync: textarea -> preview)
     textArea.addEventListener('scroll', () => {
         if (isScrolling) return;
         isScrolling = true;
 
-        const scrollPercentage = textArea.scrollTop / (textArea.scrollHeight - textArea.clientHeight);
-        const previewTargetPosition = scrollPercentage * (previewContainer.scrollHeight - previewContainer.clientHeight);
-        previewContainer.scrollTop = previewTargetPosition;
-
-        if (scrollTimeout) clearTimeout(scrollTimeout);
-        scrollTimeout = window.setTimeout(() => {
-            isScrolling = false;
-            scrollTimeout = null;
-        }, 50);
-    });
-
-    previewContainer.addEventListener('scroll', () => {
-        if (isScrolling) return;
-        isScrolling = true;
-
-        const scrollPercentage = previewContainer.scrollTop / (previewContainer.scrollHeight - previewContainer.clientHeight);
-        const textAreaTargetPosition = scrollPercentage * (textArea.scrollHeight - textArea.clientHeight);
-        textArea.scrollTop = textAreaTargetPosition;
-
-        if (scrollTimeout) clearTimeout(scrollTimeout);
-        scrollTimeout = window.setTimeout(() => {
-            isScrolling = false;
-            scrollTimeout = null;
-        }, 50);
-    });
-
-    const observer = new MutationObserver(() => {
-        if (textArea.scrollHeight > 0 && previewContainer.scrollHeight > 0) {
-            const scrollPercentage = textArea.scrollTop / (textArea.scrollHeight - textArea.clientHeight);
-            const previewTargetPosition = scrollPercentage * (previewContainer.scrollHeight - previewContainer.clientHeight);
+        try {
+            const scrollPos = getScrollPosition(textArea);
+            const targetElement = findPreviewElementForLine(scrollPos.line);
+            
+            if (targetElement) {
+                scrollPreviewToElement(targetElement, scrollPos);
+            } else {
+                // Fallback to percentage-based sync if no element mapping found
+                const scrollPercentage = textArea.scrollTop / Math.max(1, textArea.scrollHeight - textArea.clientHeight);
+                const previewTargetPosition = scrollPercentage * Math.max(0, previewContainer.scrollHeight - previewContainer.clientHeight);
+                previewContainer.scrollTop = previewTargetPosition;
+            }
+        } catch (error) {
+            console.warn('Error in scroll sync:', error);
+            // Fallback to percentage-based sync
+            const scrollPercentage = textArea.scrollTop / Math.max(1, textArea.scrollHeight - textArea.clientHeight);
+            const previewTargetPosition = scrollPercentage * Math.max(0, previewContainer.scrollHeight - previewContainer.clientHeight);
             previewContainer.scrollTop = previewTargetPosition;
+        }
+
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = window.setTimeout(() => {
+            isScrolling = false;
+            scrollTimeout = null;
+        }, 50); // Very responsive sync
+    });
+
+    // No reverse sync from preview to textarea - this allows users to freely scroll 
+    // the preview for content inspection without affecting the editing experience
+
+    // Observer to rebuild mapping when content changes
+    const observer = new MutationObserver(() => {
+        if (!isScrolling) {
+            // Rebuild the mapping when preview content changes
+            setTimeout(() => {
+                createLineToElementMapping();
+                
+                // Re-sync current position
+                const scrollPos = getScrollPosition(textArea);
+                const targetElement = findPreviewElementForLine(scrollPos.line);
+                if (targetElement) {
+                    scrollPreviewToElement(targetElement, scrollPos);
+                }
+            }, 10); // Small delay to allow DOM to settle
         }
     });
 
@@ -474,6 +691,11 @@ export function setupScrollSync(textArea: HTMLTextAreaElement, previewContainer:
         subtree: true,
         characterData: true
     });
+
+    // Initial mapping creation
+    setTimeout(() => {
+        createLineToElementMapping();
+    }, 100); // Allow initial render to complete
 }
 
 function openFileDialog(maxSizeMB: number): Promise<File | null> {
