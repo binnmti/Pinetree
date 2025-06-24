@@ -1,6 +1,6 @@
 @page "/view/{User}/{Guid:guid}"
 @using Pinetree.Client.ViewModels
-@using Pinetree.Client.Services  
+@using Pinetree.Client.Services
 @using Pinetree.Client.Pages.Components
 @using Pinetree.Shared.ViewModels
 
@@ -12,7 +12,7 @@
 }
 else if (Pinetree != null)
 {
-    <Markdown Pinetree="@(Pinetree)" Guid="@(Guid)" IsTry=false IsProfessional=false FileCount=@FileCount IsPublicView=true User="@User" />
+    <Markdown Pinetree="@(Pinetree)" Guid="@(Guid)" IsTry=false IsProfessional=false FileCount=@FileCount IsPublicView=true User="@User" UserProfileIconUrl="@UserProfileIconUrl" />
 }
 else
 {
@@ -28,31 +28,44 @@ else
 
     [Parameter]
     public Guid Guid { get; set; }
-
     private PinetreeView? Pinetree { get; set; }
     private int FileCount { get; set; }
     private bool isLoading = true;
+    private string? UserProfileIconUrl { get; set; }
 
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
     [Inject]
     public required HttpClient HttpClient { get; set; }
-
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             try
             {
+                // Load document data
                 var response = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"/api/Pinecones/get-view-include-child/{Guid}");
                 if (response == null || response.Guid == Guid.Empty)
                 {
                     NavigationManager.NavigateTo("/");
                     return;
                 }
-                
-                (Pinetree, FileCount) = response.ToPinetreeIncludeChild();
+
+                (Pinetree, FileCount) = response.ToPinetreeIncludeChild();                // Load user profile icon
+                try
+                {
+                    var profileResponse = await HttpClient.GetAsync($"/api/Images/user-profile-icon/{User}");
+                    if (profileResponse.IsSuccessStatusCode)
+                    {
+                        var profileResult = await profileResponse.Content.ReadFromJsonAsync<dynamic>();
+                        UserProfileIconUrl = profileResult?.GetProperty("url").GetString();
+                    }
+                }
+                catch
+                {
+                    // Profile icon loading failed, use default
+                    UserProfileIconUrl = null;
+                }
             }
             catch (Exception ex)
             {

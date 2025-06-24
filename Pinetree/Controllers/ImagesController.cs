@@ -96,6 +96,7 @@ public class ImagesController : ControllerBase
             isOverQuota = usage.IsOverQuota
         });
     }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteImage(int id)
     {
@@ -121,109 +122,23 @@ public class ImagesController : ControllerBase
         return Ok();
     }
 
-    [HttpPost("upload-icon")]
-    public async Task<IActionResult> UploadUserIcon(IFormFile file)
+    [HttpGet("user-profile-icon/{userName}")]
+    [AllowAnonymous] // Public view should be accessible without authentication
+    public async Task<IActionResult> GetUserProfileIcon(string userName)
     {
-        if (file == null || file.Length == 0)
-            return BadRequest("No file uploaded");
-
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized();
-
-        // Validate file type
-        var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
-        if (!allowedTypes.Contains(file.ContentType.ToLower()))
-            return BadRequest("Invalid file type. Only JPEG, PNG, and GIF files are allowed.");        // Validate file size (max 5MB)
-        if (file.Length > 5 * 1024 * 1024)
-            return BadRequest("File size exceeds 5MB limit.");
-
         try
         {
-            var userName = User.Identity?.Name;
-            if (string.IsNullOrEmpty(userName))
+            var user = await _userManager.FindByNameAsync(userName);
+            if (user == null)
             {
-                return Unauthorized();
+                return NotFound(new { message = "User not found" });
             }
 
-            // Check storage quota
-            var usage = await _blobStorageService.GetUserStorageUsageAsync(userName);
-            if (usage.TotalSizeInBytes + file.Length > usage.QuotaInBytes)
-            {
-                return BadRequest(new { error = "Storage quota exceeded" });
-            }
-
-            using var stream = file.OpenReadStream();
-            var extension = Path.GetExtension(file.FileName);
-
-            // Use existing UploadImageAsync with a special GUID for profile icons
-            var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
-            var imageUrl = await _blobStorageService.UploadImageAsync(stream, extension, userName, profileIconGuid);
-
-            // Update user profile
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user != null)
-            {
-                user.ProfileIconUrl = imageUrl;
-                await _userManager.UpdateAsync(user);
-            }
-
-            return Ok(new { url = imageUrl });
+            return Ok(new { url = user.ProfileIconUrl });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Error uploading file: {ex.Message}");
-        }
-    }
-
-    [HttpGet("user-icon/{userId}")]
-    public async Task<IActionResult> GetUserIcon(string userId)
-    {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user?.ProfileIconUrl == null)
-            return NotFound();
-        return Ok(new { url = user.ProfileIconUrl });
-    }
-
-    [HttpDelete("user-icon")]
-    public async Task<IActionResult> DeleteUserIcon()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized();
-
-        try
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user?.ProfileIconUrl != null)
-            {
-                var userName = User.Identity?.Name;
-                if (!string.IsNullOrEmpty(userName))
-                {
-                    // Find the blob info for the profile icon
-                    // Profile icons use a special GUID: 00000000-0000-0000-0000-000000000001
-                    var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
-                    var blobInfo = await _dbContext.UserBlobInfos
-                        .FirstOrDefaultAsync(b => b.UserName == userName &&
-                                                 b.PineconeGuid == profileIconGuid &&
-                                                 !b.IsDeleted);
-
-                    if (blobInfo != null)
-                    {
-                        await _blobStorageService.DeleteBlobAsync(blobInfo.Id, userName);
-                    }
-                }
-
-                // Update user profile
-                user.ProfileIconUrl = null;
-                await _userManager.UpdateAsync(user);
-            }
-
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, $"Error deleting icon: {ex.Message}");
+            return StatusCode(500, new { message = "Error retrieving profile icon", error = ex.Message });
         }
     }
 }
