@@ -43,11 +43,25 @@
                             <i class="bi bi-person-fill text-white" style="font-size: 2rem;"></i>
                         </div>
                     }
-                </div>                
+                </div>
                 <div>
-                    <!-- File upload form -->                    <EditForm Model="FileInput" FormName="fileUpload" OnValidSubmit="OnFileUploadAsync" method="post" enctype="multipart/form-data" class="mb-2">
-                        <input type="file" name="file" accept="image/*" class="form-control mb-2" style="max-width: 300px;" />
-                        <button type="submit" class="btn btn-primary btn-sm">Upload Icon</button>
+                    <!-- File upload form -->
+                    <EditForm Model="FileInput" FormName="fileUpload" OnValidSubmit="OnFileUploadAsync" method="post" enctype="multipart/form-data" class="mb-2" id="fileUploadForm">
+                        @if (isUploading)
+                        {
+                            <div class="text-primary">
+                                <div class="spinner-border spinner-border-sm me-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                Uploading image...
+                            </div>
+                        }
+                        else
+                        {
+                            <input type="file" name="file" accept="image/*" class="form-control mb-2" style="max-width: 300px;"
+                                   onchange="document.getElementById('fileUploadForm').submit()" />
+                        }
+                        <button type="submit" class="btn btn-primary btn-sm d-none">Upload Icon</button>
                     </EditForm>
 
                     @if (!string.IsNullOrEmpty(user?.ProfileIconUrl))
@@ -85,10 +99,11 @@
     private string? phoneNumber;
     private string? statusMessage;
     private string? statusClass = "alert-info";
+    private bool isUploading = false;
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
-    
+
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
 
@@ -97,7 +112,7 @@
 
     [SupplyParameterFromForm]
     private DeleteIconModel DeleteInput { get; set; } = new();
-    
+
     protected override async Task OnInitializedAsync()
     {
         user = await UserAccessor.GetRequiredUserAsync(HttpContext);
@@ -117,17 +132,19 @@
         DeleteInput ??= new DeleteIconModel();
 
         await base.OnParametersSetAsync();
-    }    private async Task OnValidSubmitAsync()
+    }
+
+    private async Task OnValidSubmitAsync()
     {
         try
         {
             if (Input.PhoneNumber != phoneNumber)
             {
-                var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
-                if (!setPhoneResult.Succeeded)
+                var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber); if (!setPhoneResult.Succeeded)
                 {
                     statusMessage = "Error: Failed to set phone number.";
                     statusClass = "alert-danger";
+                    StateHasChanged();
                     return;
                 }
             }
@@ -141,14 +158,19 @@
         {
             statusMessage = $"Update failed: {ex.Message}";
             statusClass = "alert-danger";
+            StateHasChanged();
         }
     }
-      private async Task OnFileUploadAsync()
+
+    private async Task OnFileUploadAsync()
     {
+        isUploading = true;
+        StateHasChanged(); // Show loading state
+
         try
         {
             Console.WriteLine("OnFileUploadAsync called");
-            
+
             var request = HttpContext.Request;
             IFormFile? file = null;
 
@@ -160,7 +182,7 @@
             {
                 var form = await request.ReadFormAsync();
                 Console.WriteLine($"Form files count: {form.Files.Count}");
-                
+
                 foreach (var formFile in form.Files)
                 {
                     Console.WriteLine($"File: {formFile.Name}, FileName: {formFile.FileName}, Length: {formFile.Length}");
@@ -168,10 +190,12 @@
 
                 file = form.Files["file"];
                 Console.WriteLine($"Selected file from form: {file?.Name}, Length: {file?.Length}");
-            }            if (file == null || file.Length == 0)
+            }
+            if (file == null || file.Length == 0)
             {
                 statusMessage = "Error: No file selected";
                 statusClass = "alert-danger";
+                StateHasChanged();
                 return;
             }
 
@@ -180,6 +204,7 @@
             {
                 statusMessage = "Error: File size must be less than 5MB";
                 statusClass = "alert-danger";
+                StateHasChanged();
                 return;
             }
 
@@ -189,14 +214,16 @@
             {
                 statusMessage = "Error: Only JPEG, PNG, and GIF files are allowed";
                 statusClass = "alert-danger";
+                StateHasChanged();
                 return;
             }
 
-            Console.WriteLine("Starting file upload...");            var userName = user.UserName;
+            Console.WriteLine("Starting file upload..."); var userName = user.UserName;
             if (string.IsNullOrEmpty(userName))
             {
                 statusMessage = "Error: User name not found";
                 statusClass = "alert-danger";
+                StateHasChanged();
                 return;
             }
 
@@ -206,19 +233,20 @@
             {
                 statusMessage = "Error: Storage quota exceeded";
                 statusClass = "alert-danger";
+                StateHasChanged();
                 return;
             }
 
             using var stream = file.OpenReadStream();
             var extension = Path.GetExtension(file.FileName);
-            
+
             // Use a special GUID for profile icons
             var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
             var imageUrl = await BlobStorageService.UploadImageAsync(stream, extension, userName, profileIconGuid);
-              // Update user profile
+            // Update user profile
             user.ProfileIconUrl = imageUrl;
             await UserManager.UpdateAsync(user);
-            
+
             Console.WriteLine($"Profile icon uploaded successfully: {imageUrl}");
             statusMessage = "Profile icon uploaded successfully";
             statusClass = "alert-success";
@@ -230,14 +258,23 @@
             statusMessage = $"Upload failed: {ex.Message}";
             statusClass = "alert-danger";
         }
-    }    private async Task OnDeleteIconAsync()
+        finally
+        {
+            isUploading = false;
+            StateHasChanged(); // Hide loading state
+        }
+    }
+
+    private async Task OnDeleteIconAsync()
     {
         try
-        {            var userName = user.UserName;
+        {
+            var userName = user.UserName;
             if (string.IsNullOrEmpty(userName))
             {
                 statusMessage = "Error: User name not found";
                 statusClass = "alert-danger";
+                StateHasChanged();
                 return;
             }
 
@@ -246,19 +283,19 @@
                 // Find the blob info for the profile icon
                 var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
                 var blobInfo = await DbContext.UserBlobInfos
-                    .FirstOrDefaultAsync(b => b.UserName == userName && 
-                                             b.PineconeGuid == profileIconGuid && 
+                    .FirstOrDefaultAsync(b => b.UserName == userName &&
+                                             b.PineconeGuid == profileIconGuid &&
                                              !b.IsDeleted);
-                
+
                 if (blobInfo != null)
                 {
                     await BlobStorageService.DeleteBlobAsync(blobInfo.Id, userName);
                 }
-                  // Update user profile
+                // Update user profile
                 user.ProfileIconUrl = null;
                 await UserManager.UpdateAsync(user);
             }
-            
+
             statusMessage = "Profile icon deleted successfully";
             statusClass = "alert-success";
             StateHasChanged(); // Force UI update
@@ -267,6 +304,7 @@
         {
             statusMessage = $"Delete failed: {ex.Message}";
             statusClass = "alert-danger";
+            StateHasChanged();
         }
     }
 
@@ -275,7 +313,9 @@
         [Phone]
         [Display(Name = "Phone number")]
         public string? PhoneNumber { get; set; }
-    }    private sealed class FileUploadModel
+    }
+
+    private sealed class FileUploadModel
     {
         public IFormFile? File { get; set; }
     }

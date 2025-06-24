@@ -67,3 +67,41 @@
         border-radius: 8px;
     }
 }
+
+/* Navigation Menu Styles */
+.navbar .dropdown-toggle::after {
+    display: none; /* Hide default Bootstrap dropdown arrow for profile icon */
+}
+
+.navbar .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.navbar .dropdown-item.active {
+    background-color: #e9ecef;
+    color: #495057;
+    font-weight: 600;
+}
+
+/* Profile icon in navbar */
+.navbar .nav-link.dropdown-toggle {
+    padding: 0.5rem 0.25rem;
+}
+
+/* Logout button styling in dropdown */
+.navbar .dropdown-item button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}

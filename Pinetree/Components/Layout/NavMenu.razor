@@ -29,38 +29,61 @@
                                 <i class="bi bi-card-list"></i> User
                             </NavLink>
                         </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="/Pricing">
+                                <i class="bi bi-cash-coin" aria-hidden="true"></i> Pricing
+                            </NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="/feedback">
+                                <i class="bi bi-chat-dots" aria-hidden="true"></i> Feedback
+                            </NavLink>
+                        </li>
+
+                        <!-- User Profile Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" id="profileDropdown">
+                                @if (!string.IsNullOrEmpty(currentUser?.ProfileIconUrl))
+                                {
+                                    <img src="@currentUser.ProfileIconUrl" alt="Profile" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                        <i class="bi bi-person-fill text-white" style="font-size: 1rem;"></i>
+                                    </div>
+                                }
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow" style="right: 0; left: auto; min-width: 180px;" aria-labelledby="profileDropdown">
+                                <li>
+                                    <h6 class="dropdown-header">@context.User.Identity?.Name</h6>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item @(IsManagePage() ? "active" : "")" href="/Account/Manage">
+                                        <i class="bi bi-person-gear" aria-hidden="true"></i> Profile
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="Account/Logout" method="post" class="d-inline">
+                                        <AntiforgeryToken />
+                                        <input type="hidden" name="ReturnUrl" value="" />
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-arrow-bar-up" aria-hidden="true"></i> Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                        <!-- Admin menu (if admin) -->
                         <AuthorizeView Roles="@Roles.Admin" Context="adminContext">
                             <li class="nav-item">
                                 <NavLink class="nav-link" href="/audit">
                                     <i class="bi bi-shield-lock" aria-hidden="true"></i> Audit Log
                                 </NavLink>
                             </li>
-                        </AuthorizeView>                        <li class="nav-item">
-                            <div class="d-flex align-items-center">
-                                @if (!string.IsNullOrEmpty(currentUser?.ProfileIconUrl))
-                                {
-                                    <img src="@currentUser.ProfileIconUrl" alt="Profile" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;" />
-                                }
-                                else
-                                {
-                                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                        <i class="bi bi-person-fill text-white" style="font-size: 1rem;"></i>
-                                    </div>
-                                }
-                                <NavLink class="nav-link" href="Account/Manage">
-                                    <i class="bi bi-person-fill" aria-hidden="true"></i> @context.User.Identity?.Name
-                                </NavLink>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <form action="Account/Logout" method="post">
-                                <AntiforgeryToken />
-                                <input type="hidden" name="ReturnUrl" value="" />
-                                <button type="submit" class="nav-link">
-                                    <i class="bi bi-arrow-bar-up" aria-hidden="true"></i> Logout
-                                </button>
-                            </form>
-                        </li>
+                        </AuthorizeView>
                     </Authorized>
                     <NotAuthorized>
                         <li class="nav-item">
@@ -78,19 +101,18 @@
                                 <i class="bi bi-person-badge" aria-hidden="true"></i> Login
                             </NavLink>
                         </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="/Pricing">
+                                <i class="bi bi-cash-coin" aria-hidden="true"></i> Pricing
+                            </NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="/feedback">
+                                <i class="bi bi-chat-dots" aria-hidden="true"></i> Feedback
+                            </NavLink>
+                        </li>
                     </NotAuthorized>
                 </AuthorizeView>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="/Pricing">
-                        <i class="bi bi-cash-coin" aria-hidden="true"></i> Pricing
-                    </NavLink>
-                </li>
-
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="/feedback">
-                        <i class="bi bi-chat-dots" aria-hidden="true"></i> Feedback
-                    </NavLink>
-                </li>
             </ul>
         </div>
     </div>
@@ -99,7 +121,7 @@
 @code
 {
     private ApplicationUser? currentUser;
-    
+
     protected override async Task OnInitializedAsync()
     {
         // Get current user with profile icon
@@ -112,7 +134,7 @@
             }
         }
     }
-
+    
     // TODO: Hamburger menu priority is broken on Markdown Page
     private bool IsMarkdownPage()
     {
@@ -120,5 +142,11 @@
         return path.StartsWith("play") ||
                path.StartsWith("edit/") ||
                path.StartsWith("view/");
+    }
+
+    private bool IsManagePage()
+    {
+        var path = NavigationManager.ToBaseRelativePath(NavigationManager.Uri).ToLowerInvariant();
+        return path.StartsWith("account/manage");
     }
 }
