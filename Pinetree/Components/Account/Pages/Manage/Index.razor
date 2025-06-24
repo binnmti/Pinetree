@@ -181,6 +181,7 @@
             StateHasChanged();
         }
     }
+
     private async Task OnFileUploadAsync()
     {
         isUploading = true;
@@ -217,10 +218,14 @@
                 return;
             }
 
+            var extension = Path.GetExtension(file.FileName);
+
             // Validate file type
             var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
-            if (!allowedTypes.Contains(file.ContentType.ToLower()))
-            {
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            if (!allowedTypes.Contains(file.ContentType.ToLower()) || 
+                !allowedExtensions.Contains(extension.ToLower()))
+                {
                 statusMessage = "Error: Only JPEG, PNG, and GIF files are allowed";
                 statusClass = "alert-danger";
                 StateHasChanged();
@@ -247,7 +252,6 @@
             } 
             
             using var stream = file.OpenReadStream();
-            var extension = Path.GetExtension(file.FileName);
 
             // Use a special GUID for profile icons
             var imageUrl = await BlobStorageService.UploadImageAsync(stream, extension, userName, ProfileIconGuid);
@@ -271,6 +275,7 @@
             StateHasChanged();
         }
     }
+
     private async Task OnDeleteIconAsync()
     {
         try
@@ -283,7 +288,7 @@
                 StateHasChanged();
                 return;
             }
-
+            
             if (!string.IsNullOrEmpty(user.ProfileIconUrl))
             {
                 // Use the dedicated profile icon deletion method
@@ -292,6 +297,7 @@
                 {
                     // Update local user object
                     user.ProfileIconUrl = null;
+                    await UserManager.UpdateAsync(user);
                     statusMessage = "Profile icon deleted successfully";
                     statusClass = "alert-success";
                 }
