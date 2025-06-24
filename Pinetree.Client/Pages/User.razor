@@ -355,6 +355,9 @@ else
 }
 
 @code {
+    // Profile icon uses a special GUID for identification
+    private static readonly Guid ProfileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
+    
     // Tab and UI state
     private int activeTab = 0;
     private bool isLoading = true;
@@ -412,11 +415,11 @@ else
             await LoadDocuments();
         }
     }
+    
     private bool IsProfileIcon(UserBlobViewModel file)
     {
-        // Profile icons use a special GUID: 00000000-0000-0000-0000-000000000001
-        var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
-        return file.PineconeGuid == profileIconGuid;
+        // Profile icons use a special GUID for identification
+        return file.PineconeGuid == ProfileIconGuid;
     }
 
     private async Task LoadPage(int pageNumber)

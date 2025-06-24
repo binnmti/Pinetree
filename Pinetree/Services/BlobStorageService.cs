@@ -17,6 +17,9 @@ public class BlobStorageService
     private readonly UserManager<ApplicationUser> _userManager;
     private const int DefaultQuotaInBytes = 1024 * 1024 * 3;
     
+    // Profile icon uses a special GUID for identification
+    public static readonly Guid ProfileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
+    
     public BlobStorageService(IConfiguration configuration, ApplicationDbContext dbContext, IEncryptionService encryptionService, UserManager<ApplicationUser> userManager)
     {
         var connectionString = configuration.GetConnectionString("AzureStorage")
@@ -257,7 +260,7 @@ public class BlobStorageService
             return (false, false);
         }
 
-        var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var profileIconGuid = ProfileIconGuid;
         bool isProfileIcon = blobInfo.PineconeGuid == profileIconGuid;
 
         // Delete the blob using the existing method
@@ -290,7 +293,7 @@ public class BlobStorageService
         try
         {
             // Find the profile icon blob
-            var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
+            var profileIconGuid = ProfileIconGuid;
             var blobInfo = await _dbContext.UserBlobInfos
                 .FirstOrDefaultAsync(b => b.UserName == userName &&
                                          b.PineconeGuid == profileIconGuid &&

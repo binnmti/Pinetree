@@ -87,6 +87,9 @@
 </div>
 
 @code {
+    // Profile icon uses a special GUID for identification
+    private static readonly Guid ProfileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
+    
     private ApplicationUser user = default!;
     private string? username;
     private string? phoneNumber;
@@ -241,14 +244,13 @@
                 statusClass = "alert-danger";
                 StateHasChanged();
                 return;
-            }
-
+            } 
+            
             using var stream = file.OpenReadStream();
             var extension = Path.GetExtension(file.FileName);
 
             // Use a special GUID for profile icons
-            var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
-            var imageUrl = await BlobStorageService.UploadImageAsync(stream, extension, userName, profileIconGuid);
+            var imageUrl = await BlobStorageService.UploadImageAsync(stream, extension, userName, ProfileIconGuid);
 
             // Update user profile
             user.ProfileIconUrl = imageUrl;

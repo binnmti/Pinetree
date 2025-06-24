@@ -1,10 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Pinetree.Data;
 using Pinetree.Services;
-using System.Security.Claims;
+using Pinetree.Shared.ViewModels;
 
 namespace Pinetree.Controllers;
 
@@ -17,7 +16,10 @@ public class ImagesController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _dbContext;
 
-    public ImagesController(BlobStorageService blobStorageService, UserManager<ApplicationUser> userManager, ApplicationDbContext dbContext)
+    public ImagesController(
+        BlobStorageService blobStorageService, 
+        UserManager<ApplicationUser> userManager, 
+        ApplicationDbContext dbContext)
     {
         _blobStorageService = blobStorageService;
         _userManager = userManager;
@@ -52,7 +54,7 @@ public class ImagesController : ControllerBase
             {
                 return BadRequest(new { error = "Storage quota exceeded" });
             }
-
+            
             var url = await _blobStorageService.UploadImageAsync(stream, extension, userName, pineconeGuid);
             return Ok(new { url });
         }
@@ -61,7 +63,7 @@ public class ImagesController : ControllerBase
             return StatusCode(500, new { error = $"Error uploading image: {ex.Message}" });
         }
     }
-
+    
     [HttpGet("list")]
     public async Task<IActionResult> ListUserImages()
     {
@@ -96,7 +98,7 @@ public class ImagesController : ControllerBase
             isOverQuota = usage.IsOverQuota
         });
     }
-
+    
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteImage(int id)
     {
@@ -128,13 +130,12 @@ public class ImagesController : ControllerBase
     {
         try
         {
-            var user = await _userManager.FindByNameAsync(userName);
-            if (user == null)
+            var user = await _userManager.FindByNameAsync(userName);            if (user == null)
             {
-                return NotFound(new { message = "User not found" });
+                return NotFound(new UserProfileIconViewModel { Url = null });
             }
 
-            return Ok(new { url = user.ProfileIconUrl });
+            return Ok(new UserProfileIconViewModel { Url = user.ProfileIconUrl });
         }
         catch (Exception ex)
         {
