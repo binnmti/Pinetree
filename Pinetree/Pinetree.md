@@ -1,7 +1,15 @@
 # TODO
-- stripe 
-- User Data Cancellation
 - User Icon
+
+- stripe 
+ 
+- User Data Cancellation
+- Individual settings for disclosure range
+- AI Icon Professional
+- AI Image
+- Trashbox
+- Private Page SEO
+- Output Markdown
 
 - Changelog Discord
 - Staging Terafform

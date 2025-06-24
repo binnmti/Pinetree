@@ -1,6 +1,11 @@
 ﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Pinetree.Data
 @using Pinetree.Shared
+@using System.Security.Claims
 @inject NavigationManager NavigationManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject UserManager<ApplicationUser> UserManager
 
 @{
     bool isMarkdownPage = IsMarkdownPage();
@@ -30,11 +35,22 @@
                                     <i class="bi bi-shield-lock" aria-hidden="true"></i> Audit Log
                                 </NavLink>
                             </li>
-                        </AuthorizeView>
-                        <li class="nav-item">
-                            <NavLink class="nav-link" href="Account/Manage">
-                                <i class="bi bi-person-fill" aria-hidden="true"></i> @context.User.Identity?.Name
-                            </NavLink>
+                        </AuthorizeView>                        <li class="nav-item">
+                            <div class="d-flex align-items-center">
+                                @if (!string.IsNullOrEmpty(currentUser?.ProfileIconUrl))
+                                {
+                                    <img src="@currentUser.ProfileIconUrl" alt="Profile" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                        <i class="bi bi-person-fill text-white" style="font-size: 1rem;"></i>
+                                    </div>
+                                }
+                                <NavLink class="nav-link" href="Account/Manage">
+                                    <i class="bi bi-person-fill" aria-hidden="true"></i> @context.User.Identity?.Name
+                                </NavLink>
+                            </div>
                         </li>
                         <li class="nav-item">
                             <form action="Account/Logout" method="post">
@@ -82,6 +98,21 @@
 
 @code
 {
+    private ApplicationUser? currentUser;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        // Get current user with profile icon
+        if (HttpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated == true)
+        {
+            var userId = HttpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(userId))
+            {
+                currentUser = await UserManager.FindByIdAsync(userId);
+            }
+        }
+    }
+
     // TODO: Hamburger menu priority is broken on Markdown Page
     private bool IsMarkdownPage()
     {

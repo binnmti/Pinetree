@@ -3,19 +3,65 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
 @using Pinetree.Data
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
+@inject HttpClient HttpClient
+@inject Pinetree.Services.BlobStorageService BlobStorageService
+@inject Pinetree.Data.ApplicationDbContext DbContext
 
 <PageTitle>Profile</PageTitle>
 
 <h3>Profile</h3>
-<StatusMessage />
+
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert @statusClass alert-dismissible fade show" role="alert">
+        @statusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" @onclick="() => statusMessage = null"></button>
+    </div>
+}
 
 <div class="row">
     <div class="col-xl-6">
+        <!-- Profile Icon Section -->
+        <div class="mb-4">
+            <h5>Profile Icon</h5>
+            <div class="d-flex align-items-center mb-3">
+                <div class="me-3">
+                    @if (!string.IsNullOrEmpty(user?.ProfileIconUrl))
+                    {
+                        <img src="@user.ProfileIconUrl" alt="Profile Icon" class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                            <i class="bi bi-person-fill text-white" style="font-size: 2rem;"></i>
+                        </div>
+                    }
+                </div>                
+                <div>
+                    <!-- File upload form -->                    <EditForm Model="FileInput" FormName="fileUpload" OnValidSubmit="OnFileUploadAsync" method="post" enctype="multipart/form-data" class="mb-2">
+                        <input type="file" name="file" accept="image/*" class="form-control mb-2" style="max-width: 300px;" />
+                        <button type="submit" class="btn btn-primary btn-sm">Upload Icon</button>
+                    </EditForm>
+
+                    @if (!string.IsNullOrEmpty(user?.ProfileIconUrl))
+                    {
+                        <EditForm Model="DeleteInput" FormName="deleteIcon" OnValidSubmit="OnDeleteIconAsync" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                Remove Icon
+                            </button>
+                        </EditForm>
+                    }
+                </div>
+            </div>
+        </div>
+
         <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
             <DataAnnotationsValidator />
             <ValidationSummary class="text-danger" role="alert" />
@@ -37,35 +83,191 @@
     private ApplicationUser user = default!;
     private string? username;
     private string? phoneNumber;
+    private string? statusMessage;
+    private string? statusClass = "alert-info";
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
-
+    
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
 
+    [SupplyParameterFromForm]
+    private FileUploadModel FileInput { get; set; } = new();
+
+    [SupplyParameterFromForm]
+    private DeleteIconModel DeleteInput { get; set; } = new();
+    
     protected override async Task OnInitializedAsync()
     {
         user = await UserAccessor.GetRequiredUserAsync(HttpContext);
         username = await UserManager.GetUserNameAsync(user);
         phoneNumber = await UserManager.GetPhoneNumberAsync(user);
 
+        // Ensure Input is initialized before setting PhoneNumber
+        Input ??= new InputModel();
         Input.PhoneNumber ??= phoneNumber;
     }
 
-    private async Task OnValidSubmitAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        if (Input.PhoneNumber != phoneNumber)
-        {
-            var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
-            if (!setPhoneResult.Succeeded)
-            {
-                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
-            }
-        }
+        // Ensure all form models are initialized
+        Input ??= new InputModel();
+        FileInput ??= new FileUploadModel();
+        DeleteInput ??= new DeleteIconModel();
 
-        await SignInManager.RefreshSignInAsync(user);
-        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+        await base.OnParametersSetAsync();
+    }    private async Task OnValidSubmitAsync()
+    {
+        try
+        {
+            if (Input.PhoneNumber != phoneNumber)
+            {
+                var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
+                if (!setPhoneResult.Succeeded)
+                {
+                    statusMessage = "Error: Failed to set phone number.";
+                    statusClass = "alert-danger";
+                    return;
+                }
+            }
+
+            await SignInManager.RefreshSignInAsync(user);
+            statusMessage = "Your profile has been updated";
+            statusClass = "alert-success";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Update failed: {ex.Message}";
+            statusClass = "alert-danger";
+        }
+    }
+      private async Task OnFileUploadAsync()
+    {
+        try
+        {
+            Console.WriteLine("OnFileUploadAsync called");
+            
+            var request = HttpContext.Request;
+            IFormFile? file = null;
+
+            Console.WriteLine($"Request method: {request.Method}");
+            Console.WriteLine($"Content type: {request.ContentType}");
+            Console.WriteLine($"Has form content type: {request.HasFormContentType}");
+
+            if (request.HasFormContentType)
+            {
+                var form = await request.ReadFormAsync();
+                Console.WriteLine($"Form files count: {form.Files.Count}");
+                
+                foreach (var formFile in form.Files)
+                {
+                    Console.WriteLine($"File: {formFile.Name}, FileName: {formFile.FileName}, Length: {formFile.Length}");
+                }
+
+                file = form.Files["file"];
+                Console.WriteLine($"Selected file from form: {file?.Name}, Length: {file?.Length}");
+            }            if (file == null || file.Length == 0)
+            {
+                statusMessage = "Error: No file selected";
+                statusClass = "alert-danger";
+                return;
+            }
+
+            // Validate file size (5MB)
+            if (file.Length > 5 * 1024 * 1024)
+            {
+                statusMessage = "Error: File size must be less than 5MB";
+                statusClass = "alert-danger";
+                return;
+            }
+
+            // Validate file type
+            var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
+            if (!allowedTypes.Contains(file.ContentType.ToLower()))
+            {
+                statusMessage = "Error: Only JPEG, PNG, and GIF files are allowed";
+                statusClass = "alert-danger";
+                return;
+            }
+
+            Console.WriteLine("Starting file upload...");            var userName = user.UserName;
+            if (string.IsNullOrEmpty(userName))
+            {
+                statusMessage = "Error: User name not found";
+                statusClass = "alert-danger";
+                return;
+            }
+
+            // Check storage quota
+            var usage = await BlobStorageService.GetUserStorageUsageAsync(userName);
+            if (usage.TotalSizeInBytes + file.Length > usage.QuotaInBytes)
+            {
+                statusMessage = "Error: Storage quota exceeded";
+                statusClass = "alert-danger";
+                return;
+            }
+
+            using var stream = file.OpenReadStream();
+            var extension = Path.GetExtension(file.FileName);
+            
+            // Use a special GUID for profile icons
+            var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
+            var imageUrl = await BlobStorageService.UploadImageAsync(stream, extension, userName, profileIconGuid);
+              // Update user profile
+            user.ProfileIconUrl = imageUrl;
+            await UserManager.UpdateAsync(user);
+            
+            Console.WriteLine($"Profile icon uploaded successfully: {imageUrl}");
+            statusMessage = "Profile icon uploaded successfully";
+            statusClass = "alert-success";
+            StateHasChanged(); // Force UI update
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception in OnFileUploadAsync: {ex}");
+            statusMessage = $"Upload failed: {ex.Message}";
+            statusClass = "alert-danger";
+        }
+    }    private async Task OnDeleteIconAsync()
+    {
+        try
+        {            var userName = user.UserName;
+            if (string.IsNullOrEmpty(userName))
+            {
+                statusMessage = "Error: User name not found";
+                statusClass = "alert-danger";
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(user.ProfileIconUrl))
+            {
+                // Find the blob info for the profile icon
+                var profileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
+                var blobInfo = await DbContext.UserBlobInfos
+                    .FirstOrDefaultAsync(b => b.UserName == userName && 
+                                             b.PineconeGuid == profileIconGuid && 
+                                             !b.IsDeleted);
+                
+                if (blobInfo != null)
+                {
+                    await BlobStorageService.DeleteBlobAsync(blobInfo.Id, userName);
+                }
+                  // Update user profile
+                user.ProfileIconUrl = null;
+                await UserManager.UpdateAsync(user);
+            }
+            
+            statusMessage = "Profile icon deleted successfully";
+            statusClass = "alert-success";
+            StateHasChanged(); // Force UI update
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Delete failed: {ex.Message}";
+            statusClass = "alert-danger";
+        }
     }
 
     private sealed class InputModel
@@ -73,5 +275,13 @@
         [Phone]
         [Display(Name = "Phone number")]
         public string? PhoneNumber { get; set; }
+    }    private sealed class FileUploadModel
+    {
+        public IFormFile? File { get; set; }
+    }
+
+    private sealed class DeleteIconModel
+    {
+        // Empty model for delete form
     }
 }
