@@ -20,6 +20,9 @@ public class BlobStorageService
     // Profile icon uses a special GUID for identification
     public static readonly Guid ProfileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
     
+    // TODO: Consider refactoring to reduce EncryptionService dependency for non-encryption operations
+    // The encryption functionality is only needed for operations that involve decrypting Pinecone titles
+    // Manage page operations like profile icon management don't require encryption functionality
     public BlobStorageService(IConfiguration configuration, ApplicationDbContext dbContext, IEncryptionService encryptionService, UserManager<ApplicationUser> userManager)
     {
         var connectionString = configuration.GetConnectionString("AzureStorage")
@@ -214,9 +217,11 @@ public class BlobStorageService
                         decryptedTitle = item.PineconeTitle;
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // If decryption fails, use empty string
+                    // If decryption fails in non-critical contexts (like Manage pages),
+                    // log the error and continue with empty string to prevent crashes
+                    Console.WriteLine($"Warning: Failed to decrypt title for blob {item.Id}. Error: {ex.Message}");
                     decryptedTitle = "";
                 }
             }
