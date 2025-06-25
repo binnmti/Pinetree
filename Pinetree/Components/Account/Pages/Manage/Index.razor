@@ -103,11 +103,10 @@
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
 
-    [SupplyParameterFromForm]
     private FileUploadModel FileInput { get; set; } = new();
 
-    [SupplyParameterFromForm]
     private DeleteIconModel DeleteInput { get; set; } = new();
+
     protected override async Task OnInitializedAsync()
     {
         try

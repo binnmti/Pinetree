@@ -30,7 +30,15 @@ builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 builder.Services.AddScoped<PaymentService>();
-builder.Services.AddScoped<BlobStorageService>();
+// BlobStorageService with optional EncryptionService - allows profile management to work without encryption
+builder.Services.AddScoped<BlobStorageService>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+    var dbContext = provider.GetRequiredService<ApplicationDbContext>();
+    var userManager = provider.GetRequiredService<UserManager<ApplicationUser>>();
+    var encryptionService = provider.GetService<IEncryptionService>(); // Optional service
+    return new BlobStorageService(configuration, dbContext, userManager, encryptionService);
+});
 builder.Services.AddSingleton<AIEmojiWithRateLimitService>();
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<VersionService>();
