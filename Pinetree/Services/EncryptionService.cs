@@ -12,14 +12,15 @@ public class EncryptionService : IEncryptionService
     private const string ENCRYPTION_VERSION = "ENC_V1";
     private const string VERSION_SEPARATOR = ":";
     
-    private readonly byte[] _key;
+    private readonly byte[] _key = null!;
 
     /// <summary>
     /// Constructor - initializes encryption key from environment variables or configuration
     /// </summary>
     /// <param name="configuration">Configuration provider</param>
     /// <param name="logger">Logger instance</param>
-    public EncryptionService(IConfiguration configuration)
+    public EncryptionService(IConfiguration configuration,
+        ILogger<EncryptionService> logger)
     {
         // Read encryption key from environment variable first, then configuration
         var keyString = configuration.GetConnectionString("EncryptionKey") ;
@@ -40,9 +41,9 @@ public class EncryptionService : IEncryptionService
                     $"Invalid encryption key length: {_key.Length} bytes. Expected 32 bytes for AES-256.");
             }
         }
-        catch (FormatException ex)
+        catch (FormatException)
         {
-            throw new InvalidOperationException("Invalid encryption key format. Key must be a valid Base64 string.", ex);
+            logger.LogInformation("Invalid encryption key format. Key must be a valid Base64 string.");
         }
     }        
     
