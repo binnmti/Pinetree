@@ -3,8 +3,8 @@ using Azure.Storage.Blobs.Models;
 using Microsoft.EntityFrameworkCore;
 using Pinetree.Data;
 using Pinetree.Models;
-using Pinetree.Shared.ViewModels;
 using Microsoft.AspNetCore.Identity;
+using Pinetree.Shared.ViewModels;
 
 namespace Pinetree.Services;
 
@@ -13,25 +13,24 @@ public class BlobStorageService
     private readonly BlobServiceClient _blobServiceClient;
     private readonly string _containerName = "images";
     private readonly ApplicationDbContext _dbContext;
-    private readonly IEncryptionService _encryptionService;
+    private readonly IEncryptionService? _encryptionService;
     private readonly UserManager<ApplicationUser> _userManager;
     private const int DefaultQuotaInBytes = 1024 * 1024 * 3;
-    
+
     // Profile icon uses a special GUID for identification
     public static readonly Guid ProfileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
-    
-    // TODO: Consider refactoring to reduce EncryptionService dependency for non-encryption operations
-    // The encryption functionality is only needed for operations that involve decrypting Pinecone titles
-    // Manage page operations like profile icon management don't require encryption functionality
-    public BlobStorageService(IConfiguration configuration, ApplicationDbContext dbContext, IEncryptionService encryptionService, UserManager<ApplicationUser> userManager)
+
+    // EncryptionService is now optional - only needed for operations that decrypt Pinecone titles
+    // This allows Manage page operations (profile icon management) to work without encryption dependency
+    public BlobStorageService(IConfiguration configuration, ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager, IEncryptionService? encryptionService = null)
     {
         var connectionString = configuration.GetConnectionString("AzureStorage")
                             ?? throw new ArgumentNullException("Azure Storage connection string is missing from configuration");
 
         _blobServiceClient = new BlobServiceClient(connectionString);
         _dbContext = dbContext;
-        _encryptionService = encryptionService;
         _userManager = userManager;
+        _encryptionService = encryptionService;
     }
 
     public async Task<string> UploadImageAsync(Stream content, string fileExtension, string userName, Guid pineconeGuid)
@@ -124,7 +123,7 @@ public class BlobStorageService
 
         return true;
     }
-    
+
     public async Task<UserStorageUsage> GetUserStorageUsageAsync(string userName)
     {
         var usage = await _dbContext.UserStorageUsages.SingleOrDefaultAsync(x => x.UserName == userName);
@@ -157,17 +156,31 @@ public class BlobStorageService
         var fullBlobPath = $"{folderPath}{blobName}";
         var blobClient = containerClient.GetBlobClient(fullBlobPath);
         return blobClient.Uri.ToString();
-    }    
-    
-    public async Task<List<UserBlobViewModel>> GetUserBlobViewModelsAsync(string userName)
+    }
+
+    /// <summary>
+    /// Checks if encryption service is available for operations that require decryption
+    /// </summary>
+    public bool IsEncryptionServiceAvailable => _encryptionService != null;
+
+    /// <summary>
+    /// Gets user blob view models with optional encryption support
+    /// If encryption service is not available, encrypted titles will be shown as plain text or empty
+    /// </summary>
+    public async Task<List<UserBlobViewModel>> GetUserBlobViewModelsAsync(string userName, bool requireEncryption = false)
     {
+        if (requireEncryption && _encryptionService == null)
+        {
+            throw new InvalidOperationException("Encryption service is required for this operation but not available");
+        }
+
         // Get user ID for decryption
         var user = await _userManager.FindByNameAsync(userName);
         if (user == null)
         {
             throw new InvalidOperationException($"User not found: {userName}");
         }
-        
+
         var results = await _dbContext.UserBlobInfos
             .Where(b => b.UserName == userName && !b.IsDeleted)
             .OrderByDescending(b => b.UploadedAt)
@@ -193,9 +206,9 @@ public class BlobStorageService
                 }
             )
             .ToListAsync();
-        
+
         var viewModels = new List<UserBlobViewModel>();
-        
+
         foreach (var item in results)
         {
             string decryptedTitle = "";
@@ -207,25 +220,24 @@ public class BlobStorageService
                     {
                         decryptedTitle = item.PineconeTitle ?? "";
                     }
-                    else if (_encryptionService.CanDecrypt(item.PineconeTitle))
+                    else if (_encryptionService != null && _encryptionService.CanDecrypt(item.PineconeTitle))
                     {
                         decryptedTitle = _encryptionService.Decrypt(item.PineconeTitle);
                     }
                     else
                     {
-                        // Legacy plain text data
+                        // Legacy plain text data or encryption service not available
                         decryptedTitle = item.PineconeTitle;
                     }
                 }
                 catch (Exception ex)
                 {
-                    // If decryption fails in non-critical contexts (like Manage pages),
-                    // log the error and continue with empty string to prevent crashes
+                    // If decryption fails, log the error and continue with empty string to prevent crashes
                     Console.WriteLine($"Warning: Failed to decrypt title for blob {item.Id}. Error: {ex.Message}");
                     decryptedTitle = "";
                 }
             }
-            
+
             viewModels.Add(new UserBlobViewModel
             {
                 Id = item.Id,
@@ -238,7 +250,7 @@ public class BlobStorageService
                 UploadedAt = item.UploadedAt
             });
         }
-        
+
         return viewModels;
     }
 
