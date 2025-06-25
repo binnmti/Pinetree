@@ -1,31 +1,48 @@
 ﻿@page "/"
 @using Pinetree.Client.Services
+@using Pinetree.Shared.Resources
+@using Microsoft.Extensions.Localization
+@using Microsoft.AspNetCore.Components
 @inject IJSRuntime JSRuntime
+@inject IStringLocalizer<SharedResources> Localizer
+@inject LanguageService LanguageService
 @rendermode InteractiveAuto
 @implements IAsyncDisposable
 
-<PageTitle>Pinetree(Beta)</PageTitle>
+<PageTitle>@Localizer["SiteTitle"]</PageTitle>
 <HeadContent>
-    <meta property="og:title" content=@Title />
-    <meta name="twitter:title" content=@Title />
-    <meta name="description" content=@Description />
-    <meta property="og:description" content=@Description />
-    <meta name="twitter:description" content=@Description />
+    <meta property="og:title" content=@Localizer["SiteTitle"] />
+    <meta name="twitter:title" content=@Localizer["SiteTitle"] />
+    <meta name="description" content=@Localizer["SiteDescription"] />
+    <meta property="og:description" content=@Localizer["SiteDescription"] />
+    <meta name="twitter:description" content=@Localizer["SiteDescription"] />
     <meta property="og:url" content=@Url />
     <link rel="canonical" href=@Url />
 </HeadContent>
 
 <div class="position-relative">
+    <!-- Language Selector -->
+    <div class="language-selector" style="position: absolute; top: 10px; right: 10px; z-index: 1000;">
+        <select class="form-select form-select-sm" style="width: auto;" @onchange="OnLanguageChanged">
+            @foreach (var lang in LanguageService.GetSupportedLanguages())
+            {
+                <option value="@lang" selected="@(lang == LanguageService.CurrentCulture.TwoLetterISOLanguageName)">
+                    @LanguageService.GetLanguageDisplayName(lang)
+                </option>
+            }
+        </select>
+    </div>
+
     <!-- Main Content - Centered -->
     <div style="display: flex; justify-content: center; align-items: center; text-align: center; flex-direction: column;">
 
         <h1 style="font-size: 4em; margin-top: 50px;">
             <img src="img/Pinetree64.webp" alt="Pinetree logo" width="64" height="64">
-            Pinetree is browser-based <span class="highlight-text">hierarchical</span> markdown editor
+            @((MarkupString)string.Format(Localizer["MainHeading"], $"<span class=\"highlight-text\">{Localizer["Hierarchical"]}</span>"))
         </h1>
         <div class="mt-4 button-container">
-            <a class="btn btn-outline-primary btn-lg m-2" href="/play"><i class="bi bi-tools"></i>Playground</a>
-            <a class="btn btn-outline-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>Register</a>
+            <a class="btn btn-outline-primary btn-lg m-2" href="/play"><i class="bi bi-tools"></i>@Localizer["Playground"]</a>
+            <a class="btn btn-outline-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>@Localizer["Register"]</a>
         </div>
         <div class="slider-container mt-4">            
             <div class="slider" id="imageSlider">
@@ -52,7 +69,7 @@
 
         <!-- Hierarchical emphasis section -->
         <div class="hierarchical-emphasis my-5 py-4">
-            <h2 class="mb-4">What is a <span class="highlight-text">Hierarchical</span> Markdown Editor?</h2>
+            <h2 class="mb-4">@((MarkupString)string.Format(Localizer["WhatIsHierarchicalMarkdownEditor"], $"<span class=\"highlight-text\">{Localizer["Hierarchical"]}</span>"))</h2>
 
             <div class="concept-box">
                 <div class="concept-icon">
@@ -60,7 +77,7 @@
                 </div>
                 <div class="concept-content">
                     <p class="mb-0">
-                        Pinetree draws inspiration from Amazon's "One Pager" culture, which focuses on condensing key points into a single page. People prefer concise, readable content, yet there are times when detailed information is necessary.
+                        @Localizer["OnePagerConcept"]
                     </p>
                 </div>
             </div>
@@ -71,7 +88,7 @@
                 </div>
                 <div class="concept-content">
                     <p class="mb-0">
-                        As documents grow more detailed, we typically organize them with rules and folders. However, traditional file structures lack physical connections between these documents. Pinetree allows you to express content in a "hierarchical" format and navigate via links, enabling readers to naturally understand the relationships between content.
+                        @Localizer["HierarchicalStructure"]
                     </p>
                 </div>
             </div>
@@ -82,16 +99,16 @@
                 </div>
                 <div class="concept-content">
                     <p class="mb-0">
-                        Pinetree is ideal for travel plans, resumes, reading notes, and any document requiring both "conciseness" and "detail." You can keep each piece of content as simple as possible while adding hierarchical details as needed. Experience this new writing style for yourself.
+                        @Localizer["UseCases"]
                     </p>
                 </div>
             </div>
             <blockquote class="mt-4 text-center">
-                <p class="fst-italic">Create multiple documents when you <a href="Account/Register" class="alert-link">register</a> for an account.</p>
+                <p class="fst-italic">@((MarkupString)string.Format(Localizer["CreateMultipleDocuments"], $"<a href=\"Account/Register\" class=\"alert-link\">{Localizer["Register"]}</a>"))</p>
             </blockquote>
         </div>        <!-- Video section -->
         <div class="video-container my-5 pt-4">
-            <h2>Pinetree Overview & Demo</h2>
+            <h2>@Localizer["PinetreeOverviewDemo"]</h2>
             <div class="video-wrapper">
                 <iframe width="520"
                         src="https://www.youtube.com/embed/afYPumK4trY"
@@ -102,16 +119,13 @@
                 </iframe>
             </div>              
             <p class="video-description">
-                This 9-minute video covers Pinetree's core concepts and includes a live demonstration of key features. We've implemented the main functionality we envisioned and are now releasing it as a beta version to gather valuable feedback from users.
+                @Localizer["VideoDescription"]
             </p>
             <div class="alert alert-info mt-3">
                 <div class="d-flex align-items-start">
                     <i class="bi bi-info-circle-fill me-2 mt-1"></i>
                     <div>
-                        <strong>Beta Version Notice:</strong> Pinetree is currently in beta development. 
-                        Please note that this is our first video production, so the quality may not be optimal. 
-                        The presentation materials are in English with subtitles, but the narration is in Japanese. 
-                        We appreciate your understanding as we continue to improve our content and service.
+                        <strong>@Localizer["BetaVersionNotice"]</strong> @Localizer["BetaVersionDescription"]
                     </div>
                 </div>
             </div>
@@ -122,19 +136,19 @@
 <!-- Call to action - Full width with distinct background -->
 <div class="cta-container">
     <div class="cta-section">
-        <h2>Ready to get started?</h2>
-        <p>Join our community of organized writers and thinkers today!</p>
+        <h2>@Localizer["ReadyToGetStarted"]</h2>
+        <p>@Localizer["JoinCommunity"]</p>
         <div class="mt-4">
-            <a class="btn btn-primary btn-lg m-2" href="/play"><i class="bi bi-tools"></i>Playground</a>
-            <a class="btn btn-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>Register</a>
-            <a class="btn btn-info btn-lg m-2" href="/Pricing"><i class="bi bi-tag"></i>Pricing</a>
+            <a class="btn btn-primary btn-lg m-2" href="/play"><i class="bi bi-tools"></i>@Localizer["Playground"]</a>
+            <a class="btn btn-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>@Localizer["Register"]</a>
+            <a class="btn btn-info btn-lg m-2" href="/Pricing"><i class="bi bi-tag"></i>@Localizer["Pricing"]</a>
         </div>
 
         <div class="mt-4">
             <p class="text-muted">
-                We're currently in a phase where we want as many users as possible to try our service. <br>
-                Please start with <a href="/play">Playground</a> and we'd appreciate your <a href="/Feedback">feedback</a> afterwards. <br>
-                Users who provide valuable feedback will receive a permanent free pass! <br>
+                @Localizer["BetaPhaseDescription"] <br>
+                @((MarkupString)string.Format(Localizer["StartWithPlayground"], $"<a href=\"/play\">{Localizer["Playground"]}</a>", $"<a href=\"/Feedback\">{Localizer["Feedback"]}</a>")) <br>
+                @Localizer["FreePassReward"] <br>
             </p>
         </div>
     </div>
@@ -148,10 +162,21 @@
     public required AuthenticationStateProvider AuthenticationStateProvider { get; set; }
 
     public const string Url = "https://pine-tree.site";
-    public const string Title = "Pinetree(Beta)";
-    public const string Description = "Pinetree is a browser-based hierarchical markdown editor.Inspired by Amazon's One-Pager culture, Pinetree helps you create concise documents that everyone actually wants to read. While a one-page summary is ideal, sometimes details matter too.";
 
     private IJSObjectReference? _jsModule;
+
+    protected override void OnInitialized()
+    {
+        LanguageService.OnLanguageChanged += StateHasChanged;
+    }
+
+    private void OnLanguageChanged(ChangeEventArgs e)
+    {
+        if (e.Value?.ToString() is string languageCode)
+        {
+            LanguageService.SetLanguage(languageCode);
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -207,5 +232,7 @@
         {
             Console.Error.WriteLine($"Error disposing slider: {ex.Message}");
         }
+        
+        LanguageService.OnLanguageChanged -= StateHasChanged;
     }
 }
