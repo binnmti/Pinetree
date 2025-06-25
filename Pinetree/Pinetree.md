@@ -1,14 +1,13 @@
 # TODO
-- User Icon
-
 - stripe 
  
-- User Data Cancellation
+- Trash box
+- Private Page SEO
 - Individual settings for disclosure range
+- 
+- User Data Cancellation
 - AI Icon Professional
 - AI Image
-- Trashbox
-- Private Page SEO
 - Output Markdown
 
 - Changelog Discord
