@@ -164,8 +164,8 @@ namespace Pinetree.UITests
             var updatedUrl = Page.Url;
             Assert.AreEqual(currentUrl, updatedUrl, "URL should remain the same after save");
 
-            // Step 6: Go back to User page and then return to edit to verify Save button is disabled
-            await Page.ClickAsync("button.list-group-item:has-text('User')");
+            // Step 6: Go back to Files page and then return to edit to verify Save button is disabled
+            await Page.ClickAsync("button.list-group-item:has-text('Files')");
             await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
             await Page.WaitForTimeoutAsync(Timeout);
 
@@ -239,7 +239,7 @@ namespace Pinetree.UITests
             Console.WriteLine("✓ Save button is correctly disabled after re-entering edit mode");
 
             // Step 8: Go back to file list for deletion
-            await Page.ClickAsync("button.list-group-item:has-text('User')");
+            await Page.ClickAsync("button.list-group-item:has-text('Files')");
             await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
             await Page.WaitForTimeoutAsync(Timeout);
 
