@@ -81,7 +81,10 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
             IsPublic = model.IsPublic,
             UserName = model.UserName,
             Create = model.Create,
-            Update = model.Update
+            Update = model.Update,
+            IsDeleted = model.IsDeleted,
+            DeletedAt = model.DeletedAt,
+            DeleteType = model.DeleteType
         };
     }
 
@@ -106,6 +109,9 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
             UserName = model.UserName,
             Create = model.Create,
             Update = model.Update,
+            IsDeleted = model.IsDeleted,
+            DeletedAt = model.DeletedAt,
+            DeleteType = model.DeleteType,
             Children = new List<PineconeViewModelWithChildren>()
         };
 
@@ -178,42 +184,80 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
 
         return ToPineconeViewModel(pinecone);
     }
-
     [HttpDelete("delete-include-child/{id}")]
-    public async Task<IActionResult> DeleteIncludeChild(Guid id)
+    public async Task<IActionResult> DeleteIncludeChild(Guid id, [FromQuery] string deleteType = "single")
     {
         var userName = User.Identity?.Name ?? "";
-        var pinecone = await SingleIncludeChild(id);
-        if (pinecone.UserName != userName)
+        var pinecone = await GetPineconeById(id);
+        if (pinecone == null || pinecone.UserName != userName)
         {
             throw new UnauthorizedAccessException("You do not own this Pinecone.");
         }
-        var parentGuid = pinecone.ParentGuid;
-        await RemoveChildrenFromDatabaseAsync(pinecone);
-        DbContext.Pinecone.Remove(pinecone);
-        await DbContext.SaveChangesAsync();
-        if (parentGuid != null)
-        {
-            await ReindexSiblingsAsync((Guid)parentGuid);
-        }
+
+        // Soft delete: mark as deleted instead of physical removal
+        await SoftDeleteIncludeChildAsync(pinecone, deleteType);
 
         return Ok();
     }
 
-    private async Task ReindexSiblingsAsync(Guid parentGuid)
+    [HttpPost("restore-file/{id}")]
+    public async Task<IActionResult> RestoreFile(Guid id)
     {
-        var siblings = await DbContext.Pinecone
-            .Where(p => p.ParentGuid == parentGuid)
-            .OrderBy(p => p.Order)
-            .ToListAsync();
-
-        for (int i = 0; i < siblings.Count; i++)
+        var userName = User.Identity?.Name ?? "";
+        var pinecone = await GetPineconeById(id);
+        if (pinecone == null || pinecone.UserName != userName || !pinecone.IsDeleted)
         {
-            siblings[i].Order = i;
+            return NotFound("File not found or not in trash.");
         }
 
-        await DbContext.SaveChangesAsync();
+        await RestoreFileWithHierarchyAsync(pinecone);
+        return Ok();
     }
+
+    [HttpDelete("permanently-delete-file/{id}")]
+    public async Task<IActionResult> PermanentlyDeleteFile(Guid id)
+    {
+        var userName = User.Identity?.Name ?? "";
+        var pinecone = await GetPineconeById(id);
+        if (pinecone == null || pinecone.UserName != userName || !pinecone.IsDeleted)
+        {
+            return NotFound("File not found or not in trash.");
+        }
+
+        await PermanentlyDeleteIncludeChildAsync(pinecone);
+        return Ok();
+    }
+
+    [HttpGet("get-deleted-files")]
+    public async Task<List<PineconeViewModel>> GetDeletedFiles(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        var userName = User.Identity?.Name ?? "";
+
+        // For bulk deletes, only show the root item to avoid cluttering the trash
+        // For single deletes, show all items regardless of hierarchy
+        var deletedFiles = await DbContext.Pinecone
+            .Where(p => p.UserName == userName && p.IsDeleted)
+            .Where(p => p.DeleteType != "bulk" || p.ParentGuid == null)
+            .OrderByDescending(p => p.DeletedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var result = new List<PineconeViewModel>();
+        foreach (var doc in deletedFiles)
+        {
+            doc.Title = DecryptContentIfPrivate(doc.Title, doc.IsPublic)!;
+            doc.Content = DecryptContentIfPrivate(doc.Content, doc.IsPublic)!;
+            var viewModel = ToPineconeViewModel(doc);
+            result.Add(viewModel);
+        }
+
+        return result;
+    }
+
     [HttpGet("get-include-child/{guid}")]
     public async Task<PineconeViewModelWithChildren?> GetIncludeChild(Guid guid)
     {
@@ -266,7 +310,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
                 ? query.OrderByDescending(p => p.Update).ThenByDescending(p => p.Id)
                 : query.OrderBy(p => p.Update).ThenBy(p => p.Id)
         };
-        
+
         var documents = await query
             .AsNoTracking()
             .Skip((pageNumber - 1) * pageSize)
@@ -351,16 +395,14 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
             currentTree.Update = DateTime.UtcNow;
 
             var currentNodeGuids = CollectNodeGuids(currentTree);
-            var newNodeGuids = nodes.Select(n => n.Guid).ToHashSet();
-
-            var nodesToRemove = currentNodeGuids.Where(guid => !newNodeGuids.Contains(guid)).ToList();
-
+            var newNodeGuids = nodes.Select(n => n.Guid).ToHashSet(); var nodesToRemove = currentNodeGuids.Where(guid => !newNodeGuids.Contains(guid)).ToList();            // Move deleted nodes to trash instead of permanently deleting them
             foreach (var guidToRemove in nodesToRemove)
             {
                 var nodeToRemove = await DbContext.Pinecone.FirstOrDefaultAsync(p => p.Guid == guidToRemove);
                 if (nodeToRemove != null)
                 {
-                    DbContext.Pinecone.Remove(nodeToRemove);
+                    // Move to trash - this is from editing (TreeView deletion), so use "single"
+                    await SoftDeleteNodeAndChildrenAsync(nodeToRemove, "single");
                 }
             }
 
@@ -472,7 +514,6 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
 
         return pinecone;
     }
-
     private async Task UpdateNodesAsync(List<PineconeUpdateRequest> nodes, string userName, string userId)
     {
         foreach (var node in nodes)
@@ -507,7 +548,8 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
     private IQueryable<Pinecone> GetUserTopList(string userName)
         => DbContext.Pinecone
             .Where(x => x.UserName == userName)
-            .Where(x => x.ParentGuid == null);
+            .Where(x => x.ParentGuid == null)
+            .Where(x => !x.IsDeleted); // Exclude deleted files
 
     private async Task<Pinecone> LoadChildrenRecursively(Pinecone parent)
     {
@@ -518,12 +560,33 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         await DbContext.Entry(parent)
             .Collection(p => p.Children)
             .Query()
+            .Where(x => !x.IsDeleted) // Exclude deleted children
             .OrderBy(x => x.Order)
             .LoadAsync();
 
         foreach (var child in parent.Children)
         {
             await LoadChildrenRecursively(child);
+        }
+        return parent;
+    }
+
+    private async Task<Pinecone> LoadChildrenRecursively(Pinecone parent, bool includeDeleted)
+    {
+        // Decrypt parent content
+        parent.Title = DecryptContentIfPrivate(parent.Title, parent.IsPublic)!;
+        parent.Content = DecryptContentIfPrivate(parent.Content, parent.IsPublic)!;
+
+        await DbContext.Entry(parent)
+            .Collection(p => p.Children)
+            .Query()
+            .Where(x => includeDeleted || !x.IsDeleted) // Exclude deleted children unless explicitly included
+            .OrderBy(x => x.Order)
+            .LoadAsync();
+
+        foreach (var child in parent.Children)
+        {
+            await LoadChildrenRecursively(child, includeDeleted);
         }
         return parent;
     }
@@ -551,5 +614,174 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         }
 
         return query;
+    }
+
+    /// <summary>
+    /// Soft delete a file and its children
+    /// </summary>
+    private async Task SoftDeleteIncludeChildAsync(Pinecone pinecone, string deleteType)
+    {
+        await SoftDeleteNodeAndChildrenAsync(pinecone, deleteType);
+        await DbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Recursively soft delete a node and all its children
+    /// </summary>
+    private async Task SoftDeleteNodeAndChildrenAsync(Pinecone node, string deleteType)
+    {
+        // Mark current node as deleted
+        node.IsDeleted = true;
+        node.DeletedAt = DateTime.UtcNow;
+        node.DeleteType = deleteType;
+        // DeletedParentTitle is no longer stored in DB - it will be retrieved dynamically from parent
+
+        // Load children if not already loaded
+        if (!DbContext.Entry(node).Collection(p => p.Children).IsLoaded)
+        {
+            await DbContext.Entry(node)
+                .Collection(p => p.Children)
+                .LoadAsync();
+        }
+
+        // Recursively delete children
+        foreach (var child in node.Children)
+        {
+            await SoftDeleteNodeAndChildrenAsync(child, deleteType);
+        }
+    }
+
+
+    /// <summary>
+    /// Recursively restore children
+    /// </summary>
+    private async Task RestoreChildrenRecursivelyAsync(Pinecone parent)
+    {
+        if (!DbContext.Entry(parent).Collection(p => p.Children).IsLoaded)
+        {
+            await DbContext.Entry(parent)
+                .Collection(p => p.Children)
+                .Query()
+                .Where(c => c.IsDeleted)
+                .LoadAsync();
+        }
+
+        foreach (var child in parent.Children.Where(c => c.IsDeleted))
+        {
+            child.IsDeleted = false;
+            child.DeletedAt = null;
+            child.Update = DateTime.UtcNow;
+
+            await RestoreChildrenRecursivelyAsync(child);
+        }
+    }
+
+    /// <summary>
+    /// Permanently delete a file and its children
+    /// </summary>
+    private async Task PermanentlyDeleteIncludeChildAsync(Pinecone pinecone)
+    {
+        await RemoveChildrenFromDatabaseAsync(pinecone);
+        DbContext.Pinecone.Remove(pinecone);
+        await DbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Restore a file with intelligent hierarchy restoration
+    /// </summary>
+    private async Task RestoreFileWithHierarchyAsync(Pinecone file)
+    {
+        // Step 1: Restore entire parent chain if needed
+        await RestoreParentChainAsync(file);
+
+        // Step 2: Reset deletion flags for the file itself
+        file.IsDeleted = false;
+        file.DeletedAt = null;
+        file.Update = DateTime.UtcNow;
+
+        // Step 3: Set appropriate Order
+        var maxOrder = await DbContext.Pinecone
+            .Where(p => p.ParentGuid == file.ParentGuid &&
+                       p.GroupGuid == file.GroupGuid &&
+                       !p.IsDeleted &&
+                       p.UserName == file.UserName)
+            .Select(p => (int?)p.Order)
+            .MaxAsync() ?? 0;
+
+        file.Order = maxOrder + 1;
+
+        // Step 4: Recursively restore children
+        await RestoreChildrenRecursivelyAsync(file);
+
+        await DbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Restore the entire parent chain up to the root if any parent is deleted
+    /// </summary>
+    private async Task RestoreParentChainAsync(Pinecone file)
+    {
+        var parentsToRestore = new List<Pinecone>();
+        var currentFile = file;
+
+        // Walk up the parent chain and collect deleted parents
+        while (currentFile.ParentGuid.HasValue)
+        {
+            var parent = await DbContext.Pinecone
+                .FirstOrDefaultAsync(p => p.Guid == currentFile.ParentGuid.Value &&
+                                        p.UserName == currentFile.UserName);
+
+            if (parent == null)
+            {
+                // Parent doesn't exist, break the chain
+                break;
+            }
+
+            if (parent.IsDeleted)
+            {
+                // Parent is deleted, add to restoration list
+                parentsToRestore.Add(parent);
+            }
+
+            currentFile = parent;
+        }
+
+        // Restore parents from root to child (reverse order)
+        parentsToRestore.Reverse();
+        foreach (var parent in parentsToRestore)
+        {
+            parent.IsDeleted = false;
+            parent.DeletedAt = null;
+            parent.Update = DateTime.UtcNow;
+
+            // Set appropriate order for the parent
+            var maxOrder = await DbContext.Pinecone
+                .Where(p => p.ParentGuid == parent.ParentGuid &&
+                           p.GroupGuid == parent.GroupGuid &&
+                           !p.IsDeleted &&
+                           p.UserName == parent.UserName)
+                .Select(p => (int?)p.Order)
+                .MaxAsync() ?? 0;
+
+            parent.Order = maxOrder + 1;
+        }
+    }
+
+    [HttpGet("get-deleted-include-child/{guid}")]
+    public async Task<PineconeViewModelWithChildren?> GetDeletedIncludeChild(Guid guid)
+    {
+        var userName = User.Identity?.Name ?? "";
+        var pinecone = await GetPineconeById(guid);
+
+        // Allow viewing deleted files for authenticated users who own them
+        if (pinecone == null || pinecone.UserName != userName)
+            return null;
+
+        var rootPinecone = await GetPineconeById(pinecone.GroupGuid);
+        if (rootPinecone == null) return null;
+
+        // Load children recursively, including deleted ones
+        var loadedPinecone = await LoadChildrenRecursively(rootPinecone, includeDeleted: true);
+        return ToPineconeViewModelWithChildren(loadedPinecone);
     }
 }

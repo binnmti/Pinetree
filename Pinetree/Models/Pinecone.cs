@@ -25,7 +25,10 @@ public class Pinecone
     public ICollection<Pinecone> Children { get; set; } = [];
 
     public required DateTime Create { get; set; } = DateTime.UtcNow;
-    public required DateTime Update { get; set; } = DateTime.UtcNow;
+    public required DateTime Update { get; set; } = DateTime.UtcNow;    // Trash/Soft Delete properties
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAt { get; set; }
+    public string DeleteType { get; set; } = "single"; // "single" or "bulk"
 
     public static readonly Pinecone None = new()
     {

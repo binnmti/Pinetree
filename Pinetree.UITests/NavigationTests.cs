@@ -67,7 +67,7 @@ namespace Pinetree.UITests
             await LoginAsTestUser();
 
             // Step 2: Navigate to User page and create new file
-            await Page.GotoAsync($"{TargetUrl}/User");
+            await Page.GotoAsync($"{TargetUrl}/files");
             await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
             // Click on "Create New File" card
@@ -428,9 +428,9 @@ namespace Pinetree.UITests
             await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
             // Verify login success by checking if we can access user page
-            await Page.GotoAsync($"{TargetUrl}/User");
+            await Page.GotoAsync($"{TargetUrl}/files");
             await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-            StringAssert.Contains(Page.Url, "/User");
+            StringAssert.Contains(Page.Url, "/files");
         }
     }
 }

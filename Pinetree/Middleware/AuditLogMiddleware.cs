@@ -59,7 +59,7 @@ public class AuditLogMiddleware
         }
 
         // User creation/deletion and permission changes
-        if (path.Contains("/user") || 
+        if (path.Contains("/files") || 
             path.Contains("/role") || 
             path.Contains("/permission") ||
             path.StartsWith("/identity"))
@@ -191,7 +191,7 @@ public class AuditLogMiddleware
         }
 
         // User/Permission management
-        if (path.Contains("/user") || path.Contains("/role") || path.Contains("/permission") || path.StartsWith("/identity"))
+        if (path.Contains("/files") || path.Contains("/role") || path.Contains("/permission") || path.StartsWith("/identity"))
         {
             return ("User Management", "Highest");
         }
