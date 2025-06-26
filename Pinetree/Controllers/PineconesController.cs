@@ -84,7 +84,6 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
             Update = model.Update,
             IsDeleted = model.IsDeleted,
             DeletedAt = model.DeletedAt,
-            DeletedParentTitle = model.DeletedParentTitle,
             DeleteType = model.DeleteType
         };
     }
@@ -112,7 +111,6 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
             Update = model.Update,
             IsDeleted = model.IsDeleted,
             DeletedAt = model.DeletedAt,
-            DeletedParentTitle = model.DeletedParentTitle,
             DeleteType = model.DeleteType,
             Children = new List<PineconeViewModelWithChildren>()
         };
@@ -235,21 +233,30 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20)
     {
-        var userName = User.Identity?.Name ?? ""; var deletedFiles = await DbContext.Pinecone
+        var userName = User.Identity?.Name ?? "";
+
+        // Use a single query with join to get deleted files and their parent titles
+        var deletedFilesWithParents = await DbContext.Pinecone
             .Where(p => p.UserName == userName && p.IsDeleted &&
                        (p.DeleteType != "bulk" || p.ParentGuid == null)) // Only show root files or non-bulk deletions
-            .OrderByDescending(p => p.DeletedAt)
+            .GroupJoin(
+                DbContext.Pinecone.Where(parent => parent.UserName == userName),
+                deleted => deleted.ParentGuid,
+                parent => parent.Guid,
+                (deleted, parents) => new { deleted, parent = parents.FirstOrDefault() })
+            .OrderByDescending(x => x.deleted.DeletedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .AsNoTracking()
             .ToListAsync();
 
         var result = new List<PineconeViewModel>();
-        foreach (var doc in deletedFiles)
+        foreach (var item in deletedFilesWithParents)
         {
+            var doc = item.deleted;
             doc.Title = DecryptContentIfPrivate(doc.Title, doc.IsPublic)!;
-            doc.Content = DecryptContentIfPrivate(doc.Content, doc.IsPublic)!;
-            result.Add(ToPineconeViewModel(doc));
+            doc.Content = DecryptContentIfPrivate(doc.Content, doc.IsPublic)!;            var viewModel = ToPineconeViewModel(doc);
+            result.Add(viewModel);
         }
 
         return result;
@@ -399,9 +406,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
                 if (nodeToRemove != null)
                 {
                     // Move to trash - this is from editing (TreeView deletion), so use "single"
-                    var parentTitle = nodeToRemove.ParentGuid.HasValue ?
-                        DecryptContentIfPrivate(currentTree.Title, currentTree.IsPublic) : null;
-                    await SoftDeleteNodeAndChildrenAsync(nodeToRemove, "single", parentTitle);
+                    await SoftDeleteNodeAndChildrenAsync(nodeToRemove, "single");
                 }
             }
 
@@ -620,29 +625,20 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
     /// </summary>
     private async Task SoftDeleteIncludeChildAsync(Pinecone pinecone, string deleteType)
     {
-        var parentTitle = pinecone.ParentGuid != null ?
-            (await GetPineconeById((Guid)pinecone.ParentGuid))?.Title : null;
-
-        // Decrypt parent title for display
-        if (!string.IsNullOrEmpty(parentTitle) && pinecone.Parent != null)
-        {
-            parentTitle = DecryptContentIfPrivate(parentTitle, pinecone.Parent.IsPublic);
-        }
-
-        await SoftDeleteNodeAndChildrenAsync(pinecone, deleteType, parentTitle);
+        await SoftDeleteNodeAndChildrenAsync(pinecone, deleteType);
         await DbContext.SaveChangesAsync();
     }
 
     /// <summary>
     /// Recursively soft delete a node and all its children
     /// </summary>
-    private async Task SoftDeleteNodeAndChildrenAsync(Pinecone node, string deleteType, string? parentTitle)
+    private async Task SoftDeleteNodeAndChildrenAsync(Pinecone node, string deleteType)
     {
         // Mark current node as deleted
         node.IsDeleted = true;
         node.DeletedAt = DateTime.UtcNow;
         node.DeleteType = deleteType;
-        node.DeletedParentTitle = parentTitle;
+        // DeletedParentTitle is no longer stored in DB - it will be retrieved dynamically from parent
 
         // Load children if not already loaded
         if (!DbContext.Entry(node).Collection(p => p.Children).IsLoaded)
@@ -655,8 +651,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         // Recursively delete children
         foreach (var child in node.Children)
         {
-            var childParentTitle = DecryptContentIfPrivate(node.Title, node.IsPublic);
-            await SoftDeleteNodeAndChildrenAsync(child, deleteType, childParentTitle);
+            await SoftDeleteNodeAndChildrenAsync(child, deleteType);
         }
     }
 
@@ -674,12 +669,11 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
                 .Where(c => c.IsDeleted)
                 .LoadAsync();
         }
-
+        
         foreach (var child in parent.Children.Where(c => c.IsDeleted))
         {
             child.IsDeleted = false;
             child.DeletedAt = null;
-            child.DeletedParentTitle = null;
             child.Update = DateTime.UtcNow;
 
             await RestoreChildrenRecursivelyAsync(child);
@@ -695,10 +689,10 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         DbContext.Pinecone.Remove(pinecone);
         await DbContext.SaveChangesAsync();
     }
-    
+
     /// <summary>
-         /// Restore a file with intelligent hierarchy restoration
-         /// </summary>
+    /// Restore a file with intelligent hierarchy restoration
+    /// </summary>
     private async Task RestoreFileWithHierarchyAsync(Pinecone file)
     {
         // Step 1: Restore entire parent chain if needed

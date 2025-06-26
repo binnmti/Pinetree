@@ -9,7 +9,6 @@ public static class PineconeViewConvert
         {
             IsDeleted = pinecone.IsDeleted,
             DeletedAt = pinecone.DeletedAt,
-            DeletedParentTitle = pinecone.DeletedParentTitle,
             DeleteType = pinecone.DeleteType
         };
 
@@ -36,14 +35,13 @@ public static class PineconeViewConvert
             }
         }
     }
-
+    
     // Extension method for hierarchical ViewModels
     private static PinetreeView ToPinetree(this PineconeViewModelWithChildren pinecone, PinetreeView? parent)
         => new(pinecone.Guid, pinecone.Title, pinecone.Content, parent, pinecone.GroupGuid, pinecone.IsPublic, pinecone.Create, pinecone.Update)
         {
             IsDeleted = pinecone.IsDeleted,
             DeletedAt = pinecone.DeletedAt,
-            DeletedParentTitle = pinecone.DeletedParentTitle,
             DeleteType = pinecone.DeleteType
         };
 

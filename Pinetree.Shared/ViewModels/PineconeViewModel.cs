@@ -12,11 +12,9 @@ public class PineconeViewModel
     public string UserName { get; set; } = string.Empty;
     public DateTime Create { get; set; }
     public DateTime Update { get; set; }
-    
-    // Trash/Soft Delete properties
+      // Trash/Soft Delete properties
     public bool IsDeleted { get; set; } = false;
     public DateTime? DeletedAt { get; set; }
-    public string? DeletedParentTitle { get; set; }
     public string DeleteType { get; set; } = "single";
 }
 

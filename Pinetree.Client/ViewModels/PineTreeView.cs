@@ -11,12 +11,10 @@ public class PinetreeView(Guid guid, string title, string content, PinetreeView?
     public bool IsExpanded { get; set; }
     public bool IsPublic { get; set; } = isPublic;
     public DateTime Create { get; set; } = create == default ? DateTime.UtcNow : create;
-    public DateTime Update { get; set; } = update == default ? DateTime.UtcNow : update;
-    
+    public DateTime Update { get; set; } = update == default ? DateTime.UtcNow : update;    
     // Trash/Soft Delete properties
     public bool IsDeleted { get; set; } = false;
     public DateTime? DeletedAt { get; set; }
-    public string? DeletedParentTitle { get; set; }
     public string DeleteType { get; set; } = "single";
 
     public List<PinetreeView> Children { get; } = [];

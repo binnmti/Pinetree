@@ -263,7 +263,6 @@ else
                                     <thead>
                                         <tr>
                                             <th>Title</th>
-                                            <th>Parent</th>
                                             <th>Deleted</th>
                                             <th>Type</th>
                                             <th>Actions</th>
@@ -278,16 +277,6 @@ else
                                                         <i class="bi bi-file-earmark-text me-2"></i>
                                                         @file.Title
                                                     </a>
-                                                </td>
-                                                <td>
-                                                    @if (!string.IsNullOrEmpty(file.DeletedParentTitle))
-                                                    {
-                                                        <span class="text-muted">@file.DeletedParentTitle</span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-muted">Root</span>
-                                                    }
                                                 </td>
                                                 <td>
                                                     <small class="text-muted">
