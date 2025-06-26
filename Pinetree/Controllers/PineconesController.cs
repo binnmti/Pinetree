@@ -235,27 +235,23 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
     {
         var userName = User.Identity?.Name ?? "";
 
-        // Use a single query with join to get deleted files and their parent titles
-        var deletedFilesWithParents = await DbContext.Pinecone
-            .Where(p => p.UserName == userName && p.IsDeleted &&
-                       (p.DeleteType != "bulk" || p.ParentGuid == null)) // Only show root files or non-bulk deletions
-            .GroupJoin(
-                DbContext.Pinecone.Where(parent => parent.UserName == userName),
-                deleted => deleted.ParentGuid,
-                parent => parent.Guid,
-                (deleted, parents) => new { deleted, parent = parents.FirstOrDefault() })
-            .OrderByDescending(x => x.deleted.DeletedAt)
+        // For bulk deletes, only show the root item to avoid cluttering the trash
+        // For single deletes, show all items regardless of hierarchy
+        var deletedFiles = await DbContext.Pinecone
+            .Where(p => p.UserName == userName && p.IsDeleted)
+            .Where(p => p.DeleteType != "bulk" || p.ParentGuid == null)
+            .OrderByDescending(p => p.DeletedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .AsNoTracking()
             .ToListAsync();
 
         var result = new List<PineconeViewModel>();
-        foreach (var item in deletedFilesWithParents)
+        foreach (var doc in deletedFiles)
         {
-            var doc = item.deleted;
             doc.Title = DecryptContentIfPrivate(doc.Title, doc.IsPublic)!;
-            doc.Content = DecryptContentIfPrivate(doc.Content, doc.IsPublic)!;            var viewModel = ToPineconeViewModel(doc);
+            doc.Content = DecryptContentIfPrivate(doc.Content, doc.IsPublic)!;
+            var viewModel = ToPineconeViewModel(doc);
             result.Add(viewModel);
         }
 
@@ -669,7 +665,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
                 .Where(c => c.IsDeleted)
                 .LoadAsync();
         }
-        
+
         foreach (var child in parent.Children.Where(c => c.IsDeleted))
         {
             child.IsDeleted = false;
