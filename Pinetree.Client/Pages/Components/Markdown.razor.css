@@ -2,6 +2,58 @@
     resize: none !important;
 }
 
+/* Public view header styles */
+.public-title-container {
+    width: 100%;
+}
+
+.public-title {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+    line-height: 1.1;
+}
+
+.public-meta {
+    min-height: 28px;
+    margin-bottom: 0.5rem;
+}
+
+.public-user-info {
+    height: 28px;
+}
+
+.public-user-avatar {
+    width: 20px;
+    height: 20px;
+    object-fit: cover;
+}
+
+.public-user-avatar-default {
+    width: 20px;
+    height: 20px;
+}
+
+.public-user-avatar-icon {
+    font-size: 0.625rem;
+}
+
+.public-user-name {
+    font-size: 0.875rem;
+    line-height: 1.2;
+}
+
+.public-dates {
+    height: 28px;
+    gap: 0.5rem;
+}
+
+.public-date-text {
+    font-size: 0.75rem;
+    line-height: 1.2;
+    color: #6c757d;
+}
+
 /* Public view styles for better readability */
 .public-view-scroll-container {
     width: 100% !important;
