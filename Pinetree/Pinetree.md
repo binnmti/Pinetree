@@ -1,8 +1,6 @@
 # TODO
 - stripe 
  
-- Trash box
-- Private Page SEO
 - Individual settings for disclosure range
 - 
 - User Data Cancellation
