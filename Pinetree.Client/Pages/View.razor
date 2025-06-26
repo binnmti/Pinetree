@@ -1,4 +1,5 @@
 @page "/view/{User}/{Guid:guid}"
+@page "/view/{Guid:guid}"
 @using Pinetree.Client.ViewModels
 @using Pinetree.Client.Services
 @using Pinetree.Client.Pages.Components
@@ -22,9 +23,8 @@ else
     </div>
 }
 
-@code {
-    [Parameter]
-    public string User { get; set; } = "";
+@code {    [Parameter]
+    public string? User { get; set; }
 
     [Parameter]
     public Guid Guid { get; set; }
@@ -43,28 +43,52 @@ else
         {
             try
             {
-                // Load document data
-                var response = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"/api/Pinecones/get-view-include-child/{Guid}");
+                PineconeViewModelWithChildren? response = null;
+
+                if (string.IsNullOrEmpty(User))
+                {
+                    // Try deleted file first (authenticated user viewing their own deleted file)
+                    try
+                    {
+                        response = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"/api/Pinecones/get-deleted-include-child/{Guid}");
+                    }
+                    catch
+                    {
+                        // If deleted file not found, try regular file
+                        response = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"/api/Pinecones/get-view-include-child/{Guid}");
+                    }
+                }
+                else
+                {
+                    // Public view - only regular files
+                    response = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"/api/Pinecones/get-view-include-child/{Guid}");
+                }
+
                 if (response == null || response.Guid == Guid.Empty)
                 {
                     NavigationManager.NavigateTo("/");
                     return;
                 }
 
-                (Pinetree, FileCount) = response.ToPinetreeIncludeChild();                // Load user profile icon
-                try
+                (Pinetree, FileCount) = response.ToPinetreeIncludeChild();
+
+                // Load user profile icon for public views only
+                if (!string.IsNullOrEmpty(User))
                 {
-                    var profileResponse = await HttpClient.GetAsync($"/api/Images/user-profile-icon/{User}");
-                    if (profileResponse.IsSuccessStatusCode)
+                    try
                     {
-                        var profileResult = await profileResponse.Content.ReadFromJsonAsync<UserProfileIconViewModel>();
-                        UserProfileIconUrl = profileResult?.Url;
+                        var profileResponse = await HttpClient.GetAsync($"/api/Images/user-profile-icon/{User}");
+                        if (profileResponse.IsSuccessStatusCode)
+                        {
+                            var profileResult = await profileResponse.Content.ReadFromJsonAsync<UserProfileIconViewModel>();
+                            UserProfileIconUrl = profileResult?.Url;
+                        }
                     }
-                }
-                catch
-                {
-                    // Profile icon loading failed, use default
-                    UserProfileIconUrl = null;
+                    catch
+                    {
+                        // Profile icon loading failed, use default
+                        UserProfileIconUrl = null;
+                    }
                 }
             }
             catch (Exception ex)

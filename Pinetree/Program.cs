@@ -48,6 +48,7 @@ builder.Services.AddScoped<ISecureLoggerService, SecureLoggerService>();
 builder.Services.AddScoped<FontSettingsService>();
 
 builder.Services.AddHostedService<AuditCleanupService>();
+builder.Services.AddHostedService<TrashCleanupService>();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthorization();

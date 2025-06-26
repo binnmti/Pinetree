@@ -28,9 +28,12 @@ else
                 <!-- Tab navigation -->
                 <div class="list-group">
                     <button @onclick="() => SetActiveTab(0)" class="list-group-item list-group-item-action @(activeTab == 0 ? "active" : "")">
-                        <i class="bi bi-file-earmark-text"></i> My Documents
+                        <i class="bi bi-file-earmark-text"></i> Active Files
                     </button>
                     <button @onclick="() => SetActiveTab(1)" class="list-group-item list-group-item-action @(activeTab == 1 ? "active" : "")">
+                        <i class="bi bi-trash"></i> Trash
+                    </button>
+                    <button @onclick="() => SetActiveTab(2)" class="list-group-item list-group-item-action @(activeTab == 2 ? "active" : "")">
                         <i class="bi bi-images"></i> My Image
                     </button>
                 </div>
@@ -237,6 +240,92 @@ else
                 }
                 else if (activeTab == 1)
                 {
+                    <!-- Trash Tab -->
+                    <div class="editor-container">
+                        <h3><i class="bi bi-trash"></i> Trash</h3>
+                        <p class="text-muted">Files deleted within the last 30 days. After 30 days, files are permanently deleted.</p>
+
+                        @if (isLoadingTrash)
+                        {
+                            <LoadingSpinner Message="Loading deleted files..." />
+                        }
+                        else if (deletedFiles == null || !deletedFiles.Any())
+                        {
+                            <div class="text-center py-5">
+                                <i class="bi bi-trash" style="font-size: 3rem; color: #6c757d;"></i>
+                                <p class="mt-3 text-muted">Trash is empty</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Parent</th>
+                                            <th>Deleted</th>
+                                            <th>Type</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var file in deletedFiles)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <a href="/view/@file.Guid" class="text-decoration-none">
+                                                        <i class="bi bi-file-earmark-text me-2"></i>
+                                                        @file.Title
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(file.DeletedParentTitle))
+                                                    {
+                                                        <span class="text-muted">@file.DeletedParentTitle</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">Root</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">
+                                                        @if (file.DeletedAt.HasValue)
+                                                        {
+                                                            @file.DeletedAt.Value.ToString("yyyy/MM/dd HH:mm")
+                                                        }
+                                                    </small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge @(file.DeleteType == "bulk" ? "bg-info" : "bg-secondary")">
+                                                        @file.DeleteType
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <button type="button" class="btn btn-outline-success"
+                                                                @onclick="() => RestoreFile(file.Guid)"
+                                                                disabled="@isRestoringFile">
+                                                            <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-danger"
+                                                                @onclick="() => PermanentlyDeleteFile(file.Guid)"
+                                                                disabled="@isDeletingFile">
+                                                            <i class="bi bi-trash"></i> Delete Forever
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (activeTab == 2)
+                {
                     <!-- Files Tab (former UserImageFiles.razor content) -->
                     <div class="row mb-4">
                         <div class="col-md-6">
@@ -357,17 +446,22 @@ else
 @code {
     // Profile icon uses a special GUID for identification
     private static readonly Guid ProfileIconGuid = Guid.Parse("00000000-0000-0000-0000-000000000001");
-    
+
     // Tab and UI state
     private int activeTab = 0;
     private bool isLoading = true;
-
     // Data properties
     private List<PinetreeView> PinetreeViews { get; set; } = new List<PinetreeView>();
     private List<UserBlobViewModel>? files;
     private UserFiles? storageUsage;
     private string Username { get; set; } = "";
     private string? ProfileIconUrl { get; set; }
+
+    // Trash-related properties
+    private List<PineconeViewModel>? deletedFiles;
+    private bool isLoadingTrash = false;
+    private bool isRestoringFile = false;
+    private bool isDeletingFile = false;
 
     // Pagination properties
     private int CurrentPage { get; set; } = 1;
@@ -381,7 +475,7 @@ else
     private string sortBy = "updatedat";
     private bool sortDescending = true;
     private Timer? searchDebounceTimer;
-
+    
     private async Task SetActiveTab(int tabIndex)
     {
         activeTab = tabIndex;
@@ -390,6 +484,10 @@ else
             await LoadDocuments();
         }
         else if (activeTab == 1)
+        {
+            await LoadDeletedFiles();
+        }
+        else if (activeTab == 2)
         {
             _ = LoadFilesAsync();
             _ = LoadStorageUsageAsync();
@@ -415,7 +513,7 @@ else
             await LoadDocuments();
         }
     }
-    
+
     private bool IsProfileIcon(UserBlobViewModel file)
     {
         // Profile icons use a special GUID for identification
@@ -559,7 +657,7 @@ else
         var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this item?");
         if (!confirmed) return;
 
-        var response = await Http.DeleteAsync($"/api/Pinecones/delete-include-child/{guid}");
+        var response = await Http.DeleteAsync($"/api/Pinecones/delete-include-child/{guid}?deleteType=bulk");
         if (!response.IsSuccessStatusCode) return;
 
         var itemToRemove = PinetreeViews.FirstOrDefault(p => p.Guid == guid);
@@ -662,10 +760,86 @@ else
     {
         return contentType.StartsWith("image/");
     }
-
     public void Dispose()
     {
         searchDebounceTimer?.Dispose();
+    }
+
+    // Trash functionality methods
+    private async Task LoadDeletedFiles()
+    {
+        try
+        {
+            isLoadingTrash = true;
+            StateHasChanged();
+
+            var response = await Http.GetAsync("api/Pinecones/get-deleted-files?pageNumber=1&pageSize=100");
+            if (response.IsSuccessStatusCode)
+            {
+                deletedFiles = await response.Content.ReadFromJsonAsync<List<PineconeViewModel>>();
+            }
+            else
+            {
+                deletedFiles = new List<PineconeViewModel>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading deleted files: {ex.Message}");
+            deletedFiles = new List<PineconeViewModel>();
+        }
+        finally
+        {
+            isLoadingTrash = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RestoreFile(Guid fileId)
+    {
+        try
+        {
+            isRestoringFile = true;
+            StateHasChanged(); var response = await Http.PostAsync($"api/Pinecones/restore-file/{fileId}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadDeletedFiles(); // Refresh the list
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error restoring file: {ex.Message}");
+        }
+        finally
+        {
+            isRestoringFile = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PermanentlyDeleteFile(Guid fileId)
+    {
+        try
+        {
+            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to permanently delete this file? This action cannot be undone.");
+            if (!confirmed) return;
+
+            isDeletingFile = true;
+            StateHasChanged(); var response = await Http.DeleteAsync($"api/Pinecones/permanently-delete-file/{fileId}");
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadDeletedFiles(); // Refresh the list
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error permanently deleting file: {ex.Message}");
+        }
+        finally
+        {
+            isDeletingFile = false;
+            StateHasChanged();
+        }
     }
 
     private class UserFiles
