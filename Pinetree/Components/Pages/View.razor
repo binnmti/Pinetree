@@ -69,7 +69,6 @@ else
     {
         return NavigationManager.Uri;
     }
-
     protected override async Task OnInitializedAsync()
     {
         try
@@ -81,34 +80,40 @@ else
                 NavigationManager.NavigateTo("/");
                 return;
             }
-
             (Pinetree, FileCount) = response.ToPinetreeIncludeChild();
-
-            // Load user profile icon for public views only
-            try
-            {
-                var profileResponse = await HttpClient.GetAsync($"{baseUrl}api/Images/user-profile-icon/{User}");
-                if (profileResponse.IsSuccessStatusCode)
-                {
-                    var profileResult = await profileResponse.Content.ReadFromJsonAsync<UserProfileIconViewModel>();
-                    UserProfileIconUrl = profileResult?.Url;
-                }
-            }
-            catch
-            {
-                // Profile icon loading failed, use default
-                UserProfileIconUrl = null;
-            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading document: {ex.Message}");
-            // Pinetree remains null, will show error message
         }
-        finally
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
         {
-            isLoading = false;
-            StateHasChanged();
+            try
+            {
+                if (!string.IsNullOrEmpty(User))
+                {
+                    var baseUrl = NavigationManager.BaseUri;
+                    var profileResponse = await HttpClient.GetAsync($"{baseUrl}api/Images/user-profile-icon/{User}");
+                    if (profileResponse.IsSuccessStatusCode)
+                    {
+                        var profileResult = await profileResponse.Content.ReadFromJsonAsync<UserProfileIconViewModel>();
+                        UserProfileIconUrl = profileResult?.Url;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading document: {ex.Message}");
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
         }
     }
 }
