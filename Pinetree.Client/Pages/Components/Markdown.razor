@@ -48,7 +48,7 @@
                                         </div>
                                     }
                                     <div>
-                                        <TreeView Pinetree="@Pinetree" Guid="@Guid" IsTry=@IsTry IsProfessional=IsProfessional OnChildEvent="SetCurrent" IsPublicView="@IsPublicView" />
+                                        <TreeView Pinetree="@Pinetree" Guid="@Guid" IsTry=@IsTry IsProfessional=IsProfessional OnChildEvent="SetCurrentAsync" IsPublicView="@IsPublicView" />
                                     </div>
                                 </div>
                             </div>
@@ -167,7 +167,7 @@
                     {
                         <div id="panel2" class="panel"
                              style="display: @(ViewMode == "edit" || ViewMode == "split" ? "flex" : "none");
-                                                                                                @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
+                                                                                                    @(ViewMode == "edit" ? "flex: 1 !important; width: 100% !important;" : "")">
                             <div class="panel-content-wrapper">
                                 <div class="panel-content">
                                     <textarea @ref="TextAreaRef" @bind="@(Content)" class="no-resize"
@@ -417,14 +417,14 @@
     }
 
     [JSInvokable]
-    public void HandleMarkdownLinkClick(string idString)
+    public async Task HandleMarkdownLinkClick(string idString)
     {
         try
         {
             if (_isDisposed) return;
             if (Guid.TryParse(idString, out var id))
             {
-                SetCurrent(id);
+                await SetCurrentAsync(id);
             }
         }
         catch (Exception ex)
@@ -785,6 +785,12 @@
         }
     }
 
+    private async Task SetCurrentAsync(Guid guid)
+    {
+        SetCurrent(guid);
+        await _jsModule.InvokeVoidAsync("scrollToTop");
+    }
+
     private void SetCurrent(Guid guid)
     {
         int fileCount = 0;
@@ -814,7 +820,7 @@
             var linkText = $"[{childTitle}](//{childId})";
             await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, linkText);
             Current.Content = await JS.GetTextAreaValueAsync();
-            SetCurrent(Guid);
+            await SetCurrentAsync(Guid);
             StateHasChanged();
         }
         catch (Exception ex)

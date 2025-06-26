@@ -1,3 +1,10 @@
+## [0.9.10] - 2025-06-26
+
+### Features
+- Introduced a Trash tab for managing deleted files, allowing users to restore or permanently delete items.
+
+---
+
 ## [0.9.9] - 2025-06-24
 
 ### Features

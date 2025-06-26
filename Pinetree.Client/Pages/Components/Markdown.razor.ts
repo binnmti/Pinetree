@@ -1423,3 +1423,31 @@ function setupResizer(
         e.stopPropagation();
     });
 }
+
+export function scrollToTop(): void {
+    // Reset edit panel (textarea)
+    const editPanel = document.getElementById('panel2');
+    if (editPanel) {
+        const textarea = editPanel.querySelector('textarea') as HTMLTextAreaElement;
+        if (textarea) {
+            textarea.scrollTop = 0;
+        }
+    }
+
+    const previewPanel = document.getElementById('panel3');
+    if (previewPanel) {
+        // Find the scrollable container in preview panel
+        const scrollableElements = [
+            previewPanel.querySelector('.public-view-scroll-container'),
+            previewPanel.querySelector('.markdown-body[style*="overflow:auto"]'),
+            previewPanel.querySelector('.panel-content')
+        ] as HTMLElement[];
+
+        for (const element of scrollableElements) {
+            if (element && element.scrollHeight > element.clientHeight) {
+                element.scrollTop = 0;
+                break;
+            }
+        }
+    }
+}
