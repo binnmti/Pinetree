@@ -695,67 +695,21 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         DbContext.Pinecone.Remove(pinecone);
         await DbContext.SaveChangesAsync();
     }
-
+    
     /// <summary>
-    /// Restore a file with intelligent hierarchy restoration
-    /// </summary>
+         /// Restore a file with intelligent hierarchy restoration
+         /// </summary>
     private async Task RestoreFileWithHierarchyAsync(Pinecone file)
     {
-        // Reset deletion flags
+        // Step 1: Restore entire parent chain if needed
+        await RestoreParentChainAsync(file);
+
+        // Step 2: Reset deletion flags for the file itself
         file.IsDeleted = false;
         file.DeletedAt = null;
         file.Update = DateTime.UtcNow;
 
-        // Determine restoration target
-        Pinecone? targetParent = null;
-        Guid targetGroupGuid = file.GroupGuid;
-
-        // Step 1: Try to restore to original parent if it exists and is not deleted
-        if (file.ParentGuid.HasValue)
-        {
-            targetParent = await DbContext.Pinecone
-                .FirstOrDefaultAsync(p => p.Guid == file.ParentGuid.Value &&
-                                        !p.IsDeleted &&
-                                        p.UserName == file.UserName);
-        }
-
-        // Step 2: If original parent not available, check if GroupGuid exists
-        if (targetParent == null && file.GroupGuid != Guid.Empty)
-        {
-            var groupExists = await DbContext.Pinecone
-                .AnyAsync(p => p.GroupGuid == file.GroupGuid &&
-                              !p.IsDeleted &&
-                              p.UserName == file.UserName);
-
-            if (!groupExists)
-            {
-                // Group doesn't exist, create new group (restore as root)
-                targetGroupGuid = Guid.NewGuid();
-                file.ParentGuid = null;
-            }
-            else
-            {
-                // Group exists, restore as child of group root
-                file.ParentGuid = null; // Root level within the group
-            }
-        }
-        else if (targetParent != null)
-        {
-            // Restore to original parent
-            file.ParentGuid = targetParent.Guid;
-            targetGroupGuid = targetParent.GroupGuid;
-        }
-        else
-        {
-            // Create new group for orphaned file
-            targetGroupGuid = Guid.NewGuid();
-            file.ParentGuid = null;
-        }
-
-        // Update GroupGuid if changed
-        file.GroupGuid = targetGroupGuid;
-
-        // Set appropriate Order
+        // Step 3: Set appropriate Order
         var maxOrder = await DbContext.Pinecone
             .Where(p => p.ParentGuid == file.ParentGuid &&
                        p.GroupGuid == file.GroupGuid &&
@@ -766,10 +720,61 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
 
         file.Order = maxOrder + 1;
 
-        // Recursively restore children
+        // Step 4: Recursively restore children
         await RestoreChildrenRecursivelyAsync(file);
 
         await DbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Restore the entire parent chain up to the root if any parent is deleted
+    /// </summary>
+    private async Task RestoreParentChainAsync(Pinecone file)
+    {
+        var parentsToRestore = new List<Pinecone>();
+        var currentFile = file;
+
+        // Walk up the parent chain and collect deleted parents
+        while (currentFile.ParentGuid.HasValue)
+        {
+            var parent = await DbContext.Pinecone
+                .FirstOrDefaultAsync(p => p.Guid == currentFile.ParentGuid.Value &&
+                                        p.UserName == currentFile.UserName);
+
+            if (parent == null)
+            {
+                // Parent doesn't exist, break the chain
+                break;
+            }
+
+            if (parent.IsDeleted)
+            {
+                // Parent is deleted, add to restoration list
+                parentsToRestore.Add(parent);
+            }
+
+            currentFile = parent;
+        }
+
+        // Restore parents from root to child (reverse order)
+        parentsToRestore.Reverse();
+        foreach (var parent in parentsToRestore)
+        {
+            parent.IsDeleted = false;
+            parent.DeletedAt = null;
+            parent.Update = DateTime.UtcNow;
+
+            // Set appropriate order for the parent
+            var maxOrder = await DbContext.Pinecone
+                .Where(p => p.ParentGuid == parent.ParentGuid &&
+                           p.GroupGuid == parent.GroupGuid &&
+                           !p.IsDeleted &&
+                           p.UserName == parent.UserName)
+                .Select(p => (int?)p.Order)
+                .MaxAsync() ?? 0;
+
+            parent.Order = maxOrder + 1;
+        }
     }
 
     [HttpGet("get-deleted-include-child/{guid}")]

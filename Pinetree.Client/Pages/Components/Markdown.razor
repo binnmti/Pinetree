@@ -569,8 +569,16 @@
         StateHasChanged();
     }
 
-    private void OnFileListClick()
+    private async Task OnFileListClick()
     {
+        if (HasPendingChanges())
+        {
+            var confirmed = await JS.ConfirmAsync("Your changes have not been saved. Are you sure you want to leave this page?");
+            if (!confirmed)
+            {
+                return;
+            }
+        }
         NavigationManager.NavigateTo($"/files");
     }
 
