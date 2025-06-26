@@ -1,0 +1,114 @@
+@page "/view/{User}/{Guid:guid}"
+@using Pinetree.Client.ViewModels
+@using Pinetree.Client.Services
+@using Pinetree.Client.Pages.Components
+@using Pinetree.Shared.ViewModels
+
+@rendermode InteractiveServer
+
+<PageTitle>@GetPageTitle()</PageTitle>
+<HeadContent>
+    <meta property="og:title" content=@GetPageTitle() />
+    <meta name="twitter:title" content=@GetPageTitle() />
+    <meta name="description" content=@GetDescription() />
+    <meta property="og:description" content=@GetDescription() />
+    <meta name="twitter:description" content=@GetDescription() />
+    <meta property="og:url" content=@GetCurrentUrl() />
+    <link rel="canonical" href=@GetCurrentUrl() />
+</HeadContent>
+
+@if (isLoading)
+{
+    <LoadingSpinner Message="Loading document..." />
+}
+else if (Pinetree != null)
+{
+    <Markdown Pinetree="@(Pinetree)" Guid="@(Guid)" IsTry=false IsProfessional=false FileCount=@FileCount IsPublicView=true User="@User" UserProfileIconUrl="@UserProfileIconUrl" />
+}
+else
+{
+    <div class="alert alert-warning mt-3" role="alert">
+        <h4 class="alert-heading">Document Not Found</h4>
+        <p>The requested document could not be found or you don't have permission to view it.</p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? User { get; set; }
+
+    [Parameter]
+    public Guid Guid { get; set; }
+    private PinetreeView? Pinetree { get; set; }
+    private int FileCount { get; set; }
+    private bool isLoading = true;
+    private string? UserProfileIconUrl { get; set; }
+
+    [Inject]
+    public required NavigationManager NavigationManager { get; set; }
+    [Inject]
+    public required HttpClient HttpClient { get; set; }
+
+    private string GetPageTitle()
+    {
+        return $"{Pinetree?.Title} - {User}'s Document | Pinetree";
+    }
+
+    private string GetDescription()
+    {
+        if (Pinetree?.Content != null && !string.IsNullOrWhiteSpace(Pinetree.Content))
+        {
+            // Get first 150 characters of content as description
+            var content = System.Text.RegularExpressions.Regex.Replace(Pinetree.Content, @"[#*`\[\]()]", "").Trim();
+            return content.Length > 150 ? content.Substring(0, 150) + "..." : content;
+        }
+        return $"View {User}'s hierarchical markdown document on Pinetree - a browser-based hierarchical markdown editor.";
+    }
+
+    private string GetCurrentUrl()
+    {
+        return NavigationManager.Uri;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var baseUrl = NavigationManager.BaseUri;
+            var response = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"{baseUrl}api/Pinecones/get-view-include-child/{Guid}");
+            if (response == null || response.Guid == Guid.Empty)
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
+
+            (Pinetree, FileCount) = response.ToPinetreeIncludeChild();
+
+            // Load user profile icon for public views only
+            try
+            {
+                var profileResponse = await HttpClient.GetAsync($"{baseUrl}api/Images/user-profile-icon/{User}");
+                if (profileResponse.IsSuccessStatusCode)
+                {
+                    var profileResult = await profileResponse.Content.ReadFromJsonAsync<UserProfileIconViewModel>();
+                    UserProfileIconUrl = profileResult?.Url;
+                }
+            }
+            catch
+            {
+                // Profile icon loading failed, use default
+                UserProfileIconUrl = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading document: {ex.Message}");
+            // Pinetree remains null, will show error message
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}
