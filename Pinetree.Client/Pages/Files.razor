@@ -86,7 +86,7 @@ else
                                 </div>
                             </div>
                         </div>
-                        @if (isLoading)
+                        @if (isLoadingDocument)
                         {
                             <LoadingSpinner Message="Loading documents..." />
                         }
@@ -438,7 +438,6 @@ else
 
     // Tab and UI state
     private int activeTab = 0;
-    private bool isLoading = true;
     // Data properties
     private List<PinetreeView> PinetreeViews { get; set; } = new List<PinetreeView>();
     private List<UserBlobViewModel>? files;
@@ -448,6 +447,8 @@ else
 
     // Trash-related properties
     private List<PineconeViewModel>? deletedFiles;
+    private bool isLoading = true;
+    private bool isLoadingDocument = false;
     private bool isLoadingTrash = false;
     private bool isRestoringFile = false;
     private bool isDeletingFile = false;
@@ -540,6 +541,7 @@ else
                 _ = LoadFilesAsync();
                 _ = LoadStorageUsageAsync();
             }
+            isLoading = false;
 
             // Ensure UI is updated
             StateHasChanged();
@@ -562,7 +564,7 @@ else
     {
         try
         {
-            isLoading = true;
+            isLoadingDocument = true;
             StateHasChanged();
 
             // Build query parameters for API call
@@ -602,7 +604,7 @@ else
         }
         finally
         {
-            isLoading = false;
+            isLoadingDocument = false;
             StateHasChanged();
         }
     }
@@ -823,7 +825,6 @@ else
         }
         finally
         {
-            isLoading = false;
             isLoadingTrash = false;
             StateHasChanged();
         }
@@ -846,7 +847,6 @@ else
         }
         finally
         {
-            isLoading = false;
             isRestoringFile = false;
             StateHasChanged();
         }
