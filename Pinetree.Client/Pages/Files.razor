@@ -282,7 +282,7 @@ else
                                                     <small class="text-muted">
                                                         @if (file.DeletedAt.HasValue)
                                                         {
-                                                            @file.DeletedAt.Value.ToString("yyyy/MM/dd HH:mm")
+                                                            @file.DeletedAt.Value.ToString("MM/dd/yyyy hh:mm tt")
                                                         }
                                                     </small>
                                                 </td>
@@ -391,7 +391,7 @@ else
                                             </td>
                                             <td>@file.FileName</td>
                                             <td>@FormatBytes(file.SizeInBytes)</td>
-                                            <td>@file.UploadedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
+                                            <td>@file.UploadedAt.ToLocalTime().ToString("MM/dd/yyyy hh:mm tt")</td>
                                             <td>
                                                 @if (IsProfileIcon(file))
                                                 {
@@ -464,10 +464,21 @@ else
     private string sortBy = "updatedat";
     private bool sortDescending = true;
     private Timer? searchDebounceTimer;
-    
+
     private async Task SetActiveTab(int tabIndex)
     {
         activeTab = tabIndex;
+
+        // Save active tab to localStorage
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "files-active-tab", tabIndex.ToString());
+        }
+        catch
+        {
+            // Ignore localStorage errors
+        }
+
         if (activeTab == 0)
         {
             await LoadDocuments();
@@ -488,6 +499,7 @@ else
         var c = (content.Length < 100) ? content : content[..100];
         return MarkdownService.ToHtml(c);
     }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -499,7 +511,38 @@ else
                 return;
             }
             Username = identity.Name ?? "";
-            await LoadDocuments();
+
+            // Restore active tab from localStorage
+            try
+            {
+                var savedTab = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", "files-active-tab");
+                if (int.TryParse(savedTab, out int tabIndex) && tabIndex >= 0 && tabIndex <= 2)
+                {
+                    activeTab = tabIndex;
+                }
+            }
+            catch
+            {
+                // Ignore localStorage errors
+            }
+
+            // Load appropriate data based on active tab
+            if (activeTab == 0)
+            {
+                await LoadDocuments();
+            }
+            else if (activeTab == 1)
+            {
+                await LoadDeletedFiles();
+            }
+            else if (activeTab == 2)
+            {
+                _ = LoadFilesAsync();
+                _ = LoadStorageUsageAsync();
+            }
+
+            // Ensure UI is updated
+            StateHasChanged();
         }
     }
 
@@ -514,6 +557,7 @@ else
         CurrentPage = pageNumber;
         await LoadDocuments();
     }
+
     private async Task LoadDocuments()
     {
         try
@@ -779,6 +823,7 @@ else
         }
         finally
         {
+            isLoading = false;
             isLoadingTrash = false;
             StateHasChanged();
         }
@@ -801,6 +846,7 @@ else
         }
         finally
         {
+            isLoading = false;
             isRestoringFile = false;
             StateHasChanged();
         }
