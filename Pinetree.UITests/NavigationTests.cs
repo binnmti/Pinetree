@@ -420,16 +420,18 @@ namespace Pinetree.UITests
         {
             await Page.GotoAsync(TargetUrl);
             await Page.ClickAsync("a[href='Account/Login']");
-            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            await Page.WaitForTimeoutAsync(Timeout);
+            await Page.WaitForSelectorAsync("input[id='Input.UserName']", new() { Timeout = Timeout });
 
             await Page.FillAsync("input[id='Input.UserName']", "test");
             await Page.FillAsync("input[id='Input.Password']", "test");
             await Page.ClickAsync("button[type='submit']");
-            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            await Page.WaitForTimeoutAsync(Timeout);
 
             // Verify login success by checking if we can access user page
             await Page.GotoAsync($"{TargetUrl}/files");
-            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            await Page.WaitForTimeoutAsync(Timeout);
+            await Page.WaitForSelectorAsync(".card", new() { Timeout = Timeout });
             StringAssert.Contains(Page.Url, "/files");
         }
     }
