@@ -2,7 +2,7 @@
 using Pinetree.Client.ViewModels;
 using Pinetree.Client.Services;
 
-namespace Pinetree.Client.Pages.Components;
+namespace Pinetree.Client.Utilities;
 
 internal static class MarkdownUtil
 {
