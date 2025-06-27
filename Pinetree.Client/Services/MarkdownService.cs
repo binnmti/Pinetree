@@ -76,7 +76,7 @@ public static class MarkdownService
         Sanitizer.AllowedAttributes.Add("aria-hidden");
         Sanitizer.AllowedClasses.Add("bi");
         Sanitizer.AllowedClasses.Add("bi-box-arrow-up-right");
-        Sanitizer.AllowedClasses.Add("me-1");
+        Sanitizer.AllowedClasses.Add("mx-1");
         
         // YouTube iframe settings
         Sanitizer.AllowedAttributes.Add("src");        // YouTube iframe settings
