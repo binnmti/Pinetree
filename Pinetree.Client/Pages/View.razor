@@ -23,7 +23,7 @@
     <link rel="canonical" href=@GetCurrentUrl() />
 </HeadContent>
 
-@if (isLoading)
+@if (isProfileLoading || isPinetreeLoading)
 {
     <LoadingSpinner Message="Loading document..." />
 }
@@ -46,9 +46,10 @@ else
     [Parameter]
     public Guid Guid { get; set; }
     private PinetreeView? Pinetree { get; set; }
-    private string? OriginalContent { get; set; } 
+    private string? OriginalContent { get; set; }
     private int FileCount { get; set; }
-    private bool isLoading = true;
+    private bool isProfileLoading = true;
+    private bool isPinetreeLoading = true;
     private string? UserProfileIconUrl { get; set; }
 
     [Inject]
@@ -104,31 +105,43 @@ else
         return string.Empty;
     }
 
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var baseUrl = NavigationManager.BaseUri;
+            var response = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"{baseUrl}api/Pinecones/get-view-include-child/{Guid}");
+            if (response == null || response.Guid == Guid.Empty)
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
+            (Pinetree, FileCount) = response.ToPinetreeIncludeChild();
+
+            // Store original content with YAML Front Matter for meta tag extraction
+            if (Pinetree != null && !string.IsNullOrWhiteSpace(Pinetree.Content))
+            {
+                OriginalContent = Pinetree.Content;
+                // Remove YAML Front Matter from display content only
+                Pinetree.Content = YamlFrontMatterHelper.RemoveYamlFrontMatter(Pinetree.Content);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading document: {ex.Message}");
+        }
+        isPinetreeLoading = false;
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             try
             {
-                var baseUrl = NavigationManager.BaseUri;
-                var response = await HttpClient.GetFromJsonAsync<PineconeViewModelWithChildren>($"{baseUrl}api/Pinecones/get-view-include-child/{Guid}");
-                if (response == null || response.Guid == Guid.Empty)
-                {
-                    NavigationManager.NavigateTo("/");
-                    return;
-                }
-                (Pinetree, FileCount) = response.ToPinetreeIncludeChild();
-
-                // Store original content with YAML Front Matter for meta tag extraction
-                if (Pinetree != null && !string.IsNullOrWhiteSpace(Pinetree.Content))
-                {
-                    OriginalContent = Pinetree.Content;
-                    // Remove YAML Front Matter from display content only
-                    Pinetree.Content = YamlFrontMatterHelper.RemoveYamlFrontMatter(Pinetree.Content);
-                }
                 if (!string.IsNullOrEmpty(User))
                 {
-                    //var baseUrl = NavigationManager.BaseUri;
+                    var baseUrl = NavigationManager.BaseUri;
                     var profileResponse = await HttpClient.GetAsync($"{baseUrl}api/Images/user-profile-icon/{User}");
                     if (profileResponse.IsSuccessStatusCode)
                     {
@@ -143,7 +156,7 @@ else
             }
             finally
             {
-                isLoading = false;
+                isProfileLoading = false;
                 StateHasChanged();
             }
         }
