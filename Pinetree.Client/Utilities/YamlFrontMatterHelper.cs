@@ -19,26 +19,7 @@ public static class YamlFrontMatterHelper
         if (content.TrimStart().StartsWith("---"))
         {
             var lines = content.Split('\n');
-            var frontMatterStart = -1;
-            var frontMatterEnd = -1;
-
-            // Find the start and end of YAML Front Matter
-            for (int i = 0; i < lines.Length; i++)
-            {
-                var trimmedLine = lines[i].Trim();
-                if (trimmedLine == "---")
-                {
-                    if (frontMatterStart == -1)
-                    {
-                        frontMatterStart = i;
-                    }
-                    else if (frontMatterEnd == -1)
-                    {
-                        frontMatterEnd = i;
-                        break;
-                    }
-                }
-            }
+            var (frontMatterStart, frontMatterEnd) = FindYamlFrontMatterBoundaries(lines);
 
             // If we found both start and end markers, remove the YAML Front Matter
             if (frontMatterStart != -1 && frontMatterEnd != -1)
@@ -67,26 +48,7 @@ public static class YamlFrontMatterHelper
             return string.Empty;
 
         var lines = content.Split('\n');
-        var frontMatterStart = -1;
-        var frontMatterEnd = -1;
-
-        // Find the start and end of YAML Front Matter
-        for (int i = 0; i < lines.Length; i++)
-        {
-            var trimmedLine = lines[i].Trim();
-            if (trimmedLine == "---")
-            {
-                if (frontMatterStart == -1)
-                {
-                    frontMatterStart = i;
-                }
-                else if (frontMatterEnd == -1)
-                {
-                    frontMatterEnd = i;
-                    break;
-                }
-            }
-        }
+        var (frontMatterStart, frontMatterEnd) = FindYamlFrontMatterBoundaries(lines);
 
         // If we found both start and end markers, parse the YAML content
         if (frontMatterStart != -1 && frontMatterEnd != -1)
@@ -141,26 +103,7 @@ public static class YamlFrontMatterHelper
             return result;
 
         var lines = content.Split('\n');
-        var frontMatterStart = -1;
-        var frontMatterEnd = -1;
-
-        // Find the start and end of YAML Front Matter
-        for (int i = 0; i < lines.Length; i++)
-        {
-            var trimmedLine = lines[i].Trim();
-            if (trimmedLine == "---")
-            {
-                if (frontMatterStart == -1)
-                {
-                    frontMatterStart = i;
-                }
-                else if (frontMatterEnd == -1)
-                {
-                    frontMatterEnd = i;
-                    break;
-                }
-            }
-        }
+        var (frontMatterStart, frontMatterEnd) = FindYamlFrontMatterBoundaries(lines);
 
         // If we found both start and end markers, parse all YAML content
         if (frontMatterStart != -1 && frontMatterEnd != -1)
@@ -187,5 +130,35 @@ public static class YamlFrontMatterHelper
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Finds the start and end boundaries of YAML Front Matter in content lines
+    /// </summary>
+    /// <param name="lines">Array of content lines</param>
+    /// <returns>Tuple containing start and end line indices, or (-1, -1) if not found</returns>
+    private static (int start, int end) FindYamlFrontMatterBoundaries(string[] lines)
+    {
+        var frontMatterStart = -1;
+        var frontMatterEnd = -1;
+        
+        for (int i = 0; i < lines.Length; i++)
+        {
+            var trimmedLine = lines[i].Trim();
+            if (trimmedLine == "---")
+            {
+                if (frontMatterStart == -1)
+                {
+                    frontMatterStart = i;
+                }
+                else if (frontMatterEnd == -1)
+                {
+                    frontMatterEnd = i;
+                    break;
+                }
+            }
+        }
+        
+        return (frontMatterStart, frontMatterEnd);
     }
 }
