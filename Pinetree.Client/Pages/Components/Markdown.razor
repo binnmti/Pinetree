@@ -68,7 +68,7 @@
                 @if (IsPublicView)
                 {
                     <!-- Simple breadcrumb header -->
-                    <div class="public-breadcrumb-full-width">
+                    <div class="public-breadcrumb-container">
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb mb-0">
                                 @foreach (var breadcrumbItem in GetBreadcrumbItems())
@@ -76,7 +76,7 @@
                                     @if (breadcrumbItem.IsLast)
                                     {
                                         <li class="breadcrumb-item active" aria-current="page">
-                                            <span class="breadcrumb-title">@TruncateTitle(breadcrumbItem.Title, 25)</span>
+                                            <span class="breadcrumb-title">@TruncateTitle(breadcrumbItem.Title, 60)</span>
                                         </li>
                                     }
                                     else
@@ -84,7 +84,7 @@
                                         <li class="breadcrumb-item">
                                             <a href="javascript:void(0)" @onclick="() => NavigateToBreadcrumbItem(breadcrumbItem.Guid)"
                                                class="breadcrumb-link" title="@breadcrumbItem.Title">
-                                                @TruncateTitle(breadcrumbItem.Title, 20)
+                                                @TruncateTitle(breadcrumbItem.Title, 50)
                                             </a>
                                         </li>
                                     }
