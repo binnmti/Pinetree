@@ -10,6 +10,44 @@
 @implements IAsyncDisposable
 
 <div class="resizable-page">
+    <!-- Mobile TreeView Toggle Button -->
+    @if (!IsPublicView)
+    {
+        <div class="mobile-tree-tab d-md-none" @onclick="ToggleMobileTreeView">
+        </div>
+    }
+    
+    <!-- Mobile TreeView Overlay -->
+    @if (!IsPublicView && _isMobileTreeViewOpen)
+    {
+        <div class="mobile-tree-overlay d-md-none" @onclick="CloseMobileTreeView">
+            <div class="mobile-tree-sidebar" @onclick:stopPropagation="true">
+                <div class="mobile-tree-content">
+                    <div class="list-group">
+                        @if (!IsTry)
+                        {
+                            <div>
+                                <button type="button" class="list-group-item list-group-item-action" @onclick="OnFileListClick">
+                                    <i class="bi bi-arrow-90deg-up me-1" aria-hidden="true"></i>
+                                    <i class="bi bi-card-list" aria-hidden="true"></i>
+                                    Files
+                                </button>
+                            </div>
+                        }
+                        <div>
+                            <TreeView Pinetree="@Pinetree" Guid="@Guid" IsTry=@IsTry IsProfessional=IsProfessional OnChildEvent="SetCurrentAsync" IsPublicView="@IsPublicView" />
+                        </div>
+                    </div>
+                </div>
+                <div class="mobile-tree-footer">
+                    <div class="text-muted small">
+                        FileCount : @FileCount
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
     @if (IsTry)
     {
         <div class="description-bar">
@@ -30,7 +68,7 @@
     }
     <div class="panels-section">
         <div class="panels-row">
-            <div id="panel1" class="panel">
+            <div id="panel1" class="panel d-none d-md-flex">
                 <div class="panel-content-wrapper">
                     <div class="panel-header">
                     </div>
@@ -63,7 +101,7 @@
                 </div>
             </div>
 
-            <div class="resizer" id="resizer1"></div>
+            <div class="resizer d-none d-md-block" id="resizer1"></div>
 
             <div class="right-panels p-3">
                 @if (IsPublicView)
@@ -326,6 +364,7 @@
     private Dictionary<string, string[]> _allEmojis = new();
     private string _currentFontFamily = "system-ui, -apple-system, sans-serif";
     private int _currentFontSize = 14;
+    private bool _isMobileTreeViewOpen = false;
 
     /// <summary>
     /// Generates markdown HTML for preview, removing YAML Front Matter if present
@@ -343,6 +382,18 @@
     private void ToggleSidebar()
     {
         IsSidebarOpen = !IsSidebarOpen;
+    }
+
+    private void ToggleMobileTreeView()
+    {
+        _isMobileTreeViewOpen = !_isMobileTreeViewOpen;
+        StateHasChanged();
+    }
+
+    private void CloseMobileTreeView()
+    {
+        _isMobileTreeViewOpen = false;
+        StateHasChanged();
     }
 
     protected override void OnInitialized()
@@ -621,6 +672,11 @@
                 return;
             }
         }
+        // Close mobile tree view when navigating
+        if (_isMobileTreeViewOpen)
+        {
+            _isMobileTreeViewOpen = false;
+        }
         NavigationManager.NavigateTo($"/files");
     }
 
@@ -830,6 +886,11 @@
     private async Task SetCurrentAsync(Guid guid)
     {
         SetCurrent(guid);
+        // Close mobile tree view when a file is selected
+        if (_isMobileTreeViewOpen)
+        {
+            _isMobileTreeViewOpen = false;
+        }
         await _jsModule.InvokeVoidAsync("scrollToTop");
     }
 
