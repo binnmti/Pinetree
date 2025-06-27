@@ -28,13 +28,13 @@ else
                 <!-- Tab navigation -->
                 <div class="list-group">
                     <button @onclick="() => SetActiveTab(0)" class="list-group-item list-group-item-action @(activeTab == 0 ? "active" : "")">
-                        <i class="bi bi-file-earmark-text"></i> Active Files
+                        <i class="bi bi-card-list"></i> Files
                     </button>
                     <button @onclick="() => SetActiveTab(1)" class="list-group-item list-group-item-action @(activeTab == 1 ? "active" : "")">
                         <i class="bi bi-trash"></i> Trash
                     </button>
                     <button @onclick="() => SetActiveTab(2)" class="list-group-item list-group-item-action @(activeTab == 2 ? "active" : "")">
-                        <i class="bi bi-images"></i> My Image
+                        <i class="bi bi-images"></i> Image
                     </button>
                 </div>
             </div>

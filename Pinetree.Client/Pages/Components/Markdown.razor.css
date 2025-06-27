@@ -14,8 +14,6 @@
 
 .breadcrumb {
     background-color: transparent;
-    padding: 0 1rem;
-    margin: 0;
     font-size: 0.875rem;
     display: flex;
     flex-wrap: wrap;
@@ -32,14 +30,12 @@
 .breadcrumb-item + .breadcrumb-item::before {
     content: "/";
     color: #6c757d;
-    margin: 0 0.75rem;
     font-weight: normal;
 }
 
 .breadcrumb-link {
     color: #0d6efd;
     text-decoration: none;
-    padding: 0.25rem 0.375rem;
     border-radius: 0.25rem;
     transition: all 0.15s ease-in-out;
     background-color: transparent;
@@ -54,7 +50,6 @@
 .breadcrumb-item.active .breadcrumb-title {
     color: #495057;
     font-weight: 500;
-    padding: 0.25rem 0.375rem;
     background-color: transparent;
     border-radius: 0.25rem;
 }
@@ -154,9 +149,6 @@
         max-width: 350px;
     }
     
-    .breadcrumb-item + .breadcrumb-item::before {
-        margin: 0 0.5rem;
-    }
     
     .public-content-title {
         font-size: 1.5rem;
@@ -170,21 +162,11 @@
 @media (max-width: 576px) {
     .breadcrumb {
         font-size: 0.75rem;
-        padding: 0 0.5rem;
     }
     
     .breadcrumb-title,
     .breadcrumb-link {
         max-width: 250px;
-    }
-    
-    .breadcrumb-item + .breadcrumb-item::before {
-        margin: 0 0.4rem;
-    }
-    
-    .breadcrumb-link,
-    .breadcrumb-item.active .breadcrumb-title {
-        padding: 0.2rem 0.3rem;
     }
     
     .public-content-title {

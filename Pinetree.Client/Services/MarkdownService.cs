@@ -158,7 +158,7 @@ public static class MarkdownService
                 if (!linkContent.Contains("bi-box-arrow-up-right"))
                 {
                     // Add external link icon before the link text
-                    var iconHtml = "<i class=\"bi bi-box-arrow-up-right me-1\" aria-hidden=\"true\" title=\"External link\"></i>";
+                    var iconHtml = "<i class=\"bi bi-box-arrow-up-right mx-1\" aria-hidden=\"true\" title=\"External link\"></i>";
                     linkContent = iconHtml + linkContent;
                 }
                 
