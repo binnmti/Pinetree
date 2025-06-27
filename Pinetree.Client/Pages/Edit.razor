@@ -5,6 +5,7 @@
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Authorization
 @using Pinetree.Client.Services
+@using Pinetree.Client.Utilities
 @using Pinetree.Client.ViewModels
 @using Pinetree.Shared
 @using Pinetree.Shared.ViewModels
@@ -34,6 +35,7 @@ else
     private Guid Guid => Guid.TryParse(GuidString, out var guid) ? guid : Guid.Empty;
 
     private PinetreeView? Pinetree { get; set; }
+    private string? OriginalContent { get; set; } // YAML Front Matter付きの元コンテンツを保持
     private int FileCount { get; set; }
     private bool IsProfessional { get; set; }
     private bool isLoading = true;
@@ -67,6 +69,12 @@ else
                     return;
                 }
                 (Pinetree, FileCount) = hit.ToPinetreeIncludeChild();
+                
+                // Store original content for potential YAML Front Matter handling
+                if (Pinetree != null && !string.IsNullOrWhiteSpace(Pinetree.Content))
+                {
+                    OriginalContent = Pinetree.Content;
+                }
             }
             catch (Exception ex)
             {

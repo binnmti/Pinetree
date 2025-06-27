@@ -2,9 +2,10 @@
 @using Pinetree.Client.ViewModels
 @using Pinetree.Client.Services
 @using Pinetree.Client.Pages.Components
+@using Pinetree.Client.Utilities
 @using Pinetree.Shared.ViewModels
 
-@rendermode InteractiveServer
+@rendermode InteractiveAuto
 
 <PageTitle>@GetPageTitle()</PageTitle>
 <HeadContent>
@@ -14,6 +15,11 @@
     <meta property="og:description" content=@GetDescription() />
     <meta name="twitter:description" content=@GetDescription() />
     <meta property="og:url" content=@GetCurrentUrl() />
+    @if (!string.IsNullOrWhiteSpace(GetOgImage()))
+    {
+        <meta property="og:image" content=@GetOgImage() />
+        <meta name="twitter:image" content=@GetOgImage() />
+    }
     <link rel="canonical" href=@GetCurrentUrl() />
 </HeadContent>
 
@@ -40,6 +46,7 @@ else
     [Parameter]
     public Guid Guid { get; set; }
     private PinetreeView? Pinetree { get; set; }
+    private string? OriginalContent { get; set; } // YAML Front Matter付きの元コンテンツを保持
     private int FileCount { get; set; }
     private bool isLoading = true;
     private string? UserProfileIconUrl { get; set; }
@@ -51,15 +58,27 @@ else
 
     private string GetPageTitle()
     {
+        var yamlTitle = YamlFrontMatterHelper.GetYamlFrontMatterValue(OriginalContent, "title");
+        if (!string.IsNullOrWhiteSpace(yamlTitle))
+        {
+            return yamlTitle;
+        }
         return $"{Pinetree?.Title} - {User}'s Document | Pinetree";
     }
 
     private string GetDescription()
     {
+        var yamlDescription = YamlFrontMatterHelper.GetYamlFrontMatterValue(OriginalContent, "description");
+        if (!string.IsNullOrWhiteSpace(yamlDescription))
+        {
+            return yamlDescription;
+        }
+
         if (Pinetree?.Content != null && !string.IsNullOrWhiteSpace(Pinetree.Content))
         {
-            // Get first 150 characters of content as description
-            var content = System.Text.RegularExpressions.Regex.Replace(Pinetree.Content, @"[#*`\[\]()]", "").Trim();
+            // Remove YAML Front Matter and get first 150 characters of content as description
+            var contentWithoutFrontMatter = YamlFrontMatterHelper.RemoveYamlFrontMatter(Pinetree.Content);
+            var content = System.Text.RegularExpressions.Regex.Replace(contentWithoutFrontMatter, @"[#*`\[\]()]", "").Trim();
             return content.Length > 150 ? content.Substring(0, 150) + "..." : content;
         }
         return $"View {User}'s hierarchical markdown document on Pinetree - a browser-based hierarchical markdown editor.";
@@ -69,6 +88,22 @@ else
     {
         return NavigationManager.Uri;
     }
+
+    private string GetOgImage()
+    {
+        var yamlImage = YamlFrontMatterHelper.GetYamlFrontMatterValue(OriginalContent, "image");
+        if (!string.IsNullOrWhiteSpace(yamlImage))
+        {
+            // If it's a relative path, make it absolute
+            if (yamlImage.StartsWith("/"))
+            {
+                return $"{NavigationManager.BaseUri.TrimEnd('/')}{yamlImage}";
+            }
+            return yamlImage;
+        }
+        return string.Empty;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -81,6 +116,14 @@ else
                 return;
             }
             (Pinetree, FileCount) = response.ToPinetreeIncludeChild();
+            
+            // Store original content with YAML Front Matter for meta tag extraction
+            if (Pinetree != null && !string.IsNullOrWhiteSpace(Pinetree.Content))
+            {
+                OriginalContent = Pinetree.Content;
+                // Remove YAML Front Matter from display content only
+                Pinetree.Content = YamlFrontMatterHelper.RemoveYamlFrontMatter(Pinetree.Content);
+            }
         }
         catch (Exception ex)
         {
