@@ -8,8 +8,6 @@
 
 @implements IAsyncDisposable
 
-<link href="~/css/public-view.css" rel="stylesheet" />
-
 <div class="resizable-page">
     @if (IsTry)
     {
@@ -68,72 +66,74 @@
 
             <div class="right-panels p-3">
                 <div class="common-header @(IsPublicView ? "public-view-header" : "")">
-                    <div class="markdown-title d-flex align-items-center @(IsPublicView ? "public-view-title" : "")">                        @if (IsPublicView)
-                        {                            <div class="public-title-container">
-                                <h1 class="public-title">@Title</h1>
-                                <div class="public-meta d-flex align-items-center justify-content-between flex-wrap">
-                                    <div class="public-user-info d-flex align-items-center">
-                                        @if (!string.IsNullOrEmpty(UserProfileIconUrl))
+                    @if (IsPublicView)
+                    {
+                        <!-- Simple breadcrumb header -->
+                        <div class="public-breadcrumb-full-width">
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb mb-0">
+                                    @foreach (var breadcrumbItem in GetBreadcrumbItems())
+                                    {
+                                        @if (breadcrumbItem.IsLast)
                                         {
-                                            <img src="@UserProfileIconUrl" alt="@User" class="public-user-avatar rounded-circle me-2" />
+                                            <li class="breadcrumb-item active" aria-current="page">
+                                                <span class="breadcrumb-title">@TruncateTitle(breadcrumbItem.Title, 25)</span>
+                                            </li>
                                         }
                                         else
                                         {
-                                            <div class="public-user-avatar-default rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2">
-                                                <i class="bi bi-person-fill text-white public-user-avatar-icon"></i>
-                                            </div>
+                                            <li class="breadcrumb-item">
+                                                <a href="javascript:void(0)" @onclick="() => NavigateToBreadcrumbItem(breadcrumbItem.Guid)" 
+                                                   class="breadcrumb-link" title="@breadcrumbItem.Title">
+                                                    @TruncateTitle(breadcrumbItem.Title, 20)
+                                                </a>
+                                            </li>
                                         }
-                                        <span class="public-user-name">@User</span>
-                                    </div>
-                                    <div class="public-dates d-flex align-items-center">
-                                        <span class="public-date-text">Created: @Current.Create.ToString("MMM dd, yyyy")</span>
-                                        @if (Current.Update != Current.Create)
-                                        {
-                                            <span class="public-date-text">Updated: @Current.Update.ToString("MMM dd, yyyy")</span>
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        else
-                        {
+                                    }
+                                </ol>
+                            </nav>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="markdown-title d-flex align-items-center">
                             <div class="position-relative flex-grow-1 mx-1">
                                 <input @bind="@(Title)" @oninput="OnInputTitleChange" placeholder="Untitled" class="w-100 pe-5" />
                                 <small class="position-absolute end-0 top-50 translate-middle-y me-2 text-muted title-counter">
                                     @{
-                                        var titleLength = Title?.Length ?? 0;
-                                        var titleMaxLength = LimitCheckService.TitleMaxCharacter;
-                                        var titleOverLimit = titleLength > titleMaxLength;
+                                        var inputTitleLength = Title?.Length ?? 0;
+                                        var inputTitleMaxLength = LimitCheckService.TitleMaxCharacter;
+                                        var inputTitleOverLimit = inputTitleLength > inputTitleMaxLength;
                                     }
-                                    <span class="@(titleOverLimit ? "text-danger fw-bold" : "")">@titleLength/@titleMaxLength</span>
+                                    <span class="@(inputTitleOverLimit ? "text-danger fw-bold" : "")">@inputTitleLength/@inputTitleMaxLength</span>
                                 </small>
                             </div>
-                        }
-                        <div class="d-flex align-items-center ms-2">
-                            @if (!IsPublicView)
-                            {
-                                var titleLength = Title?.Length ?? 0;
-                                var isTitleOverLimit = titleLength > LimitCheckService.TitleMaxCharacter;
-                                <button @onclick="SaveChanges" disabled="@(!HasPendingChanges() || IsTry || _isSaving || isTitleOverLimit)"
-                                        class="btn btn-sm btn-primary me-2" title="@(isTitleOverLimit ? "Title exceeds character limit" : "Save changes")">
-                                    @if (_isSaving)
-                                    {
-                                        <span class="d-flex align-items-center">
-                                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                            <span>Saving...</span>
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="d-flex align-items-center">
-                                            <i class="bi bi-save me-1"></i>
-                                            <span>Save</span>
-                                        </span>
-                                    }
-                                </button>
-                            }
+                            <div class="d-flex align-items-center ms-2">
+                                @if (!IsPublicView)
+                                {
+                                    var currentTitleLength = Title?.Length ?? 0;
+                                    var isTitleOverLimit = currentTitleLength > LimitCheckService.TitleMaxCharacter;
+                                    <button @onclick="SaveChanges" disabled="@(!HasPendingChanges() || IsTry || _isSaving || isTitleOverLimit)"
+                                            class="btn btn-sm btn-primary me-2" title="@(isTitleOverLimit ? "Title exceeds character limit" : "Save changes")">
+                                        @if (_isSaving)
+                                        {
+                                            <span class="d-flex align-items-center">
+                                                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                <span>Saving...</span>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="d-flex align-items-center">
+                                                <i class="bi bi-save me-1"></i>
+                                                <span>Save</span>
+                                            </span>
+                                        }
+                                    </button>
+                                }
+                            </div>
                         </div>
-                    </div>
+                    }
                     @if (!IsPublicView)
                     {
                         <div class="markdown-toolbar">
@@ -211,6 +211,36 @@
                                         <div @ref="MarkdownContainer"
                                              class="border markdown-body p-3 public-view-centered-content"
                                              style="max-width: 800px; margin: 0 auto; padding: 20px; box-sizing: border-box;">
+                                            @if (IsPublicView)
+                                            {
+                                                <!-- Title and meta information inside scrollable content -->
+                                                <div class="public-content-header mb-4">
+                                                    <h1 class="public-content-title mb-3">@Title</h1>
+                                                    <div class="public-content-meta d-flex align-items-center justify-content-between flex-wrap mb-4">
+                                                        <div class="public-user-info d-flex align-items-center">
+                                                            @if (!string.IsNullOrEmpty(UserProfileIconUrl))
+                                                            {
+                                                                <img src="@UserProfileIconUrl" alt="@User" class="public-user-avatar rounded-circle me-2" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <div class="public-user-avatar-default rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2">
+                                                                    <i class="bi bi-person-fill text-white public-user-avatar-icon"></i>
+                                                                </div>
+                                                            }
+                                                            <span class="public-user-name">@User</span>
+                                                        </div>
+                                                        <div class="public-dates d-flex align-items-center">
+                                                            <span class="public-date-text">Created: @Current.Create.ToString("MMM dd, yyyy")</span>
+                                                            @if (Current.Update != Current.Create)
+                                                            {
+                                                                <span class="public-date-text ms-2">Updated: @Current.Update.ToString("MMM dd, yyyy")</span>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                    <hr class="mb-4" />
+                                                </div>
+                                            }
                                             @((MarkupString)MarkdownText)
                                         </div>
                                     </div>
@@ -1429,6 +1459,67 @@
         {
             // Fallback to original content length if parsing fails
             return Content.Length;
+        }
+    }
+
+    // Breadcrumb helper classes and methods
+    public class BreadcrumbItem
+    {
+        public Guid Guid { get; set; }
+        public string Title { get; set; } = "";
+        public bool IsLast { get; set; }
+    }
+
+    private List<BreadcrumbItem> GetBreadcrumbItems()
+    {
+        var breadcrumbs = new List<BreadcrumbItem>();
+        var currentNode = Current;
+        
+        // Build breadcrumb path from current node to root
+        var path = new List<PinetreeView>();
+        while (currentNode != null)
+        {
+            path.Add(currentNode);
+            currentNode = currentNode.Parent;
+        }
+        
+        // Reverse to show root -> ... -> current
+        path.Reverse();
+        
+        // Convert to breadcrumb items
+        for (int i = 0; i < path.Count; i++)
+        {
+            var node = path[i];
+            breadcrumbs.Add(new BreadcrumbItem
+            {
+                Guid = node.Guid,
+                Title = string.IsNullOrWhiteSpace(node.Title) ? "Untitled" : node.Title,
+                IsLast = i == path.Count - 1
+            });
+        }
+        
+        return breadcrumbs;
+    }
+
+    private string TruncateTitle(string title, int maxLength)
+    {
+        if (string.IsNullOrEmpty(title) || title.Length <= maxLength)
+            return title;
+            
+        return title.Substring(0, maxLength - 1).Trim() + "…";
+    }
+
+    private async Task NavigateToBreadcrumbItem(Guid guid)
+    {
+        try
+        {
+            if (!IsPublicView) return;
+            
+            await SetCurrentAsync(guid);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error navigating to breadcrumb item: {ex.Message}");
         }
     }
 }

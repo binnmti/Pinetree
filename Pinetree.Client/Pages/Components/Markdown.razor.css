@@ -1,46 +1,177 @@
 ﻿.no-resize {
-    resize: none !important;
+    resize: none;
 }
 
-/* Public view header styles */
-.public-title-container {
+/* ===== BREADCRUMB STYLES ===== */
+.public-breadcrumb-container {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    box-sizing: border-box;
+}
+
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.breadcrumb-item {
+    display: inline-flex;
+    align-items: center;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    color: #6c757d;
+    margin: 0 0.5rem;
+}
+
+.breadcrumb-link {
+    color: #0d6efd;
+    text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+    color: #0a58ca;
+    text-decoration: underline;
+}
+
+.breadcrumb-item.active .breadcrumb-title {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.breadcrumb-title,
+.breadcrumb-link {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}
+/* ===== END BREADCRUMB STYLES ===== */
+
+/* Content header styles - scrollable with content */
+.public-content-header {
     width: 100%;
 }
+
+.public-content-title {
+    margin-bottom: 1rem;
+    color: #212529;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.public-content-meta {
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* Horizontal rule styling */
+.public-content-header hr {
+    border: none;
+    height: 1px;
+    background-color: #dee2e6;
+    margin: 1.5rem 0;
+}
+
+/* ===== USER INFO AND DATE STYLES ===== */
+.public-user-info {
+    gap: 0.5rem;
+}
+
+.public-user-avatar {
+    width: 32px;
+    height: 32px;
+}
+
+.public-user-avatar-default {
+    width: 32px;
+    height: 32px;
+}
+
+.public-user-avatar-icon {
+    font-size: 1rem;
+}
+
+.public-user-name {
+    font-weight: 500;
+    color: #495057;
+}
+
+.public-dates {
+    gap: 1rem;
+}
+
+.public-date-text {
+    color: #6c757d;
+}
+
+/* ===== PUBLIC VIEW LAYOUT STYLES ===== */
+.public-view-content {
+    height: 100%;
+}
+
+.public-view-scroll-container {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.public-view-centered-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Simple responsive styles */
+@media (max-width: 768px) {
+    .breadcrumb {
+        font-size: 0.75rem;
+    }
+    
+    .breadcrumb-title,
+    .breadcrumb-link {
+        max-width: 120px;
+    }
+    
+    .public-content-title {
+        font-size: 1.5rem;
+    }
+    
+    .public-view-centered-content {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 576px) {
+    .breadcrumb-title,
+    .breadcrumb-link {
+        max-width: 80px;
+    }
+    
+    .public-content-title {
+        font-size: 1.3rem;
+    }
+    
+    .public-view-centered-content {
+        padding: 10px;
+    }
+}
+
+/* ===== OTHER STYLES ===== */
 
 .public-title {
     margin-top: 0;
     margin-bottom: 0.5rem;
     font-size: 2rem;
     line-height: 1.1;
-}
-
-.public-meta {
-    min-height: 28px;
-    margin-bottom: 0.5rem;
-}
-
-.public-user-info {
-    height: 28px;
-}
-
-.public-user-avatar {
-    width: 20px;
-    height: 20px;
-    object-fit: cover;
-}
-
-.public-user-avatar-default {
-    width: 20px;
-    height: 20px;
-}
-
-.public-user-avatar-icon {
-    font-size: 0.625rem;
-}
-
-.public-user-name {
-    font-size: 0.875rem;
-    line-height: 1.2;
 }
 
 .public-dates {
@@ -180,6 +311,48 @@
         flex-direction: column;
         gap: 4px;
     }
+
+    /* ===== BREADCRUMB RESPONSIVE STYLES ===== */
+    .public-breadcrumb-full-width {
+        margin: -0.5rem -2rem 0 -2rem !important; /* Maximum negative margin for tablet */
+        width: calc(100% + 4rem) !important;
+    }
+    
+    .public-breadcrumb-container {
+        padding: 0.5rem 1.5rem !important; /* Maintain adequate padding */
+    }
+    
+    .breadcrumb {
+        font-size: 0.75rem !important;
+    }
+    
+    .breadcrumb-title {
+        max-width: 120px !important;
+    }
+    
+    .breadcrumb-item + .breadcrumb-item::before {
+        padding: 0 0.25rem !important;
+    }
+    
+    .public-content-title {
+        font-size: 1.5rem !important;
+    }
+    
+    .public-content-meta {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.5rem !important;
+    }
+    
+    .public-dates {
+        flex-direction: column !important;
+        gap: 0.25rem !important;
+    }
+    
+    .public-view-centered-content {
+        padding: 15px !important;
+    }
+    /* ===== END BREADCRUMB RESPONSIVE STYLES ===== */
 }
 
 .drag-over {
