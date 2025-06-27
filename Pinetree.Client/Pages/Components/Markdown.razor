@@ -196,11 +196,92 @@
                                              OnSetViewMode="@HandleSetViewMode"
                                              OnCopyDocumentId="@CopyDocumentId"
                                              OnFontSettingsChanged="@OnFontSettingsChanged" />
-
                         </div>
                     }
                 </div>
-                <div class="right-panels-container">
+                
+                <!-- Mobile layout (760px and below) -->
+                <div class="mobile-editor-preview-stack d-block d-md-none">
+                    @if (!IsPublicView)
+                    {
+                        <!-- Mobile Tab Navigation -->
+                        <div class="mobile-tab-navigation">
+                            <button class="mobile-tab-button @(_mobileActiveTab == "editor" ? "active" : "")" 
+                                    @onclick='() => SetMobileTab("editor")'>
+                                <i class="bi bi-pencil-square"></i> Editor
+                            </button>
+                            <button class="mobile-tab-button @(_mobileActiveTab == "preview" ? "active" : "")" 
+                                    @onclick='() => SetMobileTab("preview")'>
+                                <i class="bi bi-eye"></i> Preview
+                            </button>
+                        </div>
+
+                        <!-- Mobile Editor Section -->
+                        <div class="mobile-editor-section @(_mobileActiveTab == "editor" ? "active" : "")">
+                            <textarea @ref="TextAreaRef" 
+                                      @bind="@(Content)" 
+                                      class="no-resize"
+                                      style="font-family: @_currentFontFamily; font-size: @(_currentFontSize)px;"
+                                      @oninput="OnInputChange" 
+                                      placeholder="Write your markdown here..."></textarea>
+                        </div>
+
+                        <!-- Mobile Preview Section -->
+                        <div class="mobile-preview-section @(_mobileActiveTab == "preview" ? "active" : "")">
+                            <div class="mobile-preview-content">
+                                @if (string.IsNullOrWhiteSpace(MarkdownText))
+                                {
+                                    <div class="text-muted p-3">
+                                        <p>Preview will appear here as you type in the editor.</p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    @((MarkupString)(MarkdownText ?? ""))
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Public view mobile layout -->
+                        <div class="mobile-preview-section active">
+                            <div class="mobile-preview-content">
+                                <!-- Public view content -->
+                                <div class="public-content-header mb-4">
+                                    <h1 class="public-content-title mb-3">@Title</h1>
+                                    <div class="public-content-meta d-flex align-items-center justify-content-between flex-wrap mb-4">
+                                        <div class="public-user-info d-flex align-items-center">
+                                            @if (!string.IsNullOrEmpty(UserProfileIconUrl))
+                                            {
+                                                <img src="@UserProfileIconUrl" alt="@User" class="public-user-avatar rounded-circle me-2" />
+                                            }
+                                            else
+                                            {
+                                                <div class="public-user-avatar-default rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2">
+                                                    <i class="bi bi-person-fill text-white public-user-avatar-icon"></i>
+                                                </div>
+                                            }
+                                            <span class="public-user-name">@User</span>
+                                        </div>
+                                        <div class="public-dates d-flex align-items-center">
+                                            <span class="public-date-text">Created: @Current.Create.ToString("MMM dd, yyyy")</span>
+                                            @if (Current.Update != Current.Create)
+                                            {
+                                                <span class="public-date-text ms-2">Updated: @Current.Update.ToString("MMM dd, yyyy")</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <hr class="mb-4" />
+                                </div>
+                                @((MarkupString)(MarkdownText ?? ""))
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Desktop and Tablet layout (above 760px) -->
+                <div class="right-panels-container d-none d-md-flex">
                     @if (!IsPublicView)
                     {
                         <div id="panel2" class="panel"
@@ -237,7 +318,7 @@
                         </div>
                         <div class="resizer" id="resizer2" style="display: @(ViewMode == "split" ? "block" : "none")"></div>
                     }
-                    <div id="panel3" class="panel" style="display: @(IsPublicView || ViewMode == "preview" || ViewMode == "split" ? "flex" : "none"); @(IsPublicView ? "flex: 1 !important; width: 100% !important;" : "")">
+                    <div id="panel3" class="panel" style="display: flex !important; flex-direction: column !important; @(IsPublicView ? "flex: 1 !important; width: 100% !important;" : "")">
                         <div class="panel-content-wrapper">
                             <div class="panel-content @(IsPublicView || ViewMode == "preview" ? "public-view-content" : "")">
                                 @if (IsPublicView || ViewMode == "preview")
@@ -277,17 +358,26 @@
                                                     <hr class="mb-4" />
                                                 </div>
                                             }
-                                            @((MarkupString)MarkdownText)
+                                            @((MarkupString)(MarkdownText ?? ""))
                                         </div>
                                     </div>
                                 }
-                                else
+                                else if (ViewMode == "split" || ViewMode == "edit")
                                 {
-                                    <!-- Normal editor view -->
+                                    <!-- Split view or edit-only view - always show preview in split -->
                                     <div @ref="MarkdownContainer"
                                          class="border markdown-body p-3"
-                                         style="width:100%; height:99%; overflow:auto;">
-                                        @((MarkupString)MarkdownText)
+                                         style="width:100%; height:99%; overflow-y:auto; overflow-x:hidden; direction:ltr; text-align:left; background-color: #fff;">
+                                        @if (string.IsNullOrWhiteSpace(MarkdownText))
+                                        {
+                                            <div class="text-muted p-3">
+                                                <p>Preview will appear here as you type in the editor above.</p>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            @((MarkupString)(MarkdownText ?? ""))
+                                        }
                                     </div>
                                 }
                             </div>
@@ -365,6 +455,7 @@
     private string _currentFontFamily = "system-ui, -apple-system, sans-serif";
     private int _currentFontSize = 14;
     private bool _isMobileTreeViewOpen = false;
+    private string _mobileActiveTab = "editor"; // Default to editor tab
 
     /// <summary>
     /// Generates markdown HTML for preview, removing YAML Front Matter if present
@@ -374,9 +465,19 @@
         if (string.IsNullOrWhiteSpace(content))
             return "";
 
-        // Remove YAML Front Matter for preview
-        var contentForPreview = YamlFrontMatterHelper.RemoveYamlFrontMatter(content);
-        return MarkdownService.ToHtml(contentForPreview);
+        try
+        {
+            // Remove YAML Front Matter for preview
+            var contentForPreview = YamlFrontMatterHelper.RemoveYamlFrontMatter(content);
+            var result = MarkdownService.ToHtml(contentForPreview);
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in GeneratePreviewMarkdown: {ex.Message}");
+            return $"<p>Error generating preview: {ex.Message}</p>";
+        }
     }
 
     private void ToggleSidebar()
@@ -396,10 +497,22 @@
         StateHasChanged();
     }
 
+    private void SetMobileTab(string tab)
+    {
+        _mobileActiveTab = tab;
+        StateHasChanged();
+    }
+
     protected override void OnInitialized()
     {
         SetCurrent(Guid);
         LastSavedState = Pinetree.DeepClone();
+        
+        // Ensure MarkdownText is generated on initialization
+        if (!string.IsNullOrWhiteSpace(Content) && string.IsNullOrWhiteSpace(MarkdownText))
+        {
+            MarkdownText = GeneratePreviewMarkdown(Content);
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -657,7 +770,9 @@
         {
             Current.SaveContentToHistory(previousContent);
         }
+        
         MarkdownText = GeneratePreviewMarkdown(Content);
+        
         Current.Content = Content;
         StateHasChanged();
     }
