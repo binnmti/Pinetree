@@ -65,36 +65,36 @@
             <div class="resizer" id="resizer1"></div>
 
             <div class="right-panels p-3">
-                <div class="common-header @(IsPublicView ? "public-view-header" : "")">
-                    @if (IsPublicView)
-                    {
-                        <!-- Simple breadcrumb header -->
-                        <div class="public-breadcrumb-full-width">
-                            <nav aria-label="breadcrumb">
-                                <ol class="breadcrumb mb-0">
-                                    @foreach (var breadcrumbItem in GetBreadcrumbItems())
+                @if (IsPublicView)
+                {
+                    <!-- Simple breadcrumb header -->
+                    <div class="public-breadcrumb-full-width">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0">
+                                @foreach (var breadcrumbItem in GetBreadcrumbItems())
+                                {
+                                    @if (breadcrumbItem.IsLast)
                                     {
-                                        @if (breadcrumbItem.IsLast)
-                                        {
-                                            <li class="breadcrumb-item active" aria-current="page">
-                                                <span class="breadcrumb-title">@TruncateTitle(breadcrumbItem.Title, 25)</span>
-                                            </li>
-                                        }
-                                        else
-                                        {
-                                            <li class="breadcrumb-item">
-                                                <a href="javascript:void(0)" @onclick="() => NavigateToBreadcrumbItem(breadcrumbItem.Guid)" 
-                                                   class="breadcrumb-link" title="@breadcrumbItem.Title">
-                                                    @TruncateTitle(breadcrumbItem.Title, 20)
-                                                </a>
-                                            </li>
-                                        }
+                                        <li class="breadcrumb-item active" aria-current="page">
+                                            <span class="breadcrumb-title">@TruncateTitle(breadcrumbItem.Title, 25)</span>
+                                        </li>
                                     }
-                                </ol>
-                            </nav>
-                        </div>
-                    }
-                    else
+                                    else
+                                    {
+                                        <li class="breadcrumb-item">
+                                            <a href="javascript:void(0)" @onclick="() => NavigateToBreadcrumbItem(breadcrumbItem.Guid)"
+                                               class="breadcrumb-link" title="@breadcrumbItem.Title">
+                                                @TruncateTitle(breadcrumbItem.Title, 20)
+                                            </a>
+                                        </li>
+                                    }
+                                }
+                            </ol>
+                        </nav>
+                    </div>
+                }
+                <div class="common-header @(IsPublicView ? "public-view-header" : "")">
+                    @if (!IsPublicView)
                     {
                         <div class="markdown-title d-flex align-items-center">
                             <div class="position-relative flex-grow-1 mx-1">
@@ -133,9 +133,6 @@
                                 }
                             </div>
                         </div>
-                    }
-                    @if (!IsPublicView)
-                    {
                         <div class="markdown-toolbar">
                             <MarkdownToolbar CanUndo="@CanUndo"
                                              CanRedo="@CanRedo"
