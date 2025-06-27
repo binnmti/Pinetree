@@ -76,7 +76,7 @@ public static class MarkdownService
         Sanitizer.AllowedAttributes.Add("aria-hidden");
         Sanitizer.AllowedClasses.Add("bi");
         Sanitizer.AllowedClasses.Add("bi-box-arrow-up-right");
-        Sanitizer.AllowedClasses.Add("me-1");
+        Sanitizer.AllowedClasses.Add("mx-1");
         
         // YouTube iframe settings
         Sanitizer.AllowedAttributes.Add("src");        // YouTube iframe settings
@@ -158,7 +158,7 @@ public static class MarkdownService
                 if (!linkContent.Contains("bi-box-arrow-up-right"))
                 {
                     // Add external link icon before the link text
-                    var iconHtml = "<i class=\"bi bi-box-arrow-up-right me-1\" aria-hidden=\"true\" title=\"External link\"></i>";
+                    var iconHtml = "<i class=\"bi bi-box-arrow-up-right mx-1\" aria-hidden=\"true\" title=\"External link\"></i>";
                     linkContent = iconHtml + linkContent;
                 }
                 
