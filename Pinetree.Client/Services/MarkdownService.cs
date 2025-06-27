@@ -66,7 +66,19 @@ public static class MarkdownService
         // Image tag with size attributes
         Sanitizer.AllowedTags.Add("img");
         Sanitizer.AllowedAttributes.Add("alt");
-        Sanitizer.AllowedAttributes.Add("title");        // YouTube iframe settings
+        Sanitizer.AllowedAttributes.Add("title");
+        
+        // Allow target and rel attributes for links
+        Sanitizer.AllowedAttributes.Add("target");
+        Sanitizer.AllowedAttributes.Add("rel");
+        
+        // Allow Bootstrap Icon classes and aria attributes for external link icons
+        Sanitizer.AllowedAttributes.Add("aria-hidden");
+        Sanitizer.AllowedClasses.Add("bi");
+        Sanitizer.AllowedClasses.Add("bi-box-arrow-up-right");
+        Sanitizer.AllowedClasses.Add("me-1");
+        
+        // YouTube iframe settings
         Sanitizer.AllowedAttributes.Add("src");        // YouTube iframe settings
         Sanitizer.AllowedTags.Add("iframe");
         Sanitizer.AllowedAttributes.Add("src");
@@ -108,10 +120,53 @@ public static class MarkdownService
     {
         var processedMarkdown = ProcessYouTubeCustomSyntax(markdown);
         var html = Markdown.ToHtml(processedMarkdown, MarkdownPipeline);
+        
+        // Add target="_blank" to external links
+        html = ProcessExternalLinks(html);
+        
         var sanitizedHtml = Sanitizer.Sanitize(html);
         
         return sanitizedHtml.Replace(" disabled=\"disabled\"", "")
                            .Replace(" disabled", "");
+    }
+
+    private static string ProcessExternalLinks(string html)
+    {
+        // Pattern to match <a> tags with href attributes and capture everything until </a>
+        var pattern = @"<a\s+([^>]*?)href\s*=\s*[""']([^""']*?)[""']([^>]*?)>(.*?)</a>";
+        
+        return System.Text.RegularExpressions.Regex.Replace(html, pattern, match =>
+        {
+            var beforeHref = match.Groups[1].Value;
+            var hrefValue = match.Groups[2].Value;
+            var afterHref = match.Groups[3].Value;
+            var linkContent = match.Groups[4].Value;
+            
+            // Check if it's an external link (starts with http:// or https://)
+            // and not an internal link (starts with //)
+            if ((hrefValue.StartsWith("http://") || hrefValue.StartsWith("https://")) 
+                && !hrefValue.StartsWith("//"))
+            {
+                // Add target="_blank" and rel="noopener noreferrer" if not already present
+                var attributes = "";
+                if (!afterHref.Contains("target=") && !beforeHref.Contains("target="))
+                {
+                    attributes = " target=\"_blank\" rel=\"noopener noreferrer\"";
+                }
+                
+                // Check if icon is already present to avoid duplication
+                if (!linkContent.Contains("bi-box-arrow-up-right"))
+                {
+                    // Add external link icon before the link text
+                    var iconHtml = "<i class=\"bi bi-box-arrow-up-right me-1\" aria-hidden=\"true\" title=\"External link\"></i>";
+                    linkContent = iconHtml + linkContent;
+                }
+                
+                return $"<a {beforeHref}href=\"{hrefValue}\"{afterHref}{attributes}>{linkContent}</a>";
+            }
+            
+            return match.Value; // Return original if not an external link
+        }, System.Text.RegularExpressions.RegexOptions.Singleline);
     }
 
     private static string ProcessYouTubeCustomSyntax(string markdown)
