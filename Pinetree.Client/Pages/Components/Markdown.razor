@@ -327,6 +327,18 @@
     private string _currentFontFamily = "system-ui, -apple-system, sans-serif";
     private int _currentFontSize = 14;
 
+    /// <summary>
+    /// Generates markdown HTML for preview, removing YAML Front Matter if present
+    /// </summary>
+    private string GeneratePreviewMarkdown(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return "";
+
+        // Remove YAML Front Matter for preview
+        var contentForPreview = YamlFrontMatterHelper.RemoveYamlFrontMatter(content);
+        return MarkdownService.ToHtml(contentForPreview);
+    }
 
     private void ToggleSidebar()
     {
@@ -594,7 +606,7 @@
         {
             Current.SaveContentToHistory(previousContent);
         }
-        MarkdownText = MarkdownService.ToHtml(Content);
+        MarkdownText = GeneratePreviewMarkdown(Content);
         Current.Content = Content;
         StateHasChanged();
     }
@@ -650,7 +662,7 @@
                 if (updatedContent != Content)
                 {
                     Content = updatedContent;
-                    MarkdownText = MarkdownService.ToHtml(Content);
+                    MarkdownText = GeneratePreviewMarkdown(Content);
                     Current.Content = Content;
                 }
                 await ProcessAllNodesAsync(Pinetree);
@@ -832,7 +844,7 @@
         FileCount = fileCount;
         Title = Current.Title;
         Content = Current.Content;
-        MarkdownText = MarkdownService.ToHtml(Content);
+        MarkdownText = GeneratePreviewMarkdown(Content);
         StateHasChanged();
     }
 
@@ -1031,7 +1043,7 @@
         string? newContent = Current.Undo(); if (newContent == null) return;
 
         Content = newContent;
-        MarkdownText = MarkdownService.ToHtml(Content);
+        MarkdownText = GeneratePreviewMarkdown(Content);
         await _jsModule.InvokeAsync<string>("setTextAreaValue", TextAreaRef, Content, true);
         StateHasChanged();
     }
@@ -1042,7 +1054,7 @@
         if (newContent == null) return;
 
         Content = newContent;
-        MarkdownText = MarkdownService.ToHtml(Content);
+        MarkdownText = GeneratePreviewMarkdown(Content);
         await _jsModule.InvokeAsync<string>("setTextAreaValue", TextAreaRef, Content, true);
         StateHasChanged();
     }
@@ -1189,7 +1201,7 @@
     private void UpdateContent(string content)
     {
         Content = content;
-        MarkdownText = MarkdownService.ToHtml(Content);
+        MarkdownText = GeneratePreviewMarkdown(Content);
         Current.Content = Content;
         StateHasChanged();
     }
