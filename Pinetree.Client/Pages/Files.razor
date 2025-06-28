@@ -127,18 +127,18 @@ else
                                                         </strong>
                                                         <div class="dropdown">
                                                             <button class="btn btn-sm btn-outline-secondary border-0 p-1" type="button" 
-                                                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                                                    data-bs-toggle="dropdown" aria-expanded="false" @onclick:stopPropagation="true">
                                                                 <i class="bi bi-three-dots-vertical"></i>
                                                             </button>
-                                                            <ul class="dropdown-menu">
+                                                            <ul class="dropdown-menu" @onclick:stopPropagation="true">
                                                                 <li>
-                                                                    <button class="dropdown-item" @onclick="() => CopyFile(pinecone.Guid)">
+                                                                    <button class="dropdown-item" @onclick="() => CopyFile(pinecone.Guid)" @onclick:stopPropagation="true">
                                                                         <i class="bi bi-copy me-2"></i>Copy
                                                                     </button>
                                                                 </li>
                                                                 <li><hr class="dropdown-divider"></li>
                                                                 <li>
-                                                                    <button class="dropdown-item text-danger" @onclick="() => ConfirmDelete(pinecone.Guid)">
+                                                                    <button class="dropdown-item text-danger" @onclick="() => ConfirmDelete(pinecone.Guid)" @onclick:stopPropagation="true">
                                                                         <i class="bi bi-trash2 me-2"></i>Delete
                                                                     </button>
                                                                 </li>
