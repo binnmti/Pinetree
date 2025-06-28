@@ -804,12 +804,12 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         var originalTitle = DecryptContentIfPrivate(original.Title, original.IsPublic) ?? Untitled;
         var originalContent = DecryptContentIfPrivate(original.Content, original.IsPublic) ?? "";
 
-        // Get all existing documents at the same level to check for duplicate titles and get max order
+        // Get existing documents at the same level for title uniqueness check
         var existingDocuments = await DbContext.Pinecone
             .Where(p => p.UserName == userName && p.ParentGuid == original.ParentGuid && !p.IsDeleted)
             .ToListAsync();
 
-        // Decrypt titles for comparison
+        // Decrypt titles for comparison (only for title uniqueness)
         var existingTitles = existingDocuments
             .Select(p => DecryptContentIfPrivate(p.Title, p.IsPublic))
             .Where(t => !string.IsNullOrEmpty(t))
@@ -824,9 +824,14 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
             copyTitle = $"Copy of {originalTitle} ({counter})";
         }
 
-        // Get the next order number at the same level (start from 0 if no documents exist)
-        var maxOrder = existingDocuments.Count > 0 ? existingDocuments.Max(p => p.Order) : -1;
-        var nextOrder = maxOrder + 1;
+        // Calculate Order only for child documents (root documents don't use Order)
+        var nextOrder = 0; // Default for root documents (not actually used)
+        if (original.ParentGuid.HasValue)
+        {
+            // Only calculate Order for child documents
+            var maxOrder = existingDocuments.Count > 0 ? existingDocuments.Max(p => p.Order) : -1;
+            nextOrder = maxOrder + 1;
+        }
 
         // Create mapping for GUIDs to handle hierarchy correctly
         var guidMapping = new Dictionary<Guid, Guid>();
@@ -842,7 +847,7 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
             Content = EncryptContentIfPrivate(originalContent, original.IsPublic)!,
             GroupGuid = copyGuid, // Root document: Guid == GroupGuid (app convention)
             ParentGuid = original.ParentGuid, // Keep the same parent level
-            Order = nextOrder,
+            Order = nextOrder, // Note: Order is not used for root documents, only for child documents
             UserName = userName,
             Guid = copyGuid,
             IsPublic = original.IsPublic,
@@ -852,8 +857,11 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
 
         await DbContext.Pinecone.AddAsync(copy);
 
-        // Copy all descendants recursively with the same GroupGuid (which is the root's Guid)
-        await CopyDescendants(original.Guid, copyGuid, copyGuid, userName, guidMapping);
+        // Copy all descendants recursively only for root documents
+        if (original.ParentGuid == null)
+        {
+            await CopyDescendants(original.Guid, copyGuid, copyGuid, userName, guidMapping);
+        }
 
         await DbContext.SaveChangesAsync();
 
