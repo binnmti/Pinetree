@@ -784,4 +784,130 @@ public class PineconesController(ApplicationDbContext context, IEncryptionServic
         var loadedPinecone = await LoadChildrenRecursively(rootPinecone, includeDeleted: true);
         return ToPineconeViewModelWithChildren(loadedPinecone);
     }
+
+    [HttpPost("copy/{id}")]
+    public async Task<IActionResult> CopyDocument(Guid id)
+    {
+        var userName = User.Identity?.Name ?? "";
+        var userId = await GetCurrentUserIdAsync();
+
+        // Find the original document
+        var original = await DbContext.Pinecone
+            .FirstOrDefaultAsync(p => p.Guid == id && p.UserName == userName);
+
+        if (original == null)
+        {
+            return NotFound("Document not found");
+        }
+
+        // Decrypt original content to get the actual values
+        var originalTitle = DecryptContentIfPrivate(original.Title, original.IsPublic) ?? Untitled;
+        var originalContent = DecryptContentIfPrivate(original.Content, original.IsPublic) ?? "";
+
+        // Get existing documents at the same level for title uniqueness check
+        var existingDocuments = await DbContext.Pinecone
+            .Where(p => p.UserName == userName && p.ParentGuid == original.ParentGuid && !p.IsDeleted)
+            .ToListAsync();
+
+        // Decrypt titles for comparison (only for title uniqueness)
+        var existingTitles = existingDocuments
+            .Select(p => DecryptContentIfPrivate(p.Title, p.IsPublic))
+            .Where(t => !string.IsNullOrEmpty(t))
+            .ToHashSet();
+
+        // Generate a unique copy title (English format)
+        var copyTitle = $"Copy of {originalTitle}";
+        var counter = 1;
+        while (existingTitles.Contains(copyTitle))
+        {
+            counter++;
+            copyTitle = $"Copy of {originalTitle} ({counter})";
+        }
+
+        // Calculate Order only for child documents (root documents don't use Order)
+        var nextOrder = 0; // Default for root documents (not actually used)
+        if (original.ParentGuid.HasValue)
+        {
+            // Only calculate Order for child documents
+            var maxOrder = existingDocuments.Count > 0 ? existingDocuments.Max(p => p.Order) : -1;
+            nextOrder = maxOrder + 1;
+        }
+
+        // Create mapping for GUIDs to handle hierarchy correctly
+        var guidMapping = new Dictionary<Guid, Guid>();
+
+        // Create the copy of the root document
+        // For root documents, Guid and GroupGuid must be the same (app convention)
+        var copyGuid = Guid.NewGuid();
+        guidMapping[original.Guid] = copyGuid;
+
+        var copy = new Pinecone
+        {
+            Title = EncryptContentIfPrivate(copyTitle, original.IsPublic)!,
+            Content = EncryptContentIfPrivate(originalContent, original.IsPublic)!,
+            GroupGuid = copyGuid, // Root document: Guid == GroupGuid (app convention)
+            ParentGuid = original.ParentGuid, // Keep the same parent level
+            Order = nextOrder, // Note: Order is not used for root documents, only for child documents
+            UserName = userName,
+            Guid = copyGuid,
+            IsPublic = original.IsPublic,
+            Create = DateTime.UtcNow,
+            Update = DateTime.UtcNow,
+        };
+
+        await DbContext.Pinecone.AddAsync(copy);
+
+        // Copy all descendants recursively only for root documents
+        if (original.ParentGuid == null)
+        {
+            await CopyDescendants(original.Guid, copyGuid, copyGuid, userName, guidMapping);
+        }
+
+        await DbContext.SaveChangesAsync();
+
+        // Create ViewModel for client response (to avoid Entity tracking issues)
+        var vm = ToPineconeViewModel(copy);
+        vm.Title = DecryptContentIfPrivate(copy.Title, copy.IsPublic)!;
+        vm.Content = DecryptContentIfPrivate(copy.Content, copy.IsPublic)!;
+        
+        return Ok(vm);
+    }
+
+    private async Task CopyDescendants(Guid originalParentGuid, Guid newParentGuid, Guid sharedGroupGuid, string userName, Dictionary<Guid, Guid> guidMapping)
+    {
+        // Get all direct children of the original parent
+        var children = await DbContext.Pinecone
+            .Where(p => p.ParentGuid == originalParentGuid && p.UserName == userName && !p.IsDeleted)
+            .OrderBy(p => p.Order)
+            .ToListAsync();
+
+        foreach (var child in children)
+        {
+            // Decrypt child content
+            var childTitle = DecryptContentIfPrivate(child.Title, child.IsPublic) ?? Untitled;
+            var childContent = DecryptContentIfPrivate(child.Content, child.IsPublic) ?? "";
+
+            var childCopyGuid = Guid.NewGuid();
+            guidMapping[child.Guid] = childCopyGuid;
+
+            var childCopy = new Pinecone
+            {
+                Title = EncryptContentIfPrivate(childTitle, child.IsPublic)!,
+                Content = EncryptContentIfPrivate(childContent, child.IsPublic)!,
+                GroupGuid = sharedGroupGuid, // Same GroupGuid for entire hierarchy
+                ParentGuid = newParentGuid, // Point to the copied parent
+                Order = child.Order, // Keep the same relative order within this level
+                UserName = userName,
+                Guid = childCopyGuid,
+                IsPublic = child.IsPublic,
+                Create = DateTime.UtcNow,
+                Update = DateTime.UtcNow,
+            };
+
+            await DbContext.Pinecone.AddAsync(childCopy);
+
+            // Recursively copy this child's descendants
+            await CopyDescendants(child.Guid, childCopyGuid, sharedGroupGuid, userName, guidMapping);
+        }
+    }
 }
