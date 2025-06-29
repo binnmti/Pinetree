@@ -277,9 +277,32 @@ namespace Pinetree.UITests
             }
 
             Assert.IsNotNull(targetCard, "Created test file should be found in the list");
-            // Click delete button on the test file
-            var deleteIcon = await targetCard.QuerySelectorAsync("i.bi-trash2");
-            Assert.IsNotNull(deleteIcon, "Delete button should be found");
+            
+            // Find the three-dots menu button (try both parent button and icon)
+            var menuButton = await targetCard.QuerySelectorAsync("button[data-bs-toggle='dropdown']");
+            if (menuButton == null)
+            {
+                // Fallback: try to find by the icon directly
+                var menuIcon = await targetCard.QuerySelectorAsync("i.bi-three-dots-vertical");
+                if (menuIcon != null)
+                {
+                    // Get the parent button
+                    menuButton = await menuIcon.QuerySelectorAsync("xpath=..");
+                }
+            }
+            Assert.IsNotNull(menuButton, "Menu button should be found");
+            
+            // Click the menu button to open dropdown
+            await menuButton.ClickAsync();
+            Console.WriteLine("Menu button clicked");
+            
+            // Wait for dropdown menu to appear
+            await Page.WaitForTimeoutAsync(500);
+            await Page.WaitForSelectorAsync(".dropdown-menu.show", new() { Timeout = 2000 });
+            
+            // Find and click the delete item in the dropdown menu
+            var deleteMenuItem = await Page.QuerySelectorAsync(".dropdown-item.text-danger");
+            Assert.IsNotNull(deleteMenuItem, "Delete menu item should be found");
 
             // Handle confirm dialog - set up handler before clicking
             bool dialogHandled = false;
@@ -305,8 +328,8 @@ namespace Pinetree.UITests
 
             try
             {
-                await deleteIcon.ClickAsync();
-                Console.WriteLine("Delete button clicked");
+                await deleteMenuItem.ClickAsync();
+                Console.WriteLine("Delete menu item clicked");
 
                 // Wait for dialog to appear and be handled
                 await Page.WaitForTimeoutAsync(2000);
@@ -316,7 +339,6 @@ namespace Pinetree.UITests
                 // Remove dialog handler to prevent conflicts
                 Page.Dialog -= dialogHandler;
             }
-            Console.WriteLine("Delete button clicked");
 
             // Wait for deletion to complete - look for changes in the page
             await Page.WaitForTimeoutAsync(2000);
