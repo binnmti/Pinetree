@@ -2,7 +2,6 @@
 - stripe 
  
 - TempSave
-- >
 
 - Individual settings for disclosure range
 - User Data Cancellation
