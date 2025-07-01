@@ -58,44 +58,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddControllers();
 
 builder.Services
-    .AddAuthentication(o =>
-    {
-        o.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    })
-    .AddCookie(options =>
-    {
-        options.Cookie.Name = "PinetreeAuth";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        
-        // Key settings for persistence across deployments
-        options.ExpireTimeSpan = TimeSpan.FromDays(30);
-        options.SlidingExpiration = true;
-        options.Cookie.MaxAge = TimeSpan.FromDays(30);
-        options.Cookie.IsEssential = true;
-        
-        options.LoginPath = "/Identity/Account/Login";
-        options.LogoutPath = "/Identity/Account/Logout";
-        options.AccessDeniedPath = "/Identity/Account/AccessDenied";
-        
-        // Event handlers for validation and debugging
-        options.Events.OnValidatePrincipal = async context =>
-        {
-            var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
-            var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            
-            if (!string.IsNullOrEmpty(userId))
-            {
-                var user = await userManager.FindByIdAsync(userId);
-                if (user == null)
-                {
-                    context.RejectPrincipal();
-                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                }
-            }
-        };
-    })
+    .AddAuthentication() // Identity will configure the default scheme automatically
     .AddGoogleOpenIdConnect(options =>
     {
         options.ClientId = builder.Configuration.GetConnectionString("GoogleClientId");
@@ -166,7 +129,7 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = false; // Changed to false for easier testing
+    options.SignIn.RequireConfirmedAccount = !(builder.Environment.IsDevelopment() || builder.Environment.IsStaging());
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;
