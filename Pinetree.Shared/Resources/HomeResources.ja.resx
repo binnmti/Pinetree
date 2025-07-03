@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" msdata:Ordinal="5" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Title" xml:space="preserve">
+    <value>Pinetreeはブラウザベースの階層型マークダウンエディターです</value>
+  </data>
+  <data name="Playground" xml:space="preserve">
+    <value>プレイグラウンド</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>ユーザー登録</value>
+  </data>
+  <data name="WhatIsHierarchical" xml:space="preserve">
+    <value>階層型マークダウンエディターとは？</value>
+  </data>
+  <data name="ConceptOnePageDescription" xml:space="preserve">
+    <value>Pinetreeは、重要なポイントを1ページに凝縮することに重点を置くAmazonの「One Pager」文化からインスピレーションを得ています。人々は簡潔で読みやすいコンテンツを好みますが、詳細な情報が必要な場合もあります。</value>
+  </data>
+  <data name="ConceptHierarchicalDescription" xml:space="preserve">
+    <value>文書がより詳細になるにつれて、通常はルールやフォルダーで整理します。しかし、従来のファイル構造では、これらの文書間の物理的な接続が欠けています。Pinetreeでは、コンテンツを「階層」形式で表現し、リンクを介してナビゲートできるため、読者がコンテンツ間の関係を自然に理解できます。</value>
+  </data>
+  <data name="ConceptIdealUseDescription" xml:space="preserve">
+    <value>Pinetreeは履歴書、旅行計画、読書ノート、そして「簡潔さ」と「詳細」の両方を必要とするあらゆる文書に最適です。各コンテンツをできるだけシンプルに保ちながら、必要に応じて階層的な詳細を追加できます。この新しい書き方を自分で体験してみてください。</value>
+  </data>
+  <data name="CreateMultipleDocuments" xml:space="preserve">
+    <value>アカウント登録すると複数の文書を作成できます。</value>
+  </data>
+  <data name="OverviewAndDemo" xml:space="preserve">
+    <value>Pinetree概要＆デモ</value>
+  </data>
+  <data name="VideoDescription" xml:space="preserve">
+    <value>この9分間のビデオでは、Pinetreeの中核概念と主要機能のライブデモンストレーションを紹介しています。私たちが構想した主要機能を実装し、ユーザーからの貴重なフィードバックを集めるためにベータ版としてリリースしています。</value>
+  </data>
+  <data name="BetaVersionNotice" xml:space="preserve">
+    <value>ベータ版のお知らせ：</value>
+  </data>
+  <data name="BetaVersionDescription" xml:space="preserve">
+    <value>Pinetreeは現在ベータ開発中です。これは私たちの初めてのビデオ制作のため、品質が最適でない場合があることをご了承ください。プレゼンテーション資料は英語で字幕付きですが、ナレーションは日本語です。コンテンツとサービスの改善を続ける中でのご理解をお願いします。</value>
+  </data>
+  <data name="ReadyToGetStarted" xml:space="preserve">
+    <value>始める準備はできましたか？</value>
+  </data>
+  <data name="JoinCommunity" xml:space="preserve">
+    <value>今日から整理された作家と思想家のコミュニティに参加しましょう！</value>
+  </data>
+  <data name="Pricing" xml:space="preserve">
+    <value>料金</value>
+  </data>
+  <data name="WantManyUsers" xml:space="preserve">
+    <value>現在、できるだけ多くのユーザーにサービスを試してもらいたい段階です。</value>
+  </data>
+  <data name="StartWithPlayground" xml:space="preserve">
+    <value>プレイグラウンドから始めて、その後フィードバックをいただけると幸いです。</value>
+  </data>
+  <data name="FreePassForFeedback" xml:space="preserve">
+    <value>貴重なフィードバックを提供していただいたユーザーには永続的な無料パスを差し上げます！</value>
+  </data>
+  <data name="Feedback" xml:space="preserve">
+    <value>フィードバック</value>
+  </data>
+</root>

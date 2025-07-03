@@ -11,6 +11,7 @@ using Pinetree.Data;
 using Pinetree.Middleware;
 using Pinetree.Services;
 using Pinetree.Shared;
+using Pinetree.Shared.Services;
 using System.Security.Claims;
 
 
@@ -42,6 +43,7 @@ builder.Services.AddScoped<BlobStorageService>(provider =>
     return new BlobStorageService(configuration, dbContext, userManager, encryptionService);
 });
 builder.Services.AddSingleton<AIEmojiWithRateLimitService>();
+builder.Services.AddScoped<LocalizationService>();
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<VersionService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
