@@ -1,6 +1,9 @@
 ﻿@page "/"
 @using Pinetree.Client.Services
+@using Pinetree.Shared.Services
+@using Pinetree.Shared.Resources
 @inject IJSRuntime JSRuntime
+@inject LocalizationService LocalizationService
 @rendermode InteractiveAuto
 @implements IAsyncDisposable
 
@@ -16,16 +19,32 @@
 </HeadContent>
 
 <div class="position-relative">
+    <!-- Language Switcher - Top Right -->
+    <div style="position: absolute; top: 10px; right: 20px; z-index: 1000;">
+        <div class="btn-group" role="group" aria-label="Language selection">
+            <button type="button" 
+                    class="btn @(IsCurrentLanguage("en") ? "btn-primary" : "btn-outline-primary")" 
+                    @onclick="SetEnglish">
+                EN
+            </button>
+            <button type="button" 
+                    class="btn @(IsCurrentLanguage("ja") ? "btn-primary" : "btn-outline-primary")" 
+                    @onclick="SetJapanese">
+                日本語
+            </button>
+        </div>
+    </div>
+
     <!-- Main Content - Centered -->
     <div style="display: flex; justify-content: center; align-items: center; text-align: center; flex-direction: column;">
 
         <h1 style="font-size: 4em; margin-top: 50px;">
             <img src="img/Pinetree64.webp" alt="Pinetree logo" width="64" height="64">
-            Pinetree is browser-based <span class="highlight-text">hierarchical</span> markdown editor
+            @LocalizationService.GetLocalizedString("Title", typeof(HomeResources))
         </h1>
         <div class="mt-4 button-container">
-            <a class="btn btn-outline-primary btn-lg m-2" href="/play"><i class="bi bi-tools"></i>Playground</a>
-            <a class="btn btn-outline-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>Register</a>
+            <a class="btn btn-outline-primary btn-lg m-2" href="/play"><i class="bi bi-tools"></i>@LocalizationService.GetLocalizedString("Playground", typeof(HomeResources))</a>
+            <a class="btn btn-outline-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>@LocalizationService.GetLocalizedString("Register", typeof(HomeResources))</a>
         </div>
         <div class="slider-container mt-4">            
             <div class="slider" id="imageSlider">
@@ -52,7 +71,7 @@
 
         <!-- Hierarchical emphasis section -->
         <div class="hierarchical-emphasis my-5 py-4">
-            <h2 class="mb-4">What is a <span class="highlight-text">Hierarchical</span> Markdown Editor?</h2>
+            <h2 class="mb-4">@LocalizationService.GetLocalizedString("WhatIsHierarchical", typeof(HomeResources))</h2>
 
             <div class="concept-box">
                 <div class="concept-icon">
@@ -60,7 +79,7 @@
                 </div>
                 <div class="concept-content">
                     <p class="mb-0">
-                        Pinetree draws inspiration from Amazon's "One Pager" culture, which focuses on condensing key points into a single page. People prefer concise, readable content, yet there are times when detailed information is necessary.
+                        @LocalizationService.GetLocalizedString("ConceptOnePageDescription", typeof(HomeResources))
                     </p>
                 </div>
             </div>
@@ -71,7 +90,7 @@
                 </div>
                 <div class="concept-content">
                     <p class="mb-0">
-                        As documents grow more detailed, we typically organize them with rules and folders. However, traditional file structures lack physical connections between these documents. Pinetree allows you to express content in a "hierarchical" format and navigate via links, enabling readers to naturally understand the relationships between content.
+                        @LocalizationService.GetLocalizedString("ConceptHierarchicalDescription", typeof(HomeResources))
                     </p>
                 </div>
             </div>
@@ -82,16 +101,16 @@
                 </div>
                 <div class="concept-content">
                     <p class="mb-0">
-                        Pinetree is ideal for <a href="https://pine-tree.site/View/binnmti/7dc5d7ec-4ccc-497d-a3f1-307a33e5342e" target="_blank" rel="noopener noreferrer">resume</a>, travel plans, reading notes, and any document requiring both "conciseness" and "detail." You can keep each piece of content as simple as possible while adding hierarchical details as needed. Experience this new writing style for yourself.
+                        @((MarkupString)LocalizationService.GetLocalizedString("ConceptIdealUseDescription", typeof(HomeResources)).Replace("resume", "<a href=\"https://pine-tree.site/View/binnmti/7dc5d7ec-4ccc-497d-a3f1-307a33e5342e\" target=\"_blank\" rel=\"noopener noreferrer\">resume</a>").Replace("履歴書", "<a href=\"https://pine-tree.site/View/binnmti/7dc5d7ec-4ccc-497d-a3f1-307a33e5342e\" target=\"_blank\" rel=\"noopener noreferrer\">履歴書</a>"))
                     </p>
                 </div>
             </div>
             <blockquote class="mt-4 text-center">
-                <p class="fst-italic">Create multiple documents when you <a href="Account/Register" class="alert-link">register</a> for an account.</p>
+                <p class="fst-italic">@((MarkupString)LocalizationService.GetLocalizedString("CreateMultipleDocuments", typeof(HomeResources)).Replace("register", "<a href=\"Account/Register\" class=\"alert-link\">register</a>").Replace("ユーザー登録", "<a href=\"Account/Register\" class=\"alert-link\">ユーザー登録</a>"))</p>
             </blockquote>
         </div>        <!-- Video section -->
         <div class="video-container my-5 pt-4">
-            <h2>Pinetree Overview & Demo</h2>
+            <h2>@LocalizationService.GetLocalizedString("OverviewAndDemo", typeof(HomeResources))</h2>
             <div class="video-wrapper">
                 <iframe width="520"
                         src="https://www.youtube.com/embed/afYPumK4trY"
@@ -102,16 +121,14 @@
                 </iframe>
             </div>              
             <p class="video-description">
-                This 9-minute video covers Pinetree's core concepts and includes a live demonstration of key features. We've implemented the main functionality we envisioned and are now releasing it as a beta version to gather valuable feedback from users.
+                @LocalizationService.GetLocalizedString("VideoDescription", typeof(HomeResources))
             </p>
             <div class="alert alert-info mt-3">
                 <div class="d-flex align-items-start">
                     <i class="bi bi-info-circle-fill me-2 mt-1"></i>
                     <div>
-                        <strong>Beta Version Notice:</strong> Pinetree is currently in beta development. 
-                        Please note that this is our first video production, so the quality may not be optimal. 
-                        The presentation materials are in English with subtitles, but the narration is in Japanese. 
-                        We appreciate your understanding as we continue to improve our content and service.
+                        <strong>@LocalizationService.GetLocalizedString("BetaVersionNotice", typeof(HomeResources))</strong> 
+                        @LocalizationService.GetLocalizedString("BetaVersionDescription", typeof(HomeResources))
                     </div>
                 </div>
             </div>
@@ -122,19 +139,19 @@
 <!-- Call to action - Full width with distinct background -->
 <div class="cta-container">
     <div class="cta-section">
-        <h2>Ready to get started?</h2>
-        <p>Join our community of organized writers and thinkers today!</p>
+        <h2>@LocalizationService.GetLocalizedString("ReadyToGetStarted", typeof(HomeResources))</h2>
+        <p>@LocalizationService.GetLocalizedString("JoinCommunity", typeof(HomeResources))</p>
         <div class="mt-4">
-            <a class="btn btn-primary btn-lg m-2" href="/play"><i class="bi bi-tools"></i>Playground</a>
-            <a class="btn btn-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>Register</a>
-            <a class="btn btn-info btn-lg m-2" href="/Pricing"><i class="bi bi-tag"></i>Pricing</a>
+            <a class="btn btn-primary btn-lg m-2" href="/play"><i class="bi bi-tools"></i>@LocalizationService.GetLocalizedString("Playground", typeof(HomeResources))</a>
+            <a class="btn btn-success btn-lg m-2" href="Account/Register"><i class="bi bi-person"></i>@LocalizationService.GetLocalizedString("Register", typeof(HomeResources))</a>
+            <a class="btn btn-info btn-lg m-2" href="/Pricing"><i class="bi bi-tag"></i>@LocalizationService.GetLocalizedString("Pricing", typeof(HomeResources))</a>
         </div>
 
         <div class="mt-4">
             <p class="text-muted">
-                We're currently in a phase where we want as many users as possible to try our service. <br>
-                Please start with <a href="/play">Playground</a> and we'd appreciate your <a href="/Feedback">feedback</a> afterwards. <br>
-                Users who provide valuable feedback will receive a permanent free pass! <br>
+                @LocalizationService.GetLocalizedString("WantManyUsers", typeof(HomeResources)) <br>
+                @((MarkupString)LocalizationService.GetLocalizedString("StartWithPlayground", typeof(HomeResources)).Replace("Playground", "<a href=\"/play\">Playground</a>").Replace("プレイグラウンド", "<a href=\"/play\">プレイグラウンド</a>").Replace("feedback", $"<a href=\"/Feedback\">{LocalizationService.GetLocalizedString("Feedback", typeof(HomeResources))}</a>").Replace("フィードバック", $"<a href=\"/Feedback\">{LocalizationService.GetLocalizedString("Feedback", typeof(HomeResources))}</a>")) <br>
+                @LocalizationService.GetLocalizedString("FreePassForFeedback", typeof(HomeResources)) <br>
             </p>
         </div>
     </div>
@@ -153,10 +170,43 @@
 
     private IJSObjectReference? _jsModule;
 
+    protected override Task OnInitializedAsync()
+    {
+        LocalizationService.CultureChanged += OnCultureChanged;
+        return Task.CompletedTask;
+    }
+
+    private void OnCultureChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private bool IsCurrentLanguage(string culture)
+    {
+        return LocalizationService.CurrentCulture.TwoLetterISOLanguageName == culture;
+    }
+
+    private void SetLanguage(string culture)
+    {
+        LocalizationService.SetCulture(culture);
+    }
+
+    private async Task SetEnglish()
+    {
+        await LocalizationService.SetCultureAsync("en");
+    }
+
+    private async Task SetJapanese()
+    {
+        await LocalizationService.SetCultureAsync("ja");
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            await LocalizationService.InitializeAsync();
+            
             try
             {
                 _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./Pages/Home.razor.js");
@@ -197,6 +247,8 @@
     {
         try
         {
+            LocalizationService.CultureChanged -= OnCultureChanged;
+            
             if (_jsModule != null)
             {
                 await _jsModule.InvokeVoidAsync("cleanupSlider");
