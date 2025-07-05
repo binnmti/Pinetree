@@ -1,4 +1,9 @@
 @using Pinetree.Services
+@using Pinetree.Shared.Services
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@rendermode InteractiveServer
+
 <footer class="footer @GetFooterClass()">
     <div class="container">
         <div class="d-flex flex-column align-items-center">
@@ -17,6 +22,28 @@
             <div class="footer-copyright my-1 text-center">
                 <span>© 2025 Pinetree</span>
                 <span class="version ms-2">Version @appVersion</span>
+            </div>
+            <div class="language-switcher-container my-1">
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span style="font-size: 1.2em;">@GetCurrentLanguageFlag()</span>
+                        <span class="ms-1">@GetCurrentLanguageName()</span>
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="languageDropdown">
+                        <li>
+                            <button class="dropdown-item @(IsCurrentLanguage("en") ? "active" : "")" @onclick="SetEnglish">
+                                <span style="font-size: 1.2em;">@GetCountryFlag("US")</span>
+                                <span class="ms-2">English</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item @(IsCurrentLanguage("ja") ? "active" : "")" @onclick="SetJapanese">
+                                <span style="font-size: 1.2em;">@GetCountryFlag("JP")</span>
+                                <span class="ms-2">日本語</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -64,6 +91,59 @@
     .version {
         color: #888;
     }
+
+    .language-switcher-container {
+        margin-top: 5px;
+    }
+    
+    .language-switcher-container .dropdown-toggle {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .language-switcher-container .dropdown-menu {
+        min-width: 120px;
+        font-size: 0.875rem;
+    }
+    
+    .language-switcher-container .dropdown-item {
+        padding: 0.375rem 0.75rem;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        color: inherit;
+    }
+    
+    .language-switcher-container .dropdown-item:hover {
+        background-color: #f8f9fa;
+        color: inherit;
+    }
+    
+    .language-switcher-container .dropdown-item:focus {
+        background-color: #f8f9fa;
+        color: inherit;
+        outline: none;
+        box-shadow: none;
+    }
+    
+    .language-switcher-container .dropdown-item:active {
+        background-color: #f8f9fa;
+        color: inherit;
+    }
+    
+    .language-switcher-container .dropdown-item.active {
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    .language-switcher-container .dropdown-item.active:hover,
+    .language-switcher-container .dropdown-item.active:focus,
+    .language-switcher-container .dropdown-item.active:active {
+        background-color: #0d6efd;
+        color: white;
+    }
 </style>
 
 @code {
@@ -76,7 +156,94 @@
     [Inject]
     private VersionService VersionService { get; set; } = default!;
 
+    [Inject]
+    private LocalizationService LocalizationService { get; set; } = default!;
+
     private string appVersion = "1.0.0";
+
+    protected override void OnInitialized()
+    {
+        LocalizationService.CultureChanged += OnCultureChanged;
+    }
+
+    private void OnCultureChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LocalizationService.InitializeAsync();
+            StateHasChanged();
+        }
+    }
+
+    private bool IsCurrentLanguage(string culture)
+    {
+        return LocalizationService.CurrentCulture.TwoLetterISOLanguageName == culture;
+    }
+
+    private async Task SetEnglish()
+    {
+        await LocalizationService.SetCultureAsync("en");
+    }
+
+    private async Task SetJapanese()
+    {
+        await LocalizationService.SetCultureAsync("ja");
+    }
+
+    private string GetCurrentLanguageIcon()
+    {
+        return LocalizationService.CurrentCulture.TwoLetterISOLanguageName switch
+        {
+            "en" => "bi bi-translate",
+            "ja" => "bi bi-moon-stars",
+            _ => "bi bi-globe"
+        };
+    }
+
+    private string GetCountryFlag(string countryCode)
+    {
+        if (string.IsNullOrEmpty(countryCode) || countryCode.Length != 2)
+            return "🌐"; // Globe emoji as fallback
+
+        // Convert country code to Unicode flag emoji
+        // Each letter is converted to Regional Indicator Symbol
+        var flag = string.Empty;
+        foreach (char c in countryCode.ToUpper())
+        {
+            if (c >= 'A' && c <= 'Z')
+            {
+                // Regional Indicator Symbol Letter A = U+1F1E6 (🇦)
+                // Add (c - 'A') to get the correct letter
+                flag += char.ConvertFromUtf32(0x1F1E6 + (c - 'A'));
+            }
+        }
+        return flag;
+    }
+
+    private string GetCurrentLanguageFlag()
+    {
+        return LocalizationService.CurrentCulture.TwoLetterISOLanguageName switch
+        {
+            "en" => GetCountryFlag("US"), // 🇺🇸
+            "ja" => GetCountryFlag("JP"), // 🇯🇵
+            _ => "🌐"
+        };
+    }
+
+    private string GetCurrentLanguageName()
+    {
+        return LocalizationService.CurrentCulture.TwoLetterISOLanguageName switch
+        {
+            "en" => "English",
+            "ja" => "日本語",
+            _ => "Unknown"
+        };
+    }
 
     private string GetFooterClass()
     {
@@ -106,7 +273,6 @@
         }
         catch (Exception)
         {
-            // Use fallback version if service fails
             appVersion = Configuration["AppVersion"] ?? "1.0.0";
         }
         
@@ -116,5 +282,6 @@
     public void Dispose()
     {
         NavigationManager.LocationChanged -= (sender, e) => StateHasChanged();
+        LocalizationService.CultureChanged -= OnCultureChanged;
     }
 }

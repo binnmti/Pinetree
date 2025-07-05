@@ -19,22 +19,6 @@
 </HeadContent>
 
 <div class="position-relative">
-    <!-- Language Switcher - Top Right -->
-    <div style="position: absolute; top: 10px; right: 20px; z-index: 1000;">
-        <div class="btn-group" role="group" aria-label="Language selection">
-            <button type="button" 
-                    class="btn @(IsCurrentLanguage("en") ? "btn-primary" : "btn-outline-primary")" 
-                    @onclick="SetEnglish">
-                EN
-            </button>
-            <button type="button" 
-                    class="btn @(IsCurrentLanguage("ja") ? "btn-primary" : "btn-outline-primary")" 
-                    @onclick="SetJapanese">
-                日本語
-            </button>
-        </div>
-    </div>
-
     <!-- Main Content - Centered -->
     <div style="display: flex; justify-content: center; align-items: center; text-align: center; flex-direction: column;">
 
@@ -181,25 +165,7 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private bool IsCurrentLanguage(string culture)
-    {
-        return LocalizationService.CurrentCulture.TwoLetterISOLanguageName == culture;
-    }
 
-    private void SetLanguage(string culture)
-    {
-        LocalizationService.SetCulture(culture);
-    }
-
-    private async Task SetEnglish()
-    {
-        await LocalizationService.SetCultureAsync("en");
-    }
-
-    private async Task SetJapanese()
-    {
-        await LocalizationService.SetCultureAsync("ja");
-    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
