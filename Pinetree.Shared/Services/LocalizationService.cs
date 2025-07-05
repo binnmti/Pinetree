@@ -11,6 +11,7 @@ public class LocalizationService
     private bool _isInitialized = false;
     
     public event Action? CultureChanged;
+    
     public CultureInfo CurrentCulture => _currentCulture;
 
     public LocalizationService(IJSRuntime? jsRuntime = null) => _jsRuntime = jsRuntime;
@@ -30,6 +31,7 @@ public class LocalizationService
 
         try
         {
+            // 1. LocalStorage から保存された設定を取得（ユーザーが明示的に選択した言語）
             var savedLanguage = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "preferredLanguage");
             if (IsValidLanguage(savedLanguage)) return savedLanguage;
 
@@ -38,10 +40,12 @@ public class LocalizationService
             {
                 var langCode = browserLanguage.Split('-')[0].ToLower();
                 if (IsValidLanguage(langCode)) return langCode;
+                }
             }
-        }
         catch { }
 
+        // 3. デフォルトは英語
+        Console.WriteLine("Using default language: en");
         return "en";
     }
 
@@ -51,6 +55,7 @@ public class LocalizationService
     {
         SetCulture(culture);
         
+        // ユーザーが手動で変更した場合は LocalStorage に保存
         if (_jsRuntime != null)
         {
             try
