@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" msdata:Ordinal="5" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="PageTitle" xml:space="preserve">
+    <value>Feedback - Pinetree</value>
+  </data>
+  <data name="HelpUsWithFeedback" xml:space="preserve">
+    <value>Help Us With Your Feedback</value>
+  </data>
+  <data name="FeedbackPromotion" xml:space="preserve">
+    <value>Feedback Promotion Period:</value>
+  </data>
+  <data name="FeedbackPromotionDescription" xml:space="preserve">
+    <value>Selected users who provide valuable feedback will receive a permanent free pass!</value>
+  </data>
+  <data name="JoinOurDiscord" xml:space="preserve">
+    <value>Join Our Discord</value>
+  </data>
+  <data name="JoinDiscordDescription" xml:space="preserve">
+    <value>Join our Discord community and share your feedback directly with us.</value>
+  </data>
+  <data name="SendFeedbackDirectly" xml:space="preserve">
+    <value>Or Send Your Feedback to Discord Directly Through This Form</value>
+  </data>
+  <data name="YourName" xml:space="preserve">
+    <value>Your Name</value>
+  </data>
+  <data name="YourNameRequired" xml:space="preserve">
+    <value>Please enter your name</value>
+  </data>
+  <data name="YourNameLength" xml:space="preserve">
+    <value>Name must be 100 characters or less</value>
+  </data>
+  <data name="FeedbackContent" xml:space="preserve">
+    <value>Feedback Content</value>
+  </data>
+  <data name="FeedbackContentRequired" xml:space="preserve">
+    <value>Please enter your feedback</value>
+  </data>
+  <data name="FeedbackContentLength" xml:space="preserve">
+    <value>Feedback must be 2000 characters or less</value>
+  </data>
+  <data name="FeedbackType" xml:space="preserve">
+    <value>Feedback Type</value>
+  </data>
+  <data name="FeedbackTypeRequired" xml:space="preserve">
+    <value>Please select a feedback type</value>
+  </data>
+  <data name="PleaseSelect" xml:space="preserve">
+    <value>Please select</value>
+  </data>
+  <data name="FeatureRequest" xml:space="preserve">
+    <value>Feature Request</value>
+  </data>
+  <data name="BugReport" xml:space="preserve">
+    <value>Bug Report</value>
+  </data>
+  <data name="UserExperience" xml:space="preserve">
+    <value>User Experience</value>
+  </data>
+  <data name="Other" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="Sending" xml:space="preserve">
+    <value>Sending...</value>
+  </data>
+  <data name="SendFeedbackToDiscord" xml:space="preserve">
+    <value>Send Feedback to Discord</value>
+  </data>
+  <data name="FeedbackSent" xml:space="preserve">
+    <value>Your feedback has been sent to Discord. Thank you!</value>
+  </data>
+</root>

@@ -4,65 +4,69 @@
 @using System.Net.Http
 @using System.Net.Http.Json
 @using System.Text.Json
+@using Pinetree.Client.Services
+@using Pinetree.Shared.Services
+@using Pinetree.Shared.Resources
 
 @rendermode InteractiveWebAssembly
 
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 @inject HttpClient Http
+@inject LocalizationService LocalizationService
 
-<PageTitle>Feedback - Pinetree</PageTitle>
+<PageTitle>@LocalizationService.GetLocalizedString("PageTitle", typeof(FeedbackResources))</PageTitle>
 
 <div class="container my-5">
     <div class="row justify-content-center">
         <div class="col-md-10">
             <div class="card shadow-lg border-0">
                 <div class="card-body p-5">
-                    <h1 class="text-center mb-4">Help Us With Your Feedback</h1>
+                    <h1 class="text-center mb-4">@LocalizationService.GetLocalizedString("HelpUsWithFeedback", typeof(FeedbackResources))</h1>
 
                     <div class="alert alert-info mb-4">
                         <div class="d-flex align-items-center">
                             <i class="bi bi-gift-fill fs-4 me-2"></i>
-                            <strong>Feedback Promotion Period:</strong> Selected users who provide valuable feedback will receive a permanent free pass!
+                            <strong>@LocalizationService.GetLocalizedString("FeedbackPromotion", typeof(FeedbackResources))</strong> @LocalizationService.GetLocalizedString("FeedbackPromotionDescription", typeof(FeedbackResources))
                         </div>
                     </div>
 
                     <div class="row mb-5">
                         <div class="col-md-12 text-center">
                             <a href="https://discord.gg/xxjcsFcg" target="_blank" class="btn btn-primary btn-lg px-5 py-3">
-                                <i class="bi bi-discord fs-4 me-2"></i>Join Our Discord
+                                <i class="bi bi-discord fs-4 me-2"></i>@LocalizationService.GetLocalizedString("JoinOurDiscord", typeof(FeedbackResources))
                             </a>
-                            <p class="mt-3 text-muted">Join our Discord community and share your feedback directly with us.</p>
+                            <p class="mt-3 text-muted">@LocalizationService.GetLocalizedString("JoinDiscordDescription", typeof(FeedbackResources))</p>
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-12">
-                            <h4 class="mb-3">Or Send Your Feedback to Discord Directly Through This Form</h4>
+                            <h4 class="mb-3">@LocalizationService.GetLocalizedString("SendFeedbackDirectly", typeof(FeedbackResources))</h4>
                             <EditForm Model="@feedbackModel" OnValidSubmit="HandleValidSubmit">
                                 <DataAnnotationsValidator />
                                 <ValidationSummary class="text-danger mb-3" />
 
                                 <div class="mb-3">
-                                    <label for="name" class="form-label">Your Name</label>
+                                    <label for="name" class="form-label">@LocalizationService.GetLocalizedString("YourName", typeof(FeedbackResources))</label>
                                     <InputText id="name" @bind-Value="feedbackModel.Name" class="form-control" />
                                     <ValidationMessage For="@(() => feedbackModel.Name)" class="text-danger" />
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="feedback" class="form-label">Feedback Content</label>
+                                    <label for="feedback" class="form-label">@LocalizationService.GetLocalizedString("FeedbackContent", typeof(FeedbackResources))</label>
                                     <InputTextArea id="feedback" @bind-Value="feedbackModel.Message" class="form-control" rows="5" />
                                     <ValidationMessage For="@(() => feedbackModel.Message)" class="text-danger" />
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="feedbackType" class="form-label">Feedback Type</label>
+                                    <label for="feedbackType" class="form-label">@LocalizationService.GetLocalizedString("FeedbackType", typeof(FeedbackResources))</label>
                                     <InputSelect id="feedbackType" @bind-Value="feedbackModel.FeedbackType" class="form-select">
-                                        <option value="">Please select</option>
-                                        <option value="Feature">Feature Request</option>
-                                        <option value="Bug">Bug Report</option>
-                                        <option value="UX">User Experience</option>
-                                        <option value="Other">Other</option>
+                                        <option value="">@LocalizationService.GetLocalizedString("PleaseSelect", typeof(FeedbackResources))</option>
+                                        <option value="Feature">@LocalizationService.GetLocalizedString("FeatureRequest", typeof(FeedbackResources))</option>
+                                        <option value="Bug">@LocalizationService.GetLocalizedString("BugReport", typeof(FeedbackResources))</option>
+                                        <option value="UX">@LocalizationService.GetLocalizedString("UserExperience", typeof(FeedbackResources))</option>
+                                        <option value="Other">@LocalizationService.GetLocalizedString("Other", typeof(FeedbackResources))</option>
                                     </InputSelect>
                                     <ValidationMessage For="@(() => feedbackModel.FeedbackType)" class="text-danger" />
                                 </div>
@@ -71,12 +75,12 @@
                                     @if (isSubmitting)
                                     {
                                         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                        <span>Sending...</span>
+                                        <span>@LocalizationService.GetLocalizedString("Sending", typeof(FeedbackResources))</span>
                                     }
                                     else
                                     {
                                         <i class="bi bi-discord me-2"></i>
-                                        <span>Send Feedback to Discord</span>
+                                        <span>@LocalizationService.GetLocalizedString("SendFeedbackToDiscord", typeof(FeedbackResources))</span>
                                     }
                                 </button>
                             </EditForm>
@@ -85,7 +89,7 @@
                             {
                                 <div class="alert alert-success mt-4">
                                     <i class="bi bi-check-circle-fill me-2"></i>
-                                    Your feedback has been sent to Discord. Thank you!
+                                    @LocalizationService.GetLocalizedString("FeedbackSent", typeof(FeedbackResources))
                                 </div>
                             }
 
