@@ -266,5 +266,14 @@ namespace Pinetree.Shared.Resources {
                 return ResourceManager.GetString("YourNameLength", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to https://discord.gg/xxjcsFcg.
+        /// </summary>
+        public static string DiscordUrl {
+            get {
+                return ResourceManager.GetString("DiscordUrl", resourceCulture);
+            }
+        }
     }
 }
