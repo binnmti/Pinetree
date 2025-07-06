@@ -15,7 +15,17 @@
     <meta property="og:url" content="https://pinetree.azurewebsites.net/Pricing" />
 </HeadContent>
 
-<h1 class="text-center my-4">@LocalizationService.GetLocalizedString("PageTitle", typeof(PricingResources))</h1>
+@if (!LocalizationService.IsInitialized)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 50vh;">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <h1 class="text-center my-4">@LocalizationService.GetLocalizedString("PageTitle", typeof(PricingResources))</h1>
 <div class="container">
     <div class="row">
         <div class="col-md-4">
@@ -98,11 +108,26 @@
         </div>
     </div>
 </div>
+}
 
 @code {
+    protected override async Task OnInitializedAsync()
+    {
+        // Subscribe to culture changes
+        LocalizationService.CultureChanged += OnCultureChanged;
+        await LocalizationService.InitializeAsync();
+    }
+
+    private void OnCultureChanged()
+    {
+        // Trigger re-render when culture changes
+        InvokeAsync(StateHasChanged);
+    }
+
     public async ValueTask DisposeAsync()
     {
-        // Cleanup if needed
+        // Unsubscribe from culture changes
+        LocalizationService.CultureChanged -= OnCultureChanged;
         await Task.CompletedTask;
     }
 }

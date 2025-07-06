@@ -9,6 +9,7 @@
 @using Pinetree.Shared.Resources
 
 @rendermode InteractiveWebAssembly
+@implements IAsyncDisposable
 
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
@@ -17,6 +18,16 @@
 
 <PageTitle>@LocalizationService.GetLocalizedString("PageTitle", typeof(FeedbackResources))</PageTitle>
 
+@if (!LocalizationService.IsInitialized)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 50vh;">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
 <div class="container my-5">
     <div class="row justify-content-center">
         <div class="col-md-10">
@@ -107,12 +118,26 @@
         </div>
     </div>
 </div>
+}
 
 @code {
     private FeedbackModel feedbackModel = new();
     private bool isSubmitting = false;
     private bool isSubmitted = false;
     private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Subscribe to culture changes
+        LocalizationService.CultureChanged += OnCultureChanged;
+        await LocalizationService.InitializeAsync();
+    }
+
+    private void OnCultureChanged()
+    {
+        // Trigger re-render when culture changes
+        InvokeAsync(StateHasChanged);
+    }
 
     private class FeedbackModel
     {
@@ -192,5 +217,12 @@
             isSubmitting = false;
             StateHasChanged();
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        // Unsubscribe from culture changes
+        LocalizationService.CultureChanged -= OnCultureChanged;
+        await Task.CompletedTask;
     }
 }

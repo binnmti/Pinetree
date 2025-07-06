@@ -7,22 +7,38 @@ namespace Pinetree.Shared.Services;
 public class LocalizationService
 {
     private readonly IJSRuntime? _jsRuntime;
-    private CultureInfo _currentCulture = CultureInfo.CurrentCulture;
+    private CultureInfo _currentCulture = new CultureInfo("en"); // Default to English
     private bool _isInitialized = false;
     
     public event Action? CultureChanged;
     
     public CultureInfo CurrentCulture => _currentCulture;
+    public bool IsInitialized => _isInitialized;
 
-    public LocalizationService(IJSRuntime? jsRuntime = null) => _jsRuntime = jsRuntime;
+    public LocalizationService(IJSRuntime? jsRuntime = null) 
+    {
+        _jsRuntime = jsRuntime;
+        // Set default culture immediately
+        CultureInfo.CurrentCulture = _currentCulture;
+        CultureInfo.CurrentUICulture = _currentCulture;
+    }
 
     public async Task InitializeAsync()
     {
-        if (_isInitialized || _jsRuntime == null) return;
+        if (_isInitialized || _jsRuntime == null) 
+        {
+            if (!_isInitialized)
+            {
+                _isInitialized = true;
+                CultureChanged?.Invoke(); // Trigger UI update even if JSRuntime is null
+            }
+            return;
+        }
         
         var detectedLanguage = await DetectPreferredLanguageAsync();
         SetCulture(detectedLanguage);
         _isInitialized = true;
+        CultureChanged?.Invoke(); // Ensure UI updates after initialization
     }
 
     private async Task<string> DetectPreferredLanguageAsync()
@@ -33,16 +49,32 @@ public class LocalizationService
         {
             // 1. LocalStorage から保存された設定を取得（ユーザーが明示的に選択した言語）
             var savedLanguage = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "preferredLanguage");
-            if (IsValidLanguage(savedLanguage)) return savedLanguage;
+            if (IsValidLanguage(savedLanguage)) 
+            {
+                Console.WriteLine($"Using saved language: {savedLanguage}");
+                return savedLanguage;
+            }
 
+            // 2. ブラウザ言語を検出
             var browserLanguage = await _jsRuntime.InvokeAsync<string>("detectBrowserLanguage");
             if (!string.IsNullOrEmpty(browserLanguage))
             {
                 var langCode = browserLanguage.Split('-')[0].ToLower();
-                if (IsValidLanguage(langCode)) return langCode;
+                if (IsValidLanguage(langCode)) 
+                {
+                    Console.WriteLine($"Using browser language: {langCode} (from {browserLanguage})");
+                    return langCode;
+                }
+                else
+                {
+                    Console.WriteLine($"Browser language {langCode} not supported, using default");
                 }
             }
-        catch { }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error detecting language: {ex.Message}");
+        }
 
         // 3. デフォルトは英語
         Console.WriteLine("Using default language: en");

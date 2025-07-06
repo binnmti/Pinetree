@@ -18,6 +18,16 @@
     <link rel="canonical" href=@Url />
 </HeadContent>
 
+@if (!LocalizationService.IsInitialized)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 50vh;">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
 <div class="position-relative">
     <!-- Main Content - Centered -->
     <div style="display: flex; justify-content: center; align-items: center; text-align: center; flex-direction: column;">
@@ -140,6 +150,7 @@
         </div>
     </div>
 </div>
+}
 
 @code {
     [Inject]
@@ -154,10 +165,10 @@
 
     private IJSObjectReference? _jsModule;
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         LocalizationService.CultureChanged += OnCultureChanged;
-        return Task.CompletedTask;
+        await LocalizationService.InitializeAsync();
     }
 
     private void OnCultureChanged()
@@ -165,13 +176,10 @@
         InvokeAsync(StateHasChanged);
     }
 
-
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await LocalizationService.InitializeAsync();
             
             try
             {
