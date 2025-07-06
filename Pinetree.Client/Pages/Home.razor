@@ -167,13 +167,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        LocalizationService.CultureChanged += OnCultureChanged;
         await LocalizationService.InitializeAsync();
-    }
-
-    private void OnCultureChanged()
-    {
-        InvokeAsync(StateHasChanged);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -221,8 +215,6 @@ else
     {
         try
         {
-            LocalizationService.CultureChanged -= OnCultureChanged;
-            
             if (_jsModule != null)
             {
                 await _jsModule.InvokeVoidAsync("cleanupSlider");

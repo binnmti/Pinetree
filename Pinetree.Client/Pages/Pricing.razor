@@ -2,10 +2,10 @@
 @using Pinetree.Client.Services
 @using Pinetree.Shared.Services
 @using Pinetree.Shared.Resources
+@using Microsoft.AspNetCore.Components.Web
 @inject IJSRuntime JSRuntime
 @inject LocalizationService LocalizationService
 @rendermode InteractiveAuto
-@implements IAsyncDisposable
 
 <PageTitle>@LocalizationService.GetLocalizedString("PageTitle", typeof(PricingResources))</PageTitle>
 <HeadContent>
@@ -113,21 +113,6 @@ else
 @code {
     protected override async Task OnInitializedAsync()
     {
-        // Subscribe to culture changes
-        LocalizationService.CultureChanged += OnCultureChanged;
         await LocalizationService.InitializeAsync();
-    }
-
-    private void OnCultureChanged()
-    {
-        // Trigger re-render when culture changes
-        InvokeAsync(StateHasChanged);
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        // Unsubscribe from culture changes
-        LocalizationService.CultureChanged -= OnCultureChanged;
-        await Task.CompletedTask;
     }
 }

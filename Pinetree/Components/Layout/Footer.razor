@@ -161,14 +161,18 @@
 
     private string appVersion = "1.0.0";
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        LocalizationService.CultureChanged += OnCultureChanged;
-    }
-
-    private void OnCultureChanged()
-    {
-        InvokeAsync(StateHasChanged);
+        try
+        {
+            appVersion = await VersionService.GetLatestVersionAsync();
+        }
+        catch (Exception)
+        {
+            appVersion = Configuration["AppVersion"] ?? "1.0.0";
+        }
+        
+        NavigationManager.LocationChanged += (sender, e) => StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -265,23 +269,8 @@
         return "";
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            appVersion = await VersionService.GetLatestVersionAsync();
-        }
-        catch (Exception)
-        {
-            appVersion = Configuration["AppVersion"] ?? "1.0.0";
-        }
-        
-        NavigationManager.LocationChanged += (sender, e) => StateHasChanged();
-    }
-
     public void Dispose()
     {
         NavigationManager.LocationChanged -= (sender, e) => StateHasChanged();
-        LocalizationService.CultureChanged -= OnCultureChanged;
     }
 }
