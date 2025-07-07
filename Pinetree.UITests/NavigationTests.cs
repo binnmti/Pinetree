@@ -68,11 +68,10 @@ namespace Pinetree.UITests
 
             // Step 2: Navigate to User page and create new file
             await Page.GotoAsync($"{TargetUrl}/files");
-            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            await Page.WaitForTimeoutAsync(Timeout);
 
             // Click on "Create New File" card
             await Page.ClickAsync("div.card-body:has-text('Create New File')");
-            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
             await Page.WaitForTimeoutAsync(Timeout);
 
             // Verify we're on the edit page
@@ -166,7 +165,6 @@ namespace Pinetree.UITests
 
             // Step 6: Go back to Files page and then return to edit to verify Save button is disabled
             await Page.ClickAsync("button.list-group-item:has-text('Files')");
-            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
             await Page.WaitForTimeoutAsync(Timeout);
 
             // Find the created file and click to edit again
@@ -217,7 +215,6 @@ namespace Pinetree.UITests
             }
             Assert.IsNotNull(editLink, "Edit link or button should be found within the card");
             await editLink.ClickAsync();
-            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
             await Page.WaitForTimeoutAsync(Timeout);
 
             // Verify we're back on the edit page with a more robust check
@@ -240,7 +237,6 @@ namespace Pinetree.UITests
 
             // Step 8: Go back to file list for deletion
             await Page.ClickAsync("button.list-group-item:has-text('Files')");
-            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
             await Page.WaitForTimeoutAsync(Timeout);
 
             // Wait for the page to load completely
@@ -349,7 +345,6 @@ namespace Pinetree.UITests
 
             // Re-query the page after deletion to get the updated list
             await Page.ReloadAsync();
-            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
             await Page.WaitForTimeoutAsync(Timeout);
 
             // Now check if file is removed from list by checking if we can still find it
