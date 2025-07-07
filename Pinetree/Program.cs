@@ -204,7 +204,9 @@ builder.Services.ConfigureApplicationCookie(options =>
         catch (Exception ex)
         {
             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "Error validating principal, continuing with existing authentication");
+            logger.LogError(ex, "Error validating principal, rejecting for security");
+            context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync();
             // Don't reject the principal on validation errors to avoid unnecessary logouts
         }
     };
