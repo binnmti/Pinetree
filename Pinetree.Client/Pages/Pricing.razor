@@ -1,40 +1,53 @@
 ﻿@page "/Pricing"
-
+@using Pinetree.Client.Services
+@using Pinetree.Shared.Services
+@using Pinetree.Shared.Resources
+@using Microsoft.AspNetCore.Components.Web
+@inject IJSRuntime JSRuntime
+@inject LocalizationService LocalizationService
 @rendermode InteractiveAuto
 
-<PageTitle>Pricing Plans</PageTitle>
+<PageTitle>@LocalizationService.GetLocalizedString("PageTitle", typeof(PricingResources))</PageTitle>
 <HeadContent>
-    <meta property="og:title" content="Pinetree Pricing Plans" />
-    <meta property="og:description" content="Pinetree Pricing" />
+    <meta property="og:title" content="@LocalizationService.GetLocalizedString("PageTitle", typeof(PricingResources))" />
+    <meta property="og:description" content="@LocalizationService.GetLocalizedString("PageTitle", typeof(PricingResources))" />
     <meta property="og:image" content="pinetree.png" />
     <meta property="og:url" content="https://pinetree.azurewebsites.net/Pricing" />
 </HeadContent>
 
-<h1 class="text-center my-4">Pricing Plans</h1>
+@if (!LocalizationService.IsInitialized)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 50vh;">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <h1 class="text-center my-4">@LocalizationService.GetLocalizedString("PageTitle", typeof(PricingResources))</h1>
 <div class="container">
     <div class="row">
         <div class="col-md-4">
             <div class="card mb-4 shadow-sm h-100">
                 <div class="card-header">
-                    <h2 class="my-0 font-weight-normal">Free Plan</h2>
+                    <h2 class="my-0 font-weight-normal">@LocalizationService.GetLocalizedString("FreePlanTitle", typeof(PricingResources))</h2>
                 </div>
                 <div class="card-body d-flex flex-column">
                     <p class="mt-3">
-                        A Markdown editor that supports hierarchical structure.
-                        Organizing text hierarchically makes management more convenient.
-                        However, the free plan has some limitations.
+                        @LocalizationService.GetLocalizedString("FreePlanDescription", typeof(PricingResources))
                     </p>
-                    <h3 class="card-title pricing-card-title">$0 <small class="text-muted">/ month</small></h3>
+                    <h3 class="card-title pricing-card-title">@LocalizationService.GetLocalizedString("FreePlanPrice", typeof(PricingResources)) <small class="text-muted">@LocalizationService.GetLocalizedString("PerMonth", typeof(PricingResources))</small></h3>
                     <ul class="list-unstyled mt-3 mb-4">
-                        <li>Maximum levels: 3</li>
-                        <li>Maximum files per level: 33</li>
-                        <li><s>Maximum files: 333</s></li>
-                        <li>Maximum characters per file: 3333</li>
-                        <li>Maximum Image: 3MB</li>
+                        <li>@string.Format(LocalizationService.GetLocalizedString("MaximumLevels", typeof(PricingResources)), "3")</li>
+                        <li>@string.Format(LocalizationService.GetLocalizedString("MaximumFilesPerLevel", typeof(PricingResources)), "33")</li>
+                        <li><s>@string.Format(LocalizationService.GetLocalizedString("MaximumFiles", typeof(PricingResources)), "333")</s></li>
+                        <li>@string.Format(LocalizationService.GetLocalizedString("MaximumCharactersPerFile", typeof(PricingResources)), "3333")</li>
+                        <li>@string.Format(LocalizationService.GetLocalizedString("MaximumImage", typeof(PricingResources)), "3MB")</li>
                     </ul>
-                    <div class="mt-auto">
-                        <p class="mt-3">The reason this is the free plan is that this number is what the author considers the most suitable. If you want to use more than this, please use a paid plan.</p>
-                        <a href="Account/Register" class="btn btn-lg btn-block btn-outline-primary">Select</a>
+                        <div class="mt-auto">
+                        <p class="mt-3">@LocalizationService.GetLocalizedString("FreePlanFooter", typeof(PricingResources))</p>
+                        <a href="Account/Register" class="btn btn-lg btn-block btn-outline-primary">@LocalizationService.GetLocalizedString("GetStartedFree", typeof(PricingResources))</a>
                     </div>
                 </div>
             </div>
@@ -42,34 +55,32 @@
         <div class="col-md-4">
             <div class="card mb-4 shadow-sm h-100">
                 <div class="card-header">
-                    <h2 class="my-0 font-weight-normal">Professional Plan</h2>
+                    <h2 class="my-0 font-weight-normal">@LocalizationService.GetLocalizedString("ProfessionalPlanTitle", typeof(PricingResources))</h2>
                 </div>
                 <div class="card-body d-flex flex-column">
                     <p class="mt-3">
-                        A Markdown editor that supports hierarchical structure.
-                        Organizing text hierarchically makes management more convenient.
-                        The professional plan also has certain restrictions, but in most cases, no additional limitations are necessary.
+                        @LocalizationService.GetLocalizedString("ProfessionalPlanDescription", typeof(PricingResources))
                     </p>
                     <div class="pricing-details mt-3">
                         <div class="current-price">
-                            <h3 class="card-title pricing-card-title">$1<small class="text-muted">/ month</small></h3>
+                            <h3 class="card-title pricing-card-title">@LocalizationService.GetLocalizedString("ProfessionalPlanPrice", typeof(PricingResources))<small class="text-muted">@LocalizationService.GetLocalizedString("PerMonth", typeof(PricingResources))</small></h3>
                         </div>
                     </div>
                     <ul class="list-unstyled mt-3 mb-4">
-                        <li>Maximum levels: 9</li>
-                        <li>Maximum files per level: ∞</li>
-                        <li>Maximum files: ∞</li>
-                        <li>Maximum characters per file: ∞</li>
-                        <li>Maximum Image: 999MB</li>
+                        <li>@string.Format(LocalizationService.GetLocalizedString("MaximumLevels", typeof(PricingResources)), "9")</li>
+                        <li>@string.Format(LocalizationService.GetLocalizedString("MaximumFilesPerLevel", typeof(PricingResources)), LocalizationService.GetLocalizedString("Unlimited", typeof(PricingResources)))</li>
+                        <li>@string.Format(LocalizationService.GetLocalizedString("MaximumFiles", typeof(PricingResources)), LocalizationService.GetLocalizedString("Unlimited", typeof(PricingResources)))</li>
+                        <li>@string.Format(LocalizationService.GetLocalizedString("MaximumCharactersPerFile", typeof(PricingResources)), LocalizationService.GetLocalizedString("Unlimited", typeof(PricingResources)))</li>
+                        <li>@string.Format(LocalizationService.GetLocalizedString("MaximumImage", typeof(PricingResources)), "999MB")</li>
                     </ul>
                     <div class="mt-auto">
                         <div class="alert alert-warning mb-3">
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-gift-fill me-2"></i>
-                                <span><strong>Limited Time Offer:</strong> Get 1 year FREE access to Professional Plan!</span>
+                                <span><strong>@LocalizationService.GetLocalizedString("LimitedTimeOffer", typeof(PricingResources))</strong> @LocalizationService.GetLocalizedString("OneYearFree", typeof(PricingResources))</span>
                             </div>
                         </div>
-                        <a href="Account/Manage/Plan" class="btn btn-lg btn-block btn-outline-primary">Subscribe for $1/month</a>
+                        <a href="Account/Manage/Plan" class="btn btn-lg btn-block btn-outline-primary">@LocalizationService.GetLocalizedString("SubscribeForOneMonth", typeof(PricingResources))</a>
                     </div>
                 </div>
             </div>
@@ -77,24 +88,31 @@
         <div class="col-md-4">
             <div class="card mb-4 shadow-sm h-100">
                 <div class="card-header">
-                    <h2 class="my-0 font-weight-normal">Enterprise Plan</h2>
+                    <h2 class="my-0 font-weight-normal">@LocalizationService.GetLocalizedString("EnterprisePlanTitle", typeof(PricingResources))</h2>
                 </div>                <div class="card-body d-flex flex-column">
                     <p class="mt-3">
-                        For organizations requiring custom solutions, advanced integrations, or specialized support.
-                        Currently, we are focusing on perfecting our core features for individual and small team use.
+                        @LocalizationService.GetLocalizedString("EnterprisePlanDescription", typeof(PricingResources))
                     </p>
-                    <h3 class="card-title pricing-card-title">Custom Pricing</h3>
+                    <h3 class="card-title pricing-card-title">@LocalizationService.GetLocalizedString("CustomPricing", typeof(PricingResources))</h3>
                     <ul class="list-unstyled mt-3 mb-4">
-                        <li>Tailored solutions for your organization</li>
-                        <li>Priority support and consultation</li>
-                        <li>Custom integrations and features</li>
-                        <li>Dedicated account management</li>
+                        <li>@LocalizationService.GetLocalizedString("TailoredSolutions", typeof(PricingResources))</li>
+                        <li>@LocalizationService.GetLocalizedString("PrioritySupport", typeof(PricingResources))</li>
+                        <li>@LocalizationService.GetLocalizedString("CustomIntegrations", typeof(PricingResources))</li>
+                        <li>@LocalizationService.GetLocalizedString("DedicatedAccountManagement", typeof(PricingResources))</li>
                     </ul>
                     <div class="mt-auto">
-                        <a href="/feedback" class="btn btn-lg btn-block btn-outline-secondary">Contact Us via Feedback</a>
+                        <a href="/feedback" class="btn btn-lg btn-block btn-outline-secondary">@LocalizationService.GetLocalizedString("ContactUsViaFeedback", typeof(PricingResources))</a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await LocalizationService.InitializeAsync();
+    }
+}

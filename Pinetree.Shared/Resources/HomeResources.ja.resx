@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Title" xml:space="preserve">
+    <value>Pinetreeはブラウザベースの階層型マークダウンエディターです</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>ユーザー登録</value>
+  </data>
+  <data name="WhatIsHierarchical" xml:space="preserve">
+    <value>階層型マークダウンエディターとは？</value>
+  </data>
+  <data name="ConceptOnePageDescription" xml:space="preserve">
+    <value>Pinetreeは、Amazonの「One Pager」という文化から着想を得ています。これは要点を1ページに簡潔にまとめるスタイルです。人は、読みやすく短い文章を好みますが、詳しい内容を知りたい場面もあります。</value>
+  </data>
+  <data name="ConceptHierarchicalDescription" xml:space="preserve">
+    <value>詳細な文章が増えると、私たちはルールやフォルダで整理します。しかし、従来のファイル構造では、こうした文書に物理的なつながりがありません。Pinetreeでは、文章自体を「階層式」に表現でき、リンクでジャンプすることもできます。これにより、読み手は文のつながりを自然に理解できます。</value>
+  </data>
+  <data name="ConceptIdealUseDescription" xml:space="preserve">
+    <value>旅行計画や履歴書、読書メモなど、「簡潔」と「詳細」の両方が求められる文書に、Pinetreeは最適です。1つ1つの文章をなるべくシンプルにまとめつつ、必要に応じて階層的に詳細を書き足せます。そんな新しい文章スタイルを、ぜひ体験してみてください。</value>
+  </data>
+  <data name="CreateMultipleDocuments" xml:space="preserve">
+    <value>ユーザー登録すると複数の文書を作成できます。</value>
+  </data>
+  <data name="OverviewAndDemo" xml:space="preserve">
+    <value>Pinetree概要＆デモ</value>
+  </data>
+  <data name="VideoDescription" xml:space="preserve">
+    <value>このYoutubeでは、Pinetreeの概念と機能のデモを紹介しています。私が構想した主要機能を実装し、ユーザーからの貴重なフィードバックを集めるためにベータ版としてリリースしています。</value>
+  </data>
+  <data name="BetaVersionNotice" xml:space="preserve">
+    <value>ベータ版のお知らせ：</value>
+  </data>
+  <data name="BetaVersionDescription" xml:space="preserve">
+    <value>Pinetreeは現在ベータ開発中です。これは私の初めてのビデオ制作のため、品質が最適でないことをご了承ください。プレゼンテーション資料は英語で字幕付きですが、ナレーションは日本語です。コンテンツとサービスの改善を続ける中でのご理解をお願いします。</value>
+  </data>
+  <data name="ReadyToGetStarted" xml:space="preserve">
+    <value>始めましょう</value>
+  </data>
+  <data name="JoinCommunity" xml:space="preserve">
+    <value>Playgroundで実際にPinetreeを体験して、是非ユーザー登録してください！</value>
+  </data>
+  <data name="Pricing" xml:space="preserve">
+    <value>料金</value>
+  </data>
+  <data name="WantManyUsers" xml:space="preserve">
+    <value>現在、できるだけ多くのユーザーにサービスを試してもらいたい段階です。</value>
+  </data>
+  <data name="StartWithPlayground" xml:space="preserve">
+    <value>プレイグラウンドから始めて、その後フィードバックをいただけると幸いです。</value>
+  </data>
+  <data name="FreePassForFeedback" xml:space="preserve">
+    <value>貴重なフィードバックを提供していただいたユーザーには永続的な無料パスを差し上げます！</value>
+  </data>
+  <data name="Feedback" xml:space="preserve">
+    <value>フィードバック</value>
+  </data>
+</root>

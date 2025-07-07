@@ -1,3 +1,10 @@
+## [0.9.11] - 2025-07-07
+
+### Features
+- Added full localization support for Home, Feedback, and Pricing pages, enabling dynamic language switching between English and Japanese
+
+---
+
 ## [0.9.10] - 2025-06-26
 
 ### Features

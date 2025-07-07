@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" msdata:Ordinal="5" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="PageTitle" xml:space="preserve">
+    <value>料金プラン</value>
+  </data>
+  <data name="FreePlanTitle" xml:space="preserve">
+    <value>無料プラン</value>
+  </data>
+  <data name="FreePlanDescription" xml:space="preserve">
+    <value>階層構造Markdownエディタを無料で体験できます。整理されたコンテンツ作成を始めるのに最適ですが、いくつかの制限があります。</value>
+  </data>
+  <data name="FreePlanPrice" xml:space="preserve">
+    <value>$0</value>
+  </data>
+  <data name="PerMonth" xml:space="preserve">
+    <value>/ 月</value>
+  </data>
+  <data name="MaximumLevels" xml:space="preserve">
+    <value>最大レベル数: {0}</value>
+  </data>
+  <data name="MaximumFilesPerLevel" xml:space="preserve">
+    <value>レベルあたり最大ファイル数: {0}</value>
+  </data>
+  <data name="MaximumFiles" xml:space="preserve">
+    <value>最大ファイル数: {0}</value>
+  </data>
+  <data name="MaximumCharactersPerFile" xml:space="preserve">
+    <value>ファイルあたり最大文字数: {0}</value>
+  </data>
+  <data name="MaximumImage" xml:space="preserve">
+    <value>最大画像サイズ: {0}</value>
+  </data>
+  <data name="FreePlanFooter" xml:space="preserve">
+    <value>これらの制限は、優れた価値を提供しながら、拡張された使用のための有料プランへの成長を促すよう、慎重に設計されています。</value>
+  </data>
+  <data name="GetStartedFree" xml:space="preserve">
+    <value>無料で始める</value>
+  </data>
+  <data name="ProfessionalPlanTitle" xml:space="preserve">
+    <value>プロフェッショナルプラン</value>
+  </data>
+  <data name="ProfessionalPlanDescription" xml:space="preserve">
+    <value>階層構造Markdownエディタの全機能を活用できます。豊富なコンテンツ整理機能が必要なパワーユーザーやプロフェッショナルに最適です。</value>
+  </data>
+  <data name="ProfessionalPlanPrice" xml:space="preserve">
+    <value>$1</value>
+  </data>
+  <data name="Unlimited" xml:space="preserve">
+    <value>∞</value>
+  </data>
+  <data name="LimitedTimeOffer" xml:space="preserve">
+    <value>期間限定オファー:</value>
+  </data>
+  <data name="OneYearFree" xml:space="preserve">
+    <value>プロフェッショナルプランを1年間無料でご利用いただけます！</value>
+  </data>
+  <data name="SubscribeForOneMonth" xml:space="preserve">
+    <value>月額$1で購読</value>
+  </data>
+  <data name="EnterprisePlanTitle" xml:space="preserve">
+    <value>エンタープライズプラン</value>
+  </data>
+  <data name="EnterprisePlanDescription" xml:space="preserve">
+    <value>カスタムソリューション、高度な統合、または専門サポートが必要な組織向けです。現在、個人や小さなチーム向けのコア機能の完成に注力しています。</value>
+  </data>
+  <data name="CustomPricing" xml:space="preserve">
+    <value>カスタム料金</value>
+  </data>
+  <data name="TailoredSolutions" xml:space="preserve">
+    <value>お客様の組織に合わせたソリューション</value>
+  </data>
+  <data name="PrioritySupport" xml:space="preserve">
+    <value>優先サポートとコンサルテーション</value>
+  </data>
+  <data name="CustomIntegrations" xml:space="preserve">
+    <value>カスタム統合と機能</value>
+  </data>
+  <data name="DedicatedAccountManagement" xml:space="preserve">
+    <value>専任アカウント管理</value>
+  </data>
+  <data name="ContactUsViaFeedback" xml:space="preserve">
+    <value>フィードバック経由でお問い合わせ</value>
+  </data>
+</root>
