@@ -2,6 +2,7 @@ using Azure.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Pinetree.Client.Services;
@@ -159,38 +160,78 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.MaxAge = TimeSpan.FromDays(30);
     options.Cookie.IsEssential = true;
     
+    // Additional persistence settings
+    options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
+    options.SessionStore = null; // Use cookie-based sessions for better persistence
+    
     options.LoginPath = "/Identity/Account/Login";
     options.LogoutPath = "/Identity/Account/Logout";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
     
-    // Event for automatic user validation
+    // Event for automatic user validation with improved error handling
     options.Events.OnValidatePrincipal = async context =>
     {
-        var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
-        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-        var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        
-        if (!string.IsNullOrEmpty(userId))
+        try
         {
-            var user = await userManager.FindByIdAsync(userId);
-            if (user == null)
+            var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (!string.IsNullOrEmpty(userId))
             {
-                logger.LogInformation("User {UserId} not found, rejecting principal", userId);
-                context.RejectPrincipal();
-                await context.HttpContext.SignOutAsync();
+                var user = await userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    logger.LogInformation("User {UserId} not found during validation, rejecting principal", userId);
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync();
+                }
+                else
+                {
+                    logger.LogDebug("User {UserId} validated successfully", userId);
+                    
+                    // Update security stamp only if it has changed to avoid unnecessary invalidation
+                    var currentStamp = context.Principal?.FindFirst("AspNet.Identity.SecurityStamp")?.Value;
+                    if (!string.IsNullOrEmpty(currentStamp) && currentStamp != user.SecurityStamp)
+                    {
+                        logger.LogInformation("Security stamp changed for user {UserId}, rejecting principal", userId);
+                        context.RejectPrincipal();
+                        await context.HttpContext.SignOutAsync();
+                    }
+                }
             }
-            else
-            {
-                logger.LogDebug("User {UserId} validated successfully", userId);
-            }
+        }
+        catch (Exception ex)
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "Error validating principal, continuing with existing authentication");
+            // Don't reject the principal on validation errors to avoid unnecessary logouts
         }
     };
 });
 
 builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
 
-// Configure Data Protection API for secure encryption key management
-builder.Services.AddDataProtection();
+// Configure Data Protection API for secure encryption key management with persistence
+var dataProtectionBuilder = builder.Services.AddDataProtection()
+    .SetApplicationName("Pinetree")
+    .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
+
+// Persist keys to a secure location based on environment
+if (builder.Environment.IsProduction())
+{
+    // For production, use a persistent directory that survives deployments
+    var keysPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Pinetree", "DataProtectionKeys");
+    Directory.CreateDirectory(keysPath);
+    dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+}
+else
+{
+    // For development, use local app data
+    var keysPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Pinetree", "DataProtectionKeys");
+    Directory.CreateDirectory(keysPath);
+    dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+}
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
