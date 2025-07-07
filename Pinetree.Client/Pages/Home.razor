@@ -165,16 +165,12 @@ else
 
     private IJSObjectReference? _jsModule;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LocalizationService.InitializeAsync();
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            
+            await LocalizationService.InitializeAsync();
+
             try
             {
                 _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./Pages/Home.razor.js");
@@ -184,6 +180,8 @@ else
             {
                 Console.Error.WriteLine($"Error initializing slider: {ex.Message}");
             }
+
+            StateHasChanged();
         }
     }
 
