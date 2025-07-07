@@ -95,7 +95,7 @@ else
                 </div>
                 <div class="concept-content">
                     <p class="mb-0">
-                            @((MarkupString)LocalizationService.GetLocalizedString("ConceptIdealUseDescription", typeof(HomeResources)).Replace("resume", "<a href=\"https://pine-tree.site/View/binnmti/7dc5d7ec-4ccc-497d-a3f1-307a33e5342e\" target=\"_blank\" rel=\"noopener noreferrer\">resume</a>").Replace("履歴書", "<a href=\"https://pine-tree.site/View/binnmti/df0a1572-eb29-4157-aa52-3efd937b0947\" target=\"_blank\" rel=\"noopener noreferrer\">履歴書</a>"))
+                        @GetConceptIdealUseDescription();
                     </p>
                 </div>
             </div>
@@ -185,6 +185,18 @@ else
                 Console.Error.WriteLine($"Error initializing slider: {ex.Message}");
             }
         }
+    }
+
+    private MarkupString GetConceptIdealUseDescription()
+    {
+        var text = LocalizationService.GetLocalizedString("ConceptIdealUseDescription", typeof(HomeResources));
+        
+        var resumeText = LocalizationService.CurrentCulture.Name == "ja" ? "履歴書" : "resume";
+        var resumeUrl = LocalizationService.CurrentCulture.Name == "ja"
+            ? "https://pine-tree.site/View/binnmti/df0a1572-eb29-4157-aa52-3efd937b0947"
+            : "https://pine-tree.site/View/binnmti/7dc5d7ec-4ccc-497d-a3f1-307a33e5342e";
+
+        return new MarkupString(text.Replace(resumeText, $"<a href=\"{resumeUrl}\" target=\"_blank\" rel=\"noopener noreferrer\">{resumeText}</a>"));
     }
 
     private async Task NextSlide()

@@ -55,8 +55,10 @@ public class LocalizationService
                 }
             }
         }
-        catch { }
-
+        catch (JSException ex)
+        {
+            Console.WriteLine($"JavaScript interop error: {ex.Message}");
+        }
         return "en";
     }
 
