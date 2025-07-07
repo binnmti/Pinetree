@@ -111,8 +111,13 @@ else
 }
 
 @code {
-    protected override async Task OnInitializedAsync()
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await LocalizationService.InitializeAsync();
+        if (firstRender)
+        {
+            await LocalizationService.InitializeAsync();
+            StateHasChanged();
+        }
     }
 }

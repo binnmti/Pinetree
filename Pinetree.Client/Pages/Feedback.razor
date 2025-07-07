@@ -10,7 +10,7 @@
 @using Pinetree.Shared.Services
 @using Pinetree.Shared.Resources
 
-@rendermode InteractiveWebAssembly
+@rendermode InteractiveAuto
 
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
@@ -127,9 +127,13 @@ else
     private bool isSubmitted = false;
     private string? errorMessage;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await LocalizationService.InitializeAsync();
+        if (firstRender)
+        {
+            await LocalizationService.InitializeAsync();
+            StateHasChanged();
+        }
     }
 
     private class FeedbackModel
