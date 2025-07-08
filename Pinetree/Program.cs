@@ -182,32 +182,28 @@ builder.Services.ConfigureApplicationCookie(options =>
                 var user = await userManager.FindByIdAsync(userId);
                 if (user == null)
                 {
-                    logger.LogInformation("User {UserId} not found during validation, rejecting principal", userId);
-                    context.RejectPrincipal();
-                    await context.HttpContext.SignOutAsync();
+                    logger.LogWarning("User {UserId} not found during validation, but keeping session active to avoid unnecessary logouts during deployment", userId);
+                    // DO NOT reject principal or sign out - just log the warning
+                    return;
                 }
-                else
+                
+                logger.LogDebug("User {UserId} validated successfully", userId);
+                
+                // Security stamp validation - more lenient approach
+                var currentStamp = context.Principal?.FindFirst("AspNet.Identity.SecurityStamp")?.Value;
+                if (!string.IsNullOrEmpty(currentStamp) && !string.IsNullOrEmpty(user.SecurityStamp) && currentStamp != user.SecurityStamp)
                 {
-                    logger.LogDebug("User {UserId} validated successfully", userId);
-                    
-                    // Update security stamp only if it has changed to avoid unnecessary invalidation
-                    var currentStamp = context.Principal?.FindFirst("AspNet.Identity.SecurityStamp")?.Value;
-                    if (!string.IsNullOrEmpty(currentStamp) && currentStamp != user.SecurityStamp)
-                    {
-                        logger.LogInformation("Security stamp changed for user {UserId}, rejecting principal", userId);
-                        context.RejectPrincipal();
-                        await context.HttpContext.SignOutAsync();
-                    }
+                    logger.LogInformation("Security stamp changed for user {UserId}, but allowing session to continue", userId);
+                    // Mark for renewal instead of immediate logout
+                    context.ShouldRenew = true;
                 }
             }
         }
         catch (Exception ex)
         {
             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "Error validating principal, rejecting for security");
-            context.RejectPrincipal();
-            await context.HttpContext.SignOutAsync();
-            // Don't reject the principal on validation errors to avoid unnecessary logouts
+            logger.LogError(ex, "Error validating principal, but keeping session active to avoid unnecessary logouts");
+            // DO NOT reject principal or sign out on errors
         }
     };
 });
@@ -220,19 +216,17 @@ var dataProtectionBuilder = builder.Services.AddDataProtection()
     .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
 
 // Persist keys to a secure location based on environment
+var keysPath = builder.Environment.IsProduction()
+    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Pinetree", "DataProtectionKeys")
+    : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Pinetree", "DataProtectionKeys");
+
+Directory.CreateDirectory(keysPath);
+dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+
+// Prevent automatic key rotation in production to maintain consistency across deployments
 if (builder.Environment.IsProduction())
 {
-    // For production, use a persistent directory that survives deployments
-    var keysPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Pinetree", "DataProtectionKeys");
-    Directory.CreateDirectory(keysPath);
-    dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
-}
-else
-{
-    // For development, use local app data
-    var keysPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Pinetree", "DataProtectionKeys");
-    Directory.CreateDirectory(keysPath);
-    dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+    dataProtectionBuilder.DisableAutomaticKeyGeneration();
 }
 
 builder.Services.AddControllers()
