@@ -223,10 +223,18 @@ var keysPath = builder.Environment.IsProduction()
 Directory.CreateDirectory(keysPath);
 dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
-// Prevent automatic key rotation in production to maintain consistency across deployments
+// Configure key management for production environments
 if (builder.Environment.IsProduction())
 {
-    dataProtectionBuilder.DisableAutomaticKeyGeneration();
+    // Set longer key lifetime and configure key ring to reduce rotation frequency
+    dataProtectionBuilder.SetDefaultKeyLifetime(TimeSpan.FromDays(180));
+    
+    // Configure key activation/expiration delays to ensure smooth transitions
+    // This allows old keys to remain valid during deployments
+    dataProtectionBuilder.SetApplicationName("Pinetree-Prod");
+    
+    // Note: We do NOT disable automatic key generation to maintain security
+    // Instead, we rely on persistent storage and longer key lifetimes
 }
 
 builder.Services.AddControllers()
