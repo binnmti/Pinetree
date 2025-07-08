@@ -164,9 +164,20 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ReturnUrlParameter = CookieAuthenticationDefaults.ReturnUrlParameter;
     options.SessionStore = null; // Use cookie-based sessions for better persistence
     
-    options.LoginPath = "/Identity/Account/Login";
-    options.LogoutPath = "/Identity/Account/Logout";
-    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    
+    // Ensure proper redirect handling
+    options.Events.OnRedirectToLogin = context =>
+    {
+        // Log the redirect for debugging
+        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Redirecting to login page from path: {Path}", context.Request.Path);
+        
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
     
     // Event for automatic user validation with improved error handling
     options.Events.OnValidatePrincipal = async context =>
