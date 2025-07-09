@@ -1,3 +1,19 @@
+// Types for temporary save functionality
+interface TemporarySaveData {
+    id: string;
+    title: string;
+    content: string;
+    timestamp: number;
+    originalContent: string;
+    originalTitle: string;
+}
+
+interface SaveStatusOptions {
+    showSaveButton: boolean;
+    showUnsavedIndicator: boolean;
+    lastSavedTime?: number;
+}
+
 export function getTextAreaSelection(element: HTMLTextAreaElement): { text: string; start: number; end: number } {
     if (element) {
         return {
@@ -128,6 +144,25 @@ export function setupAllEventListeners(
     setupDropZone(textArea, dotNetHelper);
     setupClipboardPaste(textArea, dotNetHelper);
     setupTextAreaScrollBehavior(textArea);
+    initializeTemporarySave(dotNetHelper);
+}
+
+function initializeTemporarySave(dotNetHelper: DotNetObject): void {
+    try {
+        // Clean up old temporary saves on initialization
+        cleanupOldTemporarySaves(24);
+        
+        // Check for existing temporary save and notify C# side
+        setTimeout(async () => {
+            try {
+                await dotNetHelper.invokeMethodAsync('CheckForTemporarySave');
+            } catch (error) {
+                console.error('Error checking for temporary save:', error);
+            }
+        }, 100);
+    } catch (error) {
+        console.error('Error initializing temporary save:', error);
+    }
 }
 
 interface DotNetObject {
@@ -316,6 +351,116 @@ export function cleanupNavigationHandlers(dotNetHelper: DotNetObject): void {
         if ((dotNetHelper as any)._navigationObserver) {
             (dotNetHelper as any)._navigationObserver.disconnect();
         }
+    }
+}
+
+// Temporary save functionality
+export function saveTemporary(id: string, title: string, content: string, originalTitle: string, originalContent: string): boolean {
+    try {
+        // Only save if content has changed from original
+        if (content === originalContent && title === originalTitle) {
+            // Delete temporary save if content is identical to original
+            deleteTemporarySave(id);
+            return false;
+        }
+
+        const saveData: TemporarySaveData = {
+            id,
+            title,
+            content,
+            timestamp: Date.now(),
+            originalContent,
+            originalTitle
+        };
+
+        const key = `pinetree_temp_save_${id}`;
+        localStorage.setItem(key, JSON.stringify(saveData));
+        
+        console.log('Temporary save completed for document:', id);
+        return true;
+    } catch (error) {
+        console.error('Error saving temporary data:', error);
+        return false;
+    }
+}
+
+export function loadTemporary(id: string): TemporarySaveData | null {
+    try {
+        const key = `pinetree_temp_save_${id}`;
+        const data = localStorage.getItem(key);
+        
+        if (!data) {
+            return null;
+        }
+
+        const saveData: TemporarySaveData = JSON.parse(data);
+        
+        // Validate the data structure
+        if (!saveData.id || !saveData.hasOwnProperty('content') || !saveData.hasOwnProperty('title')) {
+            console.warn('Invalid temporary save data structure, removing...');
+            localStorage.removeItem(key);
+            return null;
+        }
+
+        return saveData;
+    } catch (error) {
+        console.error('Error loading temporary data:', error);
+        return null;
+    }
+}
+
+export function deleteTemporarySave(id: string): void {
+    try {
+        const key = `pinetree_temp_save_${id}`;
+        localStorage.removeItem(key);
+        console.log('Temporary save deleted for document:', id);
+    } catch (error) {
+        console.error('Error deleting temporary save:', error);
+    }
+}
+
+export function hasTemporarySave(id: string): boolean {
+    try {
+        const key = `pinetree_temp_save_${id}`;
+        return localStorage.getItem(key) !== null;
+    } catch (error) {
+        console.error('Error checking temporary save:', error);
+        return false;
+    }
+}
+
+export function cleanupOldTemporarySaves(maxAgeHours: number = 24): void {
+    try {
+        const now = Date.now();
+        const maxAge = maxAgeHours * 60 * 60 * 1000; // Convert to milliseconds
+        
+        const keysToRemove: string[] = [];
+        
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('pinetree_temp_save_')) {
+                try {
+                    const data = localStorage.getItem(key);
+                    if (data) {
+                        const saveData: TemporarySaveData = JSON.parse(data);
+                        if (now - saveData.timestamp > maxAge) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                } catch (error) {
+                    // Invalid data, mark for removal
+                    keysToRemove.push(key);
+                }
+            }
+        }
+        
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        
+        if (keysToRemove.length > 0) {
+            console.log(`Cleaned up ${keysToRemove.length} old temporary saves`);
+        }
+    } catch (error) {
+        console.error('Error cleaning up old temporary saves:', error);
     }
 }
 

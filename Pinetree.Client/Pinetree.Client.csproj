@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
     <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
+    <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="HtmlSanitizer" Version="9.0.876" />
@@ -19,5 +20,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Pinetree.Shared\Pinetree.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="Pages/**/*.js" />
+    <Content Remove="Pages/**/*.js.map" />
   </ItemGroup>
 </Project>
