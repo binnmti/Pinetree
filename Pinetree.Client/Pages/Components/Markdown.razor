@@ -136,7 +136,7 @@
                                     {
                                         <button @onclick="SaveTemporaryButton" 
                                                 class="btn btn-sm btn-outline-secondary me-2" 
-                                                title="Save temporarily to local storage">
+                                                title="Save temporarily to local storage (Ctrl+T)">
                                             <i class="bi bi-bookmark me-1"></i>
                                             <span>Temp Save</span>
                                         </button>
@@ -718,6 +718,7 @@
             _hasTemporarySave = false;
             _temporarySaveData = null;
             
+            await Task.Yield(); // Make method properly async
             StateHasChanged();
         }
         catch (Exception ex)

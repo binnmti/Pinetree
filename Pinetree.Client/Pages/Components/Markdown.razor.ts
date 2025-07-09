@@ -436,6 +436,11 @@ export function cleanupOldTemporarySaves(maxAgeHours: number = 24): void {
         
         const keysToRemove: string[] = [];
         
+        // Handle storage size limits
+        if (localStorage.length > 100) {
+            console.warn('LocalStorage has many items, performing cleanup');
+        }
+        
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             if (key && key.startsWith('pinetree_temp_save_')) {
@@ -454,13 +459,44 @@ export function cleanupOldTemporarySaves(maxAgeHours: number = 24): void {
             }
         }
         
-        keysToRemove.forEach(key => localStorage.removeItem(key));
+        keysToRemove.forEach(key => {
+            try {
+                localStorage.removeItem(key);
+            } catch (error) {
+                console.error(`Error removing key ${key}:`, error);
+            }
+        });
         
         if (keysToRemove.length > 0) {
             console.log(`Cleaned up ${keysToRemove.length} old temporary saves`);
         }
     } catch (error) {
         console.error('Error cleaning up old temporary saves:', error);
+    }
+}
+
+export function getTemporarySaveStatus(id: string): { exists: boolean; isExpired: boolean; timestamp?: number } {
+    try {
+        const key = `pinetree_temp_save_${id}`;
+        const data = localStorage.getItem(key);
+        
+        if (!data) {
+            return { exists: false, isExpired: false };
+        }
+
+        const saveData: TemporarySaveData = JSON.parse(data);
+        const now = Date.now();
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        const isExpired = now - saveData.timestamp > maxAge;
+        
+        return { 
+            exists: true, 
+            isExpired, 
+            timestamp: saveData.timestamp 
+        };
+    } catch (error) {
+        console.error('Error getting temporary save status:', error);
+        return { exists: false, isExpired: false };
     }
 }
 
@@ -474,6 +510,17 @@ export function setupKeyboardShortcuts(element: HTMLTextAreaElement, dotNetHelpe
         if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
             e.preventDefault();
             await dotNetHelper.invokeMethodAsync('HandleRedoShortcut');
+            return false;
+        }
+        // Add temporary save shortcut (Ctrl+T)
+        if ((e.ctrlKey || e.metaKey) && e.key === 't') {
+            e.preventDefault();
+            try {
+                await dotNetHelper.invokeMethodAsync('SaveTemporary');
+                console.log('Temporary save triggered via keyboard shortcut');
+            } catch (error) {
+                console.error('Error triggering temporary save:', error);
+            }
             return false;
         }
         if (e.key === 'Tab') {
