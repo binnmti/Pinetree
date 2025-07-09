@@ -24,7 +24,7 @@
         <div class="description-bar">
             <div class="alert alert-primary" role="alert">
                 <i class="bi bi-info-circle-fill"></i>
-                Since it is currently in beta version, there is no function such as temporary saving. If you are writing long texts, we recommend saving regularly to avoid malfunction.
+                This application includes temporary save functionality for data protection. Use the "Temp Save" button to save your work locally. Regular saving is still recommended.
             </div>
         </div>
     }
@@ -131,6 +131,31 @@
                                             </span>
                                         }
                                     </button>
+                                    
+                                    @if (!IsTry && HasPendingChanges())
+                                    {
+                                        <button @onclick="SaveTemporaryButton" 
+                                                class="btn btn-sm btn-outline-secondary me-2" 
+                                                title="Save temporarily to local storage (Ctrl+T)">
+                                            <i class="bi bi-bookmark me-1"></i>
+                                            <span>Temp Save</span>
+                                        </button>
+                                    }
+                                }
+                                
+                                @if (HasPendingChanges())
+                                {
+                                    <span class="badge bg-warning text-dark me-2" title="You have unsaved changes">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        Unsaved
+                                    </span>
+                                }
+                                
+                                @if (_lastTemporarySaveTime.HasValue)
+                                {
+                                    <small class="text-muted me-2">
+                                        Temp saved: @_lastTemporarySaveTime.Value.ToString("HH:mm")
+                                    </small>
                                 }
                             </div>
                         </div>
@@ -264,6 +289,56 @@
     </div>
 </div>
 
+@if (_hasTemporarySave && _temporarySaveData != null)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-backdrop fade show"></div>
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-bookmark-fill me-2"></i>
+                        Temporary Save Found
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        A temporary save was found for this document from @(new DateTime(1970, 1, 1).AddMilliseconds(_temporarySaveData.Timestamp).ToLocalTime().ToString("yyyy-MM-dd HH:mm")).
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Current Content:</h6>
+                            <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                                <strong>Title:</strong> @Title<br />
+                                <strong>Content:</strong> @(string.IsNullOrEmpty(Content) ? "(empty)" : Content.Substring(0, Math.Min(Content.Length, 100)) + (Content.Length > 100 ? "..." : ""))
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Temporary Save:</h6>
+                            <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                                <strong>Title:</strong> @_temporarySaveData.Title<br />
+                                <strong>Content:</strong> @(string.IsNullOrEmpty(_temporarySaveData.Content) ? "(empty)" : _temporarySaveData.Content.Substring(0, Math.Min(_temporarySaveData.Content.Length, 100)) + (_temporarySaveData.Content.Length > 100 ? "..." : ""))
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @onclick="RestoreTemporarySave">
+                        <i class="bi bi-arrow-clockwise me-1"></i>
+                        Restore Temporary Save
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" @onclick="DiscardTemporarySave">
+                        <i class="bi bi-trash me-1"></i>
+                        Discard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @if (_isEmojiPickerVisible)
 {
     <EmojiPicker EmojiCategories="_allEmojis" OnSelect="OnEmojiSelected" />
@@ -326,6 +401,23 @@
     private Dictionary<string, string[]> _allEmojis = new();
     private string _currentFontFamily = "system-ui, -apple-system, sans-serif";
     private int _currentFontSize = 14;
+    
+    // Temporary save fields
+    private bool _hasTemporarySave = false;
+    private TemporarySaveData? _temporarySaveData = null;
+    private DateTime? _lastTemporarySaveTime = null;
+    private string _originalTitle = "";
+    private string _originalContent = "";
+    
+    public class TemporarySaveData
+    {
+        public string Id { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Content { get; set; } = "";
+        public long Timestamp { get; set; }
+        public string OriginalContent { get; set; } = "";
+        public string OriginalTitle { get; set; } = "";
+    }
 
     /// <summary>
     /// Generates markdown HTML for preview, removing YAML Front Matter if present
@@ -349,6 +441,10 @@
     {
         SetCurrent(Guid);
         LastSavedState = Pinetree.DeepClone();
+        
+        // Initialize original content and title for temporary save comparison
+        _originalTitle = Title;
+        _originalContent = Content;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -550,6 +646,106 @@
         UpdateContent(content);
     }
 
+    [JSInvokable]
+    public async Task CheckForTemporarySave()
+    {
+        try
+        {
+            if (_isDisposed) return;
+            
+            var hasTemporarySave = await _jsModule.InvokeAsync<bool>("hasTemporarySave", Guid.ToString());
+            if (hasTemporarySave)
+            {
+                var tempData = await _jsModule.InvokeAsync<TemporarySaveData>("loadTemporary", Guid.ToString());
+                if (tempData != null)
+                {
+                    _hasTemporarySave = true;
+                    _temporarySaveData = tempData;
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error checking for temporary save: {ex.Message}");
+        }
+    }
+
+    [JSInvokable]
+    public async Task<bool> SaveTemporary()
+    {
+        try
+        {
+            if (_isDisposed || IsTry) return false;
+            
+            var success = await _jsModule.InvokeAsync<bool>("saveTemporary", 
+                Guid.ToString(), 
+                Title, 
+                Content, 
+                _originalTitle, 
+                _originalContent);
+            
+            if (success)
+            {
+                _lastTemporarySaveTime = DateTime.Now;
+                StateHasChanged();
+                return true;
+            }
+            
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error saving temporary data: {ex.Message}");
+            return false;
+        }
+    }
+
+    [JSInvokable]
+    public async Task RestoreTemporarySave()
+    {
+        try
+        {
+            if (_isDisposed || _temporarySaveData == null) return;
+            
+            Title = _temporarySaveData.Title;
+            Content = _temporarySaveData.Content;
+            Current.Title = Title;
+            Current.Content = Content;
+            
+            MarkdownText = GeneratePreviewMarkdown(Content);
+            
+            _hasTemporarySave = false;
+            _temporarySaveData = null;
+            
+            await Task.Yield(); // Make method properly async
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error restoring temporary save: {ex.Message}");
+        }
+    }
+
+    [JSInvokable]
+    public async Task DiscardTemporarySave()
+    {
+        try
+        {
+            if (_isDisposed) return;
+            
+            await _jsModule.InvokeVoidAsync("deleteTemporarySave", Guid.ToString());
+            _hasTemporarySave = false;
+            _temporarySaveData = null;
+            
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error discarding temporary save: {ex.Message}");
+        }
+    }
+
     private async Task SetViewMode(string mode)
     {
         ViewMode = mode;
@@ -623,6 +819,24 @@
         }
         NavigationManager.NavigateTo($"/files");
     }
+    
+    private async Task SaveTemporaryButton()
+    {
+        try
+        {
+            var success = await SaveTemporary();
+            if (success)
+            {
+                // Show success feedback (could be a toast notification in the future)
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error in SaveTemporary button handler: {ex.Message}");
+            await JS.AlertAsync("Error saving temporary data. Please try again.");
+        }
+    }
 
     private async Task CopyDocumentId()
     {
@@ -686,6 +900,23 @@
             if (response.IsSuccessStatusCode)
             {
                 LastSavedState = Pinetree.DeepClone();
+                
+                // Delete temporary save on successful save
+                try
+                {
+                    await _jsModule.InvokeVoidAsync("deleteTemporarySave", Guid.ToString());
+                    _hasTemporarySave = false;
+                    _temporarySaveData = null;
+                    _lastTemporarySaveTime = null;
+                    
+                    // Update original content and title for future comparisons
+                    _originalTitle = Title;
+                    _originalContent = Content;
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Error cleaning up temporary save: {ex.Message}");
+                }
             }
             else
             {
