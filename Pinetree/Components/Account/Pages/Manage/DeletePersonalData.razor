@@ -3,11 +3,13 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
 @using Pinetree.Data
+@using Pinetree.Services
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
+@inject UserDataDeletionService UserDataDeletionService
 @inject ILogger<DeletePersonalData> Logger
 
 <PageTitle>Delete Personal Data</PageTitle>
@@ -64,16 +66,14 @@
             return;
         }
 
-        var result = await UserManager.DeleteAsync(user);
-        if (!result.Succeeded)
+        var success = await UserDataDeletionService.DeleteAllUserDataAsync(user);
+        if (!success)
         {
-            throw new InvalidOperationException("Unexpected error occurred deleting user.");
+            throw new InvalidOperationException("Unexpected error occurred deleting user data.");
         }
 
-        await SignInManager.SignOutAsync();
-
         var userId = await UserManager.GetUserIdAsync(user);
-        Logger.LogInformation("User with ID '{UserId}' deleted themselves.", userId);
+        Logger.LogInformation("User with ID '{UserId}' deleted themselves and all their data.", userId);
 
         RedirectManager.RedirectToCurrentPage();
     }
