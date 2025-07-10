@@ -20,66 +20,53 @@ function performSmartMathRendering(element: HTMLElement): void {
     // Wait for KaTeX to be loaded
     const waitForKaTeX = () => {
         if (typeof (window as any).katex !== 'undefined' && typeof (window as any).renderMathInElement !== 'undefined') {
-            try {
-                // IMPORTANT: Clear any previously rendered KaTeX elements to prevent duplication
-                cleanupPreviousRender(element);
+            // Clear any previously rendered KaTeX elements to prevent duplication
+            cleanupPreviousRender(element);
+            
+            // First, handle Markdig's math spans
+            const mathSpans = element.querySelectorAll('span.math');
+            mathSpans.forEach((span) => {
+                const isDisplay = span.classList.contains('math-display');
+                const mathContent = (span.textContent || '').trim();
                 
-                // First, handle Markdig's math spans
-                const mathSpans = element.querySelectorAll('span.math');
-                mathSpans.forEach((span) => {
-                    try {
-                        const isDisplay = span.classList.contains('math-display');
-                        const mathContent = (span.textContent || '').trim();
-                        
-                        // Skip if already rendered by KaTeX
-                        if (span.querySelector('.katex')) {
-                            return;
-                        }
-                        
-                        (window as any).katex.render(mathContent, span, {
-                            displayMode: isDisplay,
-                            throwOnError: false,
-                            strict: false,
-                            trust: true,
-                            macros: {},
-                            errorColor: '#000000'
-                        });
-                    } catch (error) {
-                        // Keep original content on error
-                    }
-                });
-                
-                // Use KaTeX auto-render with enhanced error handling for traditional delimiters
-                try {
-                    (window as any).renderMathInElement(element, {
-                        delimiters: [
-                            { left: '$$', right: '$$', display: true },
-                            { left: '$', right: '$', display: false },
-                            { left: '\\(', right: '\\)', display: false },
-                            { left: '\\[', right: '\\]', display: true }
-                        ],
-                        throwOnError: false,
-                        strict: false,
-                        trust: true,
-                        macros: {},
-                        errorColor: '#000000',
-                        ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'katex'],
-                        preProcess: (math: string, displayMode: boolean) => {
-                            // Simple validation: don't process obviously incomplete expressions
-                            const trimmed = math.trim();
-                            if (trimmed === '' || trimmed === '$' || trimmed === '$$') {
-                                return null; // Skip processing
-                            }
-                            return math; // Process normally
-                        }
-                    });
-                } catch (error) {
-                    // Silently handle rendering errors
+                // Skip if already rendered by KaTeX
+                if (span.querySelector('.katex')) {
+                    return;
                 }
                 
-            } catch (error) {
-                // Silently handle errors to avoid console noise
-            }
+                (window as any).katex.render(mathContent, span, {
+                    displayMode: isDisplay,
+                    throwOnError: false,
+                    strict: false,
+                    trust: true,
+                    macros: {},
+                    errorColor: '#000000'
+                });
+            });
+            
+            // Use KaTeX auto-render for traditional delimiters
+            (window as any).renderMathInElement(element, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false },
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '\\[', right: '\\]', display: true }
+                ],
+                throwOnError: false,
+                strict: false,
+                trust: true,
+                macros: {},
+                errorColor: '#000000',
+                ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'katex'],
+                preProcess: (math: string, displayMode: boolean) => {
+                    // Simple validation: don't process obviously incomplete expressions
+                    const trimmed = math.trim();
+                    if (trimmed === '' || trimmed === '$' || trimmed === '$$') {
+                        return null; // Skip processing
+                    }
+                    return math; // Process normally
+                }
+            });
         } else {
             setTimeout(waitForKaTeX, 100);
         }
@@ -100,14 +87,12 @@ function cleanupPreviousRender(element: HTMLElement): void {
             } else {
                 // Remove the rendered KaTeX element and try to restore from annotation
                 const annotation = katexEl.querySelector('annotation[encoding="application/x-tex"]');
-                if (annotation) {
+                if (annotation && annotation.textContent) {
                     const mathText = annotation.textContent;
-                    if (mathText) {
-                        // Restore with appropriate delimiters
-                        const isDisplay = katexEl.classList.contains('katex-display');
-                        const delimiter = isDisplay ? '$$' : '$';
-                        parent.textContent = delimiter + mathText + delimiter;
-                    }
+                    // Restore with appropriate delimiters
+                    const isDisplay = katexEl.classList.contains('katex-display');
+                    const delimiter = isDisplay ? '$$' : '$';
+                    parent.textContent = delimiter + mathText + delimiter;
                 } else {
                     // Fallback: just remove the element
                     katexEl.remove();

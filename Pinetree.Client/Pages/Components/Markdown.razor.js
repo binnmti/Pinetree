@@ -16,64 +16,49 @@ function performSmartMathRendering(element) {
     // Wait for KaTeX to be loaded
     const waitForKaTeX = () => {
         if (typeof window.katex !== 'undefined' && typeof window.renderMathInElement !== 'undefined') {
-            try {
-                // IMPORTANT: Clear any previously rendered KaTeX elements to prevent duplication
-                cleanupPreviousRender(element);
-                // First, handle Markdig's math spans
-                const mathSpans = element.querySelectorAll('span.math');
-                mathSpans.forEach((span) => {
-                    try {
-                        const isDisplay = span.classList.contains('math-display');
-                        const mathContent = (span.textContent || '').trim();
-                        // Skip if already rendered by KaTeX
-                        if (span.querySelector('.katex')) {
-                            return;
-                        }
-                        window.katex.render(mathContent, span, {
-                            displayMode: isDisplay,
-                            throwOnError: false,
-                            strict: false,
-                            trust: true,
-                            macros: {},
-                            errorColor: '#000000'
-                        });
-                    }
-                    catch (error) {
-                        // Keep original content on error
-                    }
+            // Clear any previously rendered KaTeX elements to prevent duplication
+            cleanupPreviousRender(element);
+            // First, handle Markdig's math spans
+            const mathSpans = element.querySelectorAll('span.math');
+            mathSpans.forEach((span) => {
+                const isDisplay = span.classList.contains('math-display');
+                const mathContent = (span.textContent || '').trim();
+                // Skip if already rendered by KaTeX
+                if (span.querySelector('.katex')) {
+                    return;
+                }
+                window.katex.render(mathContent, span, {
+                    displayMode: isDisplay,
+                    throwOnError: false,
+                    strict: false,
+                    trust: true,
+                    macros: {},
+                    errorColor: '#000000'
                 });
-                // Use KaTeX auto-render with enhanced error handling for traditional delimiters
-                try {
-                    window.renderMathInElement(element, {
-                        delimiters: [
-                            { left: '$$', right: '$$', display: true },
-                            { left: '$', right: '$', display: false },
-                            { left: '\\(', right: '\\)', display: false },
-                            { left: '\\[', right: '\\]', display: true }
-                        ],
-                        throwOnError: false,
-                        strict: false,
-                        trust: true,
-                        macros: {},
-                        errorColor: '#000000',
-                        ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'katex'],
-                        preProcess: (math, displayMode) => {
-                            // Simple validation: don't process obviously incomplete expressions
-                            const trimmed = math.trim();
-                            if (trimmed === '' || trimmed === '$' || trimmed === '$$') {
-                                return null; // Skip processing
-                            }
-                            return math; // Process normally
-                        }
-                    });
+            });
+            // Use KaTeX auto-render for traditional delimiters
+            window.renderMathInElement(element, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false },
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '\\[', right: '\\]', display: true }
+                ],
+                throwOnError: false,
+                strict: false,
+                trust: true,
+                macros: {},
+                errorColor: '#000000',
+                ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'katex'],
+                preProcess: (math, displayMode) => {
+                    // Simple validation: don't process obviously incomplete expressions
+                    const trimmed = math.trim();
+                    if (trimmed === '' || trimmed === '$' || trimmed === '$$') {
+                        return null; // Skip processing
+                    }
+                    return math; // Process normally
                 }
-                catch (error) {
-                    // Silently handle rendering errors
-                }
-            }
-            catch (error) {
-                // Silently handle errors to avoid console noise
-            }
+            });
         }
         else {
             setTimeout(waitForKaTeX, 100);
@@ -95,14 +80,12 @@ function cleanupPreviousRender(element) {
             else {
                 // Remove the rendered KaTeX element and try to restore from annotation
                 const annotation = katexEl.querySelector('annotation[encoding="application/x-tex"]');
-                if (annotation) {
+                if (annotation && annotation.textContent) {
                     const mathText = annotation.textContent;
-                    if (mathText) {
-                        // Restore with appropriate delimiters
-                        const isDisplay = katexEl.classList.contains('katex-display');
-                        const delimiter = isDisplay ? '$$' : '$';
-                        parent.textContent = delimiter + mathText + delimiter;
-                    }
+                    // Restore with appropriate delimiters
+                    const isDisplay = katexEl.classList.contains('katex-display');
+                    const delimiter = isDisplay ? '$$' : '$';
+                    parent.textContent = delimiter + mathText + delimiter;
                 }
                 else {
                     // Fallback: just remove the element
