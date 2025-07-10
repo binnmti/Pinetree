@@ -1,45 +1,78 @@
 // Math rendering functions using KaTeX
+let mathRenderingTimeout = null;
 export function renderMathInElement(element) {
     if (!element) {
         return;
     }
+    // Clear previous timeout to debounce rapid calls
+    if (mathRenderingTimeout) {
+        clearTimeout(mathRenderingTimeout);
+    }
+    mathRenderingTimeout = window.setTimeout(() => {
+        performSmartMathRendering(element);
+    }, 50); // Very fast response time
+}
+function performSmartMathRendering(element) {
     // Wait for KaTeX to be loaded
     const waitForKaTeX = () => {
         if (typeof window.katex !== 'undefined' && typeof window.renderMathInElement !== 'undefined') {
             try {
+                // IMPORTANT: Clear any previously rendered KaTeX elements to prevent duplication
+                cleanupPreviousRender(element);
                 // First, handle Markdig's math spans
                 const mathSpans = element.querySelectorAll('span.math');
                 mathSpans.forEach((span) => {
                     try {
                         const isDisplay = span.classList.contains('math-display');
-                        window.katex.render(span.textContent, span, {
+                        const mathContent = (span.textContent || '').trim();
+                        // Skip if already rendered by KaTeX
+                        if (span.querySelector('.katex')) {
+                            return;
+                        }
+                        window.katex.render(mathContent, span, {
                             displayMode: isDisplay,
                             throwOnError: false,
-                            strict: 'ignore',
+                            strict: false,
                             trust: true,
-                            macros: {}
+                            macros: {},
+                            errorColor: '#000000'
                         });
                     }
                     catch (error) {
-                        console.error('Error rendering math span:', error);
+                        // Keep original content on error
                     }
                 });
-                // Then use auto-render for traditional delimiters
-                window.renderMathInElement(element, {
-                    delimiters: [
-                        { left: '$$', right: '$$', display: true },
-                        { left: '$', right: '$', display: false },
-                        { left: '\\(', right: '\\)', display: false },
-                        { left: '\\[', right: '\\]', display: true }
-                    ],
-                    throwOnError: false,
-                    strict: 'ignore',
-                    trust: true,
-                    macros: {}
-                });
+                // Use KaTeX auto-render with enhanced error handling for traditional delimiters
+                try {
+                    window.renderMathInElement(element, {
+                        delimiters: [
+                            { left: '$$', right: '$$', display: true },
+                            { left: '$', right: '$', display: false },
+                            { left: '\\(', right: '\\)', display: false },
+                            { left: '\\[', right: '\\]', display: true }
+                        ],
+                        throwOnError: false,
+                        strict: false,
+                        trust: true,
+                        macros: {},
+                        errorColor: '#000000',
+                        ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'katex'],
+                        preProcess: (math, displayMode) => {
+                            // Simple validation: don't process obviously incomplete expressions
+                            const trimmed = math.trim();
+                            if (trimmed === '' || trimmed === '$' || trimmed === '$$') {
+                                return null; // Skip processing
+                            }
+                            return math; // Process normally
+                        }
+                    });
+                }
+                catch (error) {
+                    // Silently handle rendering errors
+                }
             }
             catch (error) {
-                console.error('Math rendering failed:', error);
+                // Silently handle errors to avoid console noise
             }
         }
         else {
@@ -47,6 +80,37 @@ export function renderMathInElement(element) {
         }
     };
     waitForKaTeX();
+}
+function cleanupPreviousRender(element) {
+    // Remove existing KaTeX rendered elements to prevent duplication
+    const katexElements = element.querySelectorAll('.katex');
+    katexElements.forEach((katexEl) => {
+        const parent = katexEl.parentElement;
+        if (parent) {
+            // Try to restore original text content if possible
+            const originalText = katexEl.getAttribute('data-original-text');
+            if (originalText) {
+                parent.textContent = originalText;
+            }
+            else {
+                // Remove the rendered KaTeX element and try to restore from annotation
+                const annotation = katexEl.querySelector('annotation[encoding="application/x-tex"]');
+                if (annotation) {
+                    const mathText = annotation.textContent;
+                    if (mathText) {
+                        // Restore with appropriate delimiters
+                        const isDisplay = katexEl.classList.contains('katex-display');
+                        const delimiter = isDisplay ? '$$' : '$';
+                        parent.textContent = delimiter + mathText + delimiter;
+                    }
+                }
+                else {
+                    // Fallback: just remove the element
+                    katexEl.remove();
+                }
+            }
+        }
+    });
 }
 export function renderMathAfterUpdate(element) {
     if (!element) {
