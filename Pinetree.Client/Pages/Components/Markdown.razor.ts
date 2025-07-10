@@ -1,3 +1,64 @@
+// Math rendering functions using KaTeX
+export function renderMathInElement(element: HTMLElement): void {
+    if (!element) {
+        return;
+    }
+    
+    // Wait for KaTeX to be loaded
+    const waitForKaTeX = () => {
+        if (typeof (window as any).katex !== 'undefined' && typeof (window as any).renderMathInElement !== 'undefined') {
+            try {
+                // First, handle Markdig's math spans
+                const mathSpans = element.querySelectorAll('span.math');
+                mathSpans.forEach((span) => {
+                    try {
+                        const isDisplay = span.classList.contains('math-display');
+                        (window as any).katex.render(span.textContent, span, {
+                            displayMode: isDisplay,
+                            throwOnError: false,
+                            strict: 'ignore',
+                            trust: true,
+                            macros: {}
+                        });
+                    } catch (error) {
+                        console.error('Error rendering math span:', error);
+                    }
+                });
+                
+                // Then use auto-render for traditional delimiters
+                (window as any).renderMathInElement(element, {
+                    delimiters: [
+                        { left: '$$', right: '$$', display: true },
+                        { left: '$', right: '$', display: false },
+                        { left: '\\(', right: '\\)', display: false },
+                        { left: '\\[', right: '\\]', display: true }
+                    ],
+                    throwOnError: false,
+                    strict: 'ignore',
+                    trust: true,
+                    macros: {}
+                });
+            } catch (error) {
+                console.error('Math rendering failed:', error);
+            }
+        } else {
+            setTimeout(waitForKaTeX, 100);
+        }
+    };
+    waitForKaTeX();
+}
+
+export function renderMathAfterUpdate(element: HTMLElement): void {
+    if (!element) {
+        return;
+    }
+    
+    // Use requestAnimationFrame to ensure DOM is updated
+    requestAnimationFrame(() => {
+        renderMathInElement(element);
+    });
+}
+
 export function getTextAreaSelection(element: HTMLTextAreaElement): { text: string; start: number; end: number } {
     if (element) {
         return {
