@@ -4,7 +4,6 @@
 - TempSave
 
 - > `````` or `` 
-- math
 - Output Markdown
 - Github Actions Fast
 
