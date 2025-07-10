@@ -400,6 +400,7 @@
                 await _jsModule.InvokeVoidAsync("clearAllImagesFromIndexedDB");
             }
             await _jsModule.InvokeVoidAsync("initResizers");
+            await _jsModule.InvokeVoidAsync("renderMathAfterUpdate", MarkdownContainer);
         }
     }
 
@@ -597,7 +598,7 @@
         StateHasChanged();
     }
 
-    private void OnInputChange(ChangeEventArgs e)
+    private async Task OnInputChange(ChangeEventArgs e)
     {
         var previousContent = Content;
         var content = e.Value?.ToString() ?? "";
@@ -608,6 +609,7 @@
         }
         MarkdownText = GeneratePreviewMarkdown(Content);
         Current.Content = Content;
+        await _jsModule.InvokeVoidAsync("renderMathAfterUpdate", MarkdownContainer);
         StateHasChanged();
     }
 
@@ -831,6 +833,7 @@
     {
         SetCurrent(guid);
         await _jsModule.InvokeVoidAsync("scrollToTop");
+        await _jsModule.InvokeVoidAsync("renderMathAfterUpdate", MarkdownContainer);
     }
 
     private void SetCurrent(Guid guid)

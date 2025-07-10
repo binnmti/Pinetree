@@ -1,3 +1,212 @@
+// KaTeX type declarations
+interface TrustContext {
+    command: string;
+    url?: string;
+    protocol?: string;
+}
+
+interface KatexOptions {
+    displayMode?: boolean;
+    throwOnError?: boolean;
+    strict?: boolean | "ignore" | "warn" | "error";
+    trust?: boolean | ((context: TrustContext) => boolean);
+    macros?: Record<string, string>;
+    errorColor?: string;
+}
+
+interface KatexRenderMathInElementOptions {
+    delimiters?: Array<{
+        left: string;
+        right: string;
+        display: boolean;
+    }>;
+    throwOnError?: boolean;
+    strict?: boolean | "ignore" | "warn" | "error";
+    trust?: boolean | ((context: TrustContext) => boolean);
+    macros?: Record<string, string>;
+    errorColor?: string;
+    ignoredTags?: string[];
+    preProcess?: (math: string, displayMode: boolean) => string | null;
+}
+
+interface KatexGlobal {
+    render(tex: string, element: HTMLElement, options?: KatexOptions): void;
+}
+
+interface WindowWithKatex extends Window {
+    katex?: KatexGlobal;
+    renderMathInElement?: (element: HTMLElement, options?: KatexRenderMathInElementOptions) => void;
+}
+
+declare let window: WindowWithKatex;
+
+// Math rendering functions using KaTeX
+let mathRenderingTimeout: number | null = null;
+const KATEX_LOAD_TIMEOUT_MS = 10000; // 10 seconds maximum wait time
+const KATEX_RETRY_INTERVAL_MS = 100; // Check every 100ms
+
+// Security: Define a restricted trust policy for KaTeX
+function createSecureTrustPolicy(): (context: TrustContext) => boolean {
+    // Allowlist of safe commands - add more as needed
+    const allowedCommands = new Set([
+        'color',
+        'textcolor',
+        'colorbox',
+        'fcolorbox'
+    ]);
+    
+    // Allowlist of safe protocols for URLs
+    const allowedProtocols = new Set([
+        'http:',
+        'https:',
+        'mailto:'
+    ]);
+    
+    return (context: TrustContext): boolean => {
+        // Allow specific safe commands
+        if (context.command && allowedCommands.has(context.command)) {
+            return true;
+        }
+        
+        // For URL commands, check protocol
+        if (context.url && context.protocol) {
+            return allowedProtocols.has(context.protocol);
+        }
+        
+        // Deny all other commands by default
+        return false;
+    };
+}
+
+export function renderMathInElement(element: HTMLElement): void {
+    if (!element) {
+        return;
+    }
+    
+    // Clear previous timeout to debounce rapid calls
+    if (mathRenderingTimeout) {
+        clearTimeout(mathRenderingTimeout);
+    }
+    
+    mathRenderingTimeout = window.setTimeout(() => {
+        performSmartMathRendering(element);
+    }, 50); // Very fast response time
+}
+
+function performSmartMathRendering(element: HTMLElement): void {
+    const startTime = Date.now();
+    
+    // Wait for KaTeX to be loaded with timeout protection
+    const waitForKaTeX = () => {
+        const elapsed = Date.now() - startTime;
+        
+        // Check for timeout
+        if (elapsed > KATEX_LOAD_TIMEOUT_MS) {
+            console.warn('KaTeX failed to load within timeout period');
+            return;
+        }
+        
+        if (window.katex && window.renderMathInElement) {
+            // Store references locally for null safety
+            const katex = window.katex;
+            const renderMathInElement = window.renderMathInElement;
+            
+            // Create secure trust policy
+            const trustPolicy = createSecureTrustPolicy();
+            
+            // Clear any previously rendered KaTeX elements to prevent duplication
+            cleanupPreviousRender(element);
+            
+            // First, handle Markdig's math spans
+            const mathSpans = element.querySelectorAll('span.math');
+            mathSpans.forEach((span) => {
+                const isDisplay = span.classList.contains('math-display');
+                const mathContent = (span.textContent || '').trim();
+                
+                // Skip if already rendered by KaTeX
+                if (span.querySelector('.katex')) {
+                    return;
+                }
+                
+                katex.render(mathContent, span as HTMLElement, {
+                    displayMode: isDisplay,
+                    throwOnError: false,
+                    strict: false,
+                    trust: trustPolicy, // Security: use restricted trust policy
+                    macros: {},
+                    errorColor: '#000000'
+                });
+            });
+            
+            // Use KaTeX auto-render for traditional delimiters
+            renderMathInElement(element, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false },
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '\\[', right: '\\]', display: true }
+                ],
+                throwOnError: false,
+                strict: false,
+                trust: trustPolicy, // Security: use restricted trust policy
+                macros: {},
+                errorColor: '#000000',
+                ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'katex'],
+                preProcess: (math: string, displayMode: boolean) => {
+                    // Simple validation: don't process obviously incomplete expressions
+                    const trimmed = math.trim();
+                    if (trimmed === '' || trimmed === '$' || trimmed === '$$') {
+                        return null; // Skip processing
+                    }
+                    return math; // Process normally
+                }
+            });
+        } else {
+            setTimeout(waitForKaTeX, KATEX_RETRY_INTERVAL_MS);
+        }
+    };
+    waitForKaTeX();
+}
+
+function cleanupPreviousRender(element: HTMLElement): void {
+    // Remove existing KaTeX rendered elements to prevent duplication
+    const katexElements = element.querySelectorAll('.katex');
+    katexElements.forEach((katexEl) => {
+        const parent = katexEl.parentElement;
+        if (parent) {
+            // Try to restore original text content if possible
+            const originalText = katexEl.getAttribute('data-original-text');
+            if (originalText) {
+                parent.textContent = originalText;
+            } else {
+                // Remove the rendered KaTeX element and try to restore from annotation
+                const annotation = katexEl.querySelector('annotation[encoding="application/x-tex"]');
+                if (annotation && annotation.textContent) {
+                    const mathText = annotation.textContent;
+                    // Restore with appropriate delimiters
+                    const isDisplay = katexEl.classList.contains('katex-display');
+                    const delimiter = isDisplay ? '$$' : '$';
+                    parent.textContent = delimiter + mathText + delimiter;
+                } else {
+                    // Fallback: just remove the element
+                    katexEl.remove();
+                }
+            }
+        }
+    });
+}
+
+export function renderMathAfterUpdate(element: HTMLElement): void {
+    if (!element) {
+        return;
+    }
+    
+    // Use requestAnimationFrame to ensure DOM is updated
+    requestAnimationFrame(() => {
+        renderMathInElement(element);
+    });
+}
+
 export function getTextAreaSelection(element: HTMLTextAreaElement): { text: string; start: number; end: number } {
     if (element) {
         return {

@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
     <link rel="stylesheet" href="@Assets["lib/bootstrap-icons/font/bootstrap-icons.min.css"]" />
     <link rel="stylesheet" href="@Assets["lib/github-markdown-css/github-markdown.css"]" />
+    <link rel="stylesheet" href="@Assets["lib/KaTeX/katex.css"]" />
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
     <meta name="author" content="binnmti" />
@@ -26,6 +27,8 @@
 <body>    
     <Routes />
     <script src="_framework/blazor.web.js"></script>
+    <script src="@Assets["lib/KaTeX/katex.min.js"]"></script>
+    <script src="@Assets["lib/KaTeX/contrib/auto-render.min.js"]"></script>
     <script src="js/languageDetection.js"></script>
     <script src="@Assets["lib/bootstrap/dist/js/bootstrap.bundle.min.js"]" defer></script>
     <script>
