@@ -2,6 +2,34 @@
 let mathRenderingTimeout = null;
 const KATEX_LOAD_TIMEOUT_MS = 10000; // 10 seconds maximum wait time
 const KATEX_RETRY_INTERVAL_MS = 100; // Check every 100ms
+// Security: Define a restricted trust policy for KaTeX
+function createSecureTrustPolicy() {
+    // Allowlist of safe commands - add more as needed
+    const allowedCommands = new Set([
+        'color',
+        'textcolor',
+        'colorbox',
+        'fcolorbox'
+    ]);
+    // Allowlist of safe protocols for URLs
+    const allowedProtocols = new Set([
+        'http:',
+        'https:',
+        'mailto:'
+    ]);
+    return (context) => {
+        // Allow specific safe commands
+        if (context.command && allowedCommands.has(context.command)) {
+            return true;
+        }
+        // For URL commands, check protocol
+        if (context.url && context.protocol) {
+            return allowedProtocols.has(context.protocol);
+        }
+        // Deny all other commands by default
+        return false;
+    };
+}
 export function renderMathInElement(element) {
     if (!element) {
         return;
@@ -25,6 +53,11 @@ function performSmartMathRendering(element) {
             return;
         }
         if (window.katex && window.renderMathInElement) {
+            // Store references locally for null safety
+            const katex = window.katex;
+            const renderMathInElement = window.renderMathInElement;
+            // Create secure trust policy
+            const trustPolicy = createSecureTrustPolicy();
             // Clear any previously rendered KaTeX elements to prevent duplication
             cleanupPreviousRender(element);
             // First, handle Markdig's math spans
@@ -36,17 +69,17 @@ function performSmartMathRendering(element) {
                 if (span.querySelector('.katex')) {
                     return;
                 }
-                window.katex.render(mathContent, span, {
+                katex.render(mathContent, span, {
                     displayMode: isDisplay,
                     throwOnError: false,
                     strict: false,
-                    trust: true,
+                    trust: trustPolicy, // Security: use restricted trust policy
                     macros: {},
                     errorColor: '#000000'
                 });
             });
             // Use KaTeX auto-render for traditional delimiters
-            window.renderMathInElement(element, {
+            renderMathInElement(element, {
                 delimiters: [
                     { left: '$$', right: '$$', display: true },
                     { left: '$', right: '$', display: false },
@@ -55,7 +88,7 @@ function performSmartMathRendering(element) {
                 ],
                 throwOnError: false,
                 strict: false,
-                trust: true,
+                trust: trustPolicy, // Security: use restricted trust policy
                 macros: {},
                 errorColor: '#000000',
                 ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'katex'],

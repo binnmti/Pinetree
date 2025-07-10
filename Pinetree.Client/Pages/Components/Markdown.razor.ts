@@ -1,9 +1,15 @@
 // KaTeX type declarations
+interface TrustContext {
+    command: string;
+    url?: string;
+    protocol?: string;
+}
+
 interface KatexOptions {
     displayMode?: boolean;
     throwOnError?: boolean;
     strict?: boolean | "ignore" | "warn" | "error";
-    trust?: boolean | ((context: any) => boolean);
+    trust?: boolean | ((context: TrustContext) => boolean);
     macros?: Record<string, string>;
     errorColor?: string;
 }
@@ -16,7 +22,7 @@ interface KatexRenderMathInElementOptions {
     }>;
     throwOnError?: boolean;
     strict?: boolean | "ignore" | "warn" | "error";
-    trust?: boolean | ((context: any) => boolean);
+    trust?: boolean | ((context: TrustContext) => boolean);
     macros?: Record<string, string>;
     errorColor?: string;
     ignoredTags?: string[];
@@ -38,6 +44,39 @@ declare let window: WindowWithKatex;
 let mathRenderingTimeout: number | null = null;
 const KATEX_LOAD_TIMEOUT_MS = 10000; // 10 seconds maximum wait time
 const KATEX_RETRY_INTERVAL_MS = 100; // Check every 100ms
+
+// Security: Define a restricted trust policy for KaTeX
+function createSecureTrustPolicy(): (context: TrustContext) => boolean {
+    // Allowlist of safe commands - add more as needed
+    const allowedCommands = new Set([
+        'color',
+        'textcolor',
+        'colorbox',
+        'fcolorbox'
+    ]);
+    
+    // Allowlist of safe protocols for URLs
+    const allowedProtocols = new Set([
+        'http:',
+        'https:',
+        'mailto:'
+    ]);
+    
+    return (context: TrustContext): boolean => {
+        // Allow specific safe commands
+        if (context.command && allowedCommands.has(context.command)) {
+            return true;
+        }
+        
+        // For URL commands, check protocol
+        if (context.url && context.protocol) {
+            return allowedProtocols.has(context.protocol);
+        }
+        
+        // Deny all other commands by default
+        return false;
+    };
+}
 
 export function renderMathInElement(element: HTMLElement): void {
     if (!element) {
@@ -68,6 +107,13 @@ function performSmartMathRendering(element: HTMLElement): void {
         }
         
         if (window.katex && window.renderMathInElement) {
+            // Store references locally for null safety
+            const katex = window.katex;
+            const renderMathInElement = window.renderMathInElement;
+            
+            // Create secure trust policy
+            const trustPolicy = createSecureTrustPolicy();
+            
             // Clear any previously rendered KaTeX elements to prevent duplication
             cleanupPreviousRender(element);
             
@@ -82,18 +128,18 @@ function performSmartMathRendering(element: HTMLElement): void {
                     return;
                 }
                 
-                window.katex!.render(mathContent, span as HTMLElement, {
+                katex.render(mathContent, span as HTMLElement, {
                     displayMode: isDisplay,
                     throwOnError: false,
                     strict: false,
-                    trust: true,
+                    trust: trustPolicy, // Security: use restricted trust policy
                     macros: {},
                     errorColor: '#000000'
                 });
             });
             
             // Use KaTeX auto-render for traditional delimiters
-            window.renderMathInElement!(element, {
+            renderMathInElement(element, {
                 delimiters: [
                     { left: '$$', right: '$$', display: true },
                     { left: '$', right: '$', display: false },
@@ -102,7 +148,7 @@ function performSmartMathRendering(element: HTMLElement): void {
                 ],
                 throwOnError: false,
                 strict: false,
-                trust: true,
+                trust: trustPolicy, // Security: use restricted trust policy
                 macros: {},
                 errorColor: '#000000',
                 ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'katex'],
