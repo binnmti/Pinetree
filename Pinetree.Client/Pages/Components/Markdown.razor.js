@@ -1,5 +1,7 @@
 // Math rendering functions using KaTeX
 let mathRenderingTimeout = null;
+const KATEX_LOAD_TIMEOUT_MS = 10000; // 10 seconds maximum wait time
+const KATEX_RETRY_INTERVAL_MS = 100; // Check every 100ms
 export function renderMathInElement(element) {
     if (!element) {
         return;
@@ -13,9 +15,16 @@ export function renderMathInElement(element) {
     }, 50); // Very fast response time
 }
 function performSmartMathRendering(element) {
-    // Wait for KaTeX to be loaded
+    const startTime = Date.now();
+    // Wait for KaTeX to be loaded with timeout protection
     const waitForKaTeX = () => {
-        if (typeof window.katex !== 'undefined' && typeof window.renderMathInElement !== 'undefined') {
+        const elapsed = Date.now() - startTime;
+        // Check for timeout
+        if (elapsed > KATEX_LOAD_TIMEOUT_MS) {
+            console.warn('KaTeX failed to load within timeout period');
+            return;
+        }
+        if (window.katex && window.renderMathInElement) {
             // Clear any previously rendered KaTeX elements to prevent duplication
             cleanupPreviousRender(element);
             // First, handle Markdig's math spans
@@ -61,7 +70,7 @@ function performSmartMathRendering(element) {
             });
         }
         else {
-            setTimeout(waitForKaTeX, 100);
+            setTimeout(waitForKaTeX, KATEX_RETRY_INTERVAL_MS);
         }
     };
     waitForKaTeX();

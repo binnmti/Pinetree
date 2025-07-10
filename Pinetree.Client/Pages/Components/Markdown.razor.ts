@@ -1,5 +1,43 @@
+// KaTeX type declarations
+interface KatexOptions {
+    displayMode?: boolean;
+    throwOnError?: boolean;
+    strict?: boolean | "ignore" | "warn" | "error";
+    trust?: boolean | ((context: any) => boolean);
+    macros?: Record<string, string>;
+    errorColor?: string;
+}
+
+interface KatexRenderMathInElementOptions {
+    delimiters?: Array<{
+        left: string;
+        right: string;
+        display: boolean;
+    }>;
+    throwOnError?: boolean;
+    strict?: boolean | "ignore" | "warn" | "error";
+    trust?: boolean | ((context: any) => boolean);
+    macros?: Record<string, string>;
+    errorColor?: string;
+    ignoredTags?: string[];
+    preProcess?: (math: string, displayMode: boolean) => string | null;
+}
+
+interface KatexGlobal {
+    render(tex: string, element: HTMLElement, options?: KatexOptions): void;
+}
+
+interface WindowWithKatex extends Window {
+    katex?: KatexGlobal;
+    renderMathInElement?: (element: HTMLElement, options?: KatexRenderMathInElementOptions) => void;
+}
+
+declare let window: WindowWithKatex;
+
 // Math rendering functions using KaTeX
 let mathRenderingTimeout: number | null = null;
+const KATEX_LOAD_TIMEOUT_MS = 10000; // 10 seconds maximum wait time
+const KATEX_RETRY_INTERVAL_MS = 100; // Check every 100ms
 
 export function renderMathInElement(element: HTMLElement): void {
     if (!element) {
@@ -17,9 +55,19 @@ export function renderMathInElement(element: HTMLElement): void {
 }
 
 function performSmartMathRendering(element: HTMLElement): void {
-    // Wait for KaTeX to be loaded
+    const startTime = Date.now();
+    
+    // Wait for KaTeX to be loaded with timeout protection
     const waitForKaTeX = () => {
-        if (typeof (window as any).katex !== 'undefined' && typeof (window as any).renderMathInElement !== 'undefined') {
+        const elapsed = Date.now() - startTime;
+        
+        // Check for timeout
+        if (elapsed > KATEX_LOAD_TIMEOUT_MS) {
+            console.warn('KaTeX failed to load within timeout period');
+            return;
+        }
+        
+        if (window.katex && window.renderMathInElement) {
             // Clear any previously rendered KaTeX elements to prevent duplication
             cleanupPreviousRender(element);
             
@@ -34,7 +82,7 @@ function performSmartMathRendering(element: HTMLElement): void {
                     return;
                 }
                 
-                (window as any).katex.render(mathContent, span, {
+                window.katex!.render(mathContent, span as HTMLElement, {
                     displayMode: isDisplay,
                     throwOnError: false,
                     strict: false,
@@ -45,7 +93,7 @@ function performSmartMathRendering(element: HTMLElement): void {
             });
             
             // Use KaTeX auto-render for traditional delimiters
-            (window as any).renderMathInElement(element, {
+            window.renderMathInElement!(element, {
                 delimiters: [
                     { left: '$$', right: '$$', display: true },
                     { left: '$', right: '$', display: false },
@@ -68,7 +116,7 @@ function performSmartMathRendering(element: HTMLElement): void {
                 }
             });
         } else {
-            setTimeout(waitForKaTeX, 100);
+            setTimeout(waitForKaTeX, KATEX_RETRY_INTERVAL_MS);
         }
     };
     waitForKaTeX();
