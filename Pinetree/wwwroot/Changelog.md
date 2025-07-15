@@ -1,3 +1,10 @@
+## [0.9.12] - 2025-07-10
+
+### Features
+- Added KaTeX integration for rendering mathematical expressions in markdown content, supporting both inline and display math.
+
+---
+
 ## [0.9.11] - 2025-07-07
 
 ### Features
