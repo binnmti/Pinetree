@@ -155,6 +155,8 @@
                                              OnInsertLine="@InsertLine"
                                              OnInsertEmoji="@InsertEmoji"
                                              OnAutoInsertEmoji="@AutoInsertEmoji"
+                                             OnInsertCodeBlock="@InsertCodeBlock"
+                                             OnInsertMath="@InsertMath"
                                              OnSetViewMode="@HandleSetViewMode"
                                              OnCopyDocumentId="@CopyDocumentId"
                                              OnFontSettingsChanged="@OnFontSettingsChanged" />
@@ -572,7 +574,7 @@
                     if (!confirmed)
                     {
                         context.PreventNavigation();
-                    }
+                      }
                 }
             }
         }
@@ -1199,6 +1201,112 @@
     private async Task HandleSetViewMode(string mode)
     {
         await SetViewMode(mode);
+    }
+
+    private async Task InsertCodeBlock()
+    {
+        var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
+        
+        if (selection.Text.Length > 0)
+        {
+            // Check if selection is single line or multi-line
+            var lines = selection.Text.Split('\n');
+            if (lines.Length == 1)
+            {
+                // Single line: use inline code
+                await FormatText("`", "`");
+            }
+            else
+            {
+                // Multi-line: use code block
+                await FormatText("```\n", "\n```");
+            }
+        }
+        else
+        {
+            // No selection: check cursor position relative to line
+            var content = await JS.GetTextAreaValueAsync();
+            var cursorPos = selection.Start;
+            
+            // Find the current line
+            var lineStart = content.LastIndexOf('\n', cursorPos - 1) + 1;
+            var lineEnd = content.IndexOf('\n', cursorPos);
+            if (lineEnd == -1) lineEnd = content.Length;
+            
+            var currentLine = content.Substring(lineStart, lineEnd - lineStart);
+            bool isAtEndOfLine = cursorPos == lineEnd;
+            bool isAtStartOfLine = cursorPos == lineStart;
+            bool isLineEmpty = string.IsNullOrWhiteSpace(currentLine);
+            
+            if (isAtEndOfLine && !isLineEmpty)
+            {
+                // At end of non-empty line: insert with newline before
+                await FormatText("\n```\n", "\n```");
+            }
+            else if (isAtStartOfLine && !isLineEmpty)
+            {
+                // At start of non-empty line: insert with newline after
+                await FormatText("```\n", "\n```\n");
+            }
+            else
+            {
+                // Empty line or middle of line: insert normally
+                await FormatText("```\n", "\n```");
+            }
+        }
+    }
+
+    private async Task InsertMath()
+    {
+        var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
+        
+        if (selection.Text.Length > 0)
+        {
+            // Check if selection is single line or multi-line
+            var lines = selection.Text.Split('\n');
+            if (lines.Length == 1)
+            {
+                // Single line: use inline math
+                await FormatText("$", "$");
+            }
+            else
+            {
+                // Multi-line: use block math
+                await FormatText("$$\n", "\n$$");
+            }
+        }
+        else
+        {
+            // No selection: check cursor position relative to line
+            var content = await JS.GetTextAreaValueAsync();
+            var cursorPos = selection.Start;
+            
+            // Find the current line
+            var lineStart = content.LastIndexOf('\n', cursorPos - 1) + 1;
+            var lineEnd = content.IndexOf('\n', cursorPos);
+            if (lineEnd == -1) lineEnd = content.Length;
+            
+            var currentLine = content.Substring(lineStart, lineEnd - lineStart);
+            bool isAtEndOfLine = cursorPos == lineEnd;
+            bool isAtStartOfLine = cursorPos == lineStart;
+            bool isLineEmpty = string.IsNullOrWhiteSpace(currentLine);
+            
+            if (isAtEndOfLine && !isLineEmpty)
+            {
+                // At end of non-empty line: insert with newline before
+                await FormatText("\n$$\n", "\n$$");
+            }
+            else if (isAtStartOfLine && !isLineEmpty)
+            {
+                // At start of non-empty line: insert with newline after
+                await FormatText("$$\n", "\n$$\n");
+            }
+            else
+            {
+                // Empty line or middle of line: insert normally
+                await FormatText("$$\n", "\n$$");
+            }
+        }
     }
 
     private void UpdateContent(string content)

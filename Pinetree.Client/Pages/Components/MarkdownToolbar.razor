@@ -49,13 +49,17 @@
             <button type="button" class="btn btn-sm btn-outline-dark" title="Check List" @onclick='() => OnInsertList.InvokeAsync("- [ ] ")'>
                 <i class="bi bi-check-square"></i>
             </button>
-            <button type="button" class="btn btn-sm btn-outline-dark" title="Insert Code Block" @onclick='() => OnFormatText.InvokeAsync(("```\n", "\n```"))'>
+            <button type="button" class="btn btn-sm btn-outline-dark" title="Insert Code Block" @onclick="() => OnInsertCodeBlock.InvokeAsync()">
                 <i class="bi bi-code-slash"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-success" title="Insert Math Formula" @onclick="() => OnInsertMath.InvokeAsync()">
+                <i class="bi bi-calculator"></i>
             </button>
             <button type="button" class="btn btn-sm btn-outline-dark" title="Quotation" @onclick='() => OnInsertList.InvokeAsync("> ")'>
                 <i class="bi bi-quote"></i>
             </button>
-        </div>        <div class="btn-group me-2" role="group" aria-label="Indentation">
+        </div>
+        <div class="btn-group me-2" role="group" aria-label="Indentation">
             <button type="button" class="btn btn-sm btn-outline-dark" title="Decrease Indent" @onclick="() => OnDecreaseIndent.InvokeAsync()">
                 <i class="bi bi-text-indent-right"></i>
             </button>
@@ -145,4 +149,6 @@
     [Parameter] public EventCallback<string> OnSetViewMode { get; set; }
     [Parameter] public EventCallback OnCopyDocumentId { get; set; }
     [Parameter] public EventCallback<(string FontFamily, int FontSize)> OnFontSettingsChanged { get; set; }
+    [Parameter] public EventCallback OnInsertCodeBlock { get; set; }
+    [Parameter] public EventCallback OnInsertMath { get; set; }
 }
