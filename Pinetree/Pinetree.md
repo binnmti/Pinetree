@@ -3,10 +3,8 @@
  
 - TempSave
 
-- > `````` or `` 
 - Output Markdown
 - Github Actions Fast
-
 - Output hierarchical information onto one page of text
 - Visibility email settings
 - Individual settings for disclosure range

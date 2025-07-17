@@ -594,6 +594,7 @@ export function enableContinuousList(element: HTMLTextAreaElement): void {
         const after = element.value.substring(selStart);
         const marker = markerGenerator(match);
         const position = currentLine.trim() === match[0].trim() ? lineStart + 1 : selStart + 1 + marker.length;
+
         element.value = before + '\n' + marker + after;
         element.selectionStart = element.selectionEnd = position;
         element.dispatchEvent(new Event('input', { bubbles: true }));
@@ -606,10 +607,10 @@ export function enableContinuousList(element: HTMLTextAreaElement): void {
         const selStart = element.selectionStart;
         let lineStart = selStart;
         while (lineStart > 0 && text[lineStart - 1] !== '\n') lineStart--;
-
         const currentLine = text.substring(lineStart, selStart);
+
+        // Check for checkbox patterns first (most specific)
         const checkboxPattern = /^(\s*)(-\s+\[[ x]?\])\s+/;
-        const bulletPattern = /^(\s*)([-+*]|(\d+)\.|\>)\s+/;
         const checkboxMatch = currentLine.match(checkboxPattern);
         if (checkboxMatch) {
             e.preventDefault();
@@ -619,11 +620,15 @@ export function enableContinuousList(element: HTMLTextAreaElement): void {
             });
             return;
         }
+
+        // Check for bullet lists and numbered lists, but exclude quotation (>)
+        const bulletPattern = /^(\s*)([-+*]|(\d+)\.)\s+/;
         const bulletMatch = currentLine.match(bulletPattern);
         if (bulletMatch) {
             e.preventDefault();
             handleMatch(bulletMatch, currentLine, lineStart, selStart, (match) => {
                 let marker = match[0];
+                // Handle numbered lists by incrementing the number
                 if (match[3]) {
                     const num = parseInt(match[3]);
                     marker = marker.replace(/\d+/, (num + 1).toString());
@@ -631,6 +636,9 @@ export function enableContinuousList(element: HTMLTextAreaElement): void {
                 return currentLine.trim() === match[0].trim() ? '' : marker;
             });
         }
+
+        // Note: Quotation (>) is intentionally excluded from continuous list functionality
+        // Users can manually add quotation marks when needed
     });
 }
 
@@ -1448,9 +1456,7 @@ function setupTextAreaScrollBehavior(textArea: HTMLTextAreaElement): void {
                 const visibleLines = Math.floor(textArea.clientHeight / lineHeight);
                 const currentLine = textArea.value.substring(0, currentSelectionStart).split('\n').length;
                 const scrollLine = Math.floor(lastUserScrollTop / lineHeight) + 1;
-
-                const isInVisibleArea = currentLine >= scrollLine &&
-                    currentLine <= (scrollLine + visibleLines - 4); // 下部余白を考慮
+                const isInVisibleArea = currentLine >= scrollLine && currentLine <= (scrollLine + visibleLines - 4); // 下部余白を考慮
 
                 if (isInVisibleArea) {
                     textArea.scrollTop = lastUserScrollTop;
