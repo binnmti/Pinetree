@@ -572,7 +572,7 @@
                     if (!confirmed)
                     {
                         context.PreventNavigation();
-                    }
+                      }
                 }
             }
         }
@@ -904,22 +904,44 @@
     private async Task InsertList(string prefix)
     {
         var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
-        string result;
-        var lines = selection.Text.Split('\n');
+        
         if (selection.Text.Length > 0)
         {
-            result = string.Join("\n", lines.Select(line => $"{prefix}{line}"));
+            // Handle selected text: insert prefix at the beginning of each line
+            var lines = selection.Text.Split('\n');
+            var result = string.Join("\n", lines.Select(line => $"{prefix}{line}"));
+            await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, result);
+            
+            // Position cursor after the last prefix
+            var newCaretPosition = selection.End + prefix.Length * lines.Length;
+            await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, newCaretPosition, newCaretPosition);
         }
         else
         {
-            result = $"{prefix}";
+            // No selection: insert prefix at the beginning of current line
+            var content = await JS.GetTextAreaValueAsync();
+            var cursorPos = selection.Start;
+            
+            // Find the current line boundaries
+            var lineStart = content.LastIndexOf('\n', cursorPos - 1) + 1;
+            var lineEnd = content.IndexOf('\n', cursorPos);
+            if (lineEnd == -1) lineEnd = content.Length;
+            
+            // Insert prefix at the beginning of the current line
+            var beforeLine = content.Substring(0, lineStart);
+            var currentLine = content.Substring(lineStart, lineEnd - lineStart);
+            var afterLine = content.Substring(lineEnd);
+            
+            var newContent = beforeLine + prefix + currentLine + afterLine;
+            await _jsModule.InvokeAsync<string>("setTextAreaValue", TextAreaRef, newContent, true);
+            
+            // Position cursor after the prefix
+            var newCursorPos = lineStart + prefix.Length + (cursorPos - lineStart);
+            await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, newCursorPos, newCursorPos);
         }
-        await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, result);
-        var newCaretPosition = selection.End + prefix.Length * lines.Length;
-        await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, newCaretPosition, newCaretPosition);
 
-        var content = await JS.GetTextAreaValueAsync();
-        UpdateContent(content);
+        var updatedContent = await JS.GetTextAreaValueAsync();
+        UpdateContent(updatedContent);
     }
 
     private async Task InsertLink()
@@ -1186,9 +1208,66 @@
     }
 
     // Helper methods for toolbar event handling
-    private async Task HandleFormatText((string prefix, string suffix) args)
+    private async Task HandleFormatText((string singleLinePrefix, string singleLineSuffix, string multiLinePrefix, string multiLineSuffix) args)
     {
-        await FormatText(args.prefix, args.suffix);
+        var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
+        
+        if (selection.Text.Length > 0)
+        {
+            // Check if selection is single line or multi-line
+            var lines = selection.Text.Split('\n');
+            if (lines.Length == 1)
+            {
+                // Single line: use single line prefix/suffix
+                await FormatText(args.singleLinePrefix, args.singleLineSuffix);
+            }
+            else
+            {
+                // Multi-line: use multi-line prefix/suffix
+                await FormatText(args.multiLinePrefix, args.multiLineSuffix);
+            }
+        }
+        else
+        {
+            // No selection: determine context and choose appropriate format
+            var content = await JS.GetTextAreaValueAsync();
+            var cursorPos = selection.Start;
+            
+            // Find the current line
+            var lineStart = content.LastIndexOf('\n', cursorPos - 1) + 1;
+            var lineEnd = content.IndexOf('\n', cursorPos);
+            if (lineEnd == -1) lineEnd = content.Length;
+            
+            var currentLine = content.Substring(lineStart, lineEnd - lineStart);
+            bool isAtEndOfLine = cursorPos == lineEnd;
+            bool isAtStartOfLine = cursorPos == lineStart;
+            bool isLineEmpty = string.IsNullOrWhiteSpace(currentLine);
+            
+            // For code blocks and math, use block format when cursor is at line boundaries
+            if (args.multiLinePrefix.Contains("```") || args.multiLinePrefix.Contains("$$"))
+            {
+                if (isAtEndOfLine && !isLineEmpty)
+                {
+                    // At end of non-empty line: insert with newline before
+                    await FormatText($"\n{args.multiLinePrefix}", args.multiLineSuffix);
+                }
+                else if (isAtStartOfLine && !isLineEmpty)
+                {
+                    // At start of non-empty line: insert with newline after
+                    await FormatText(args.multiLinePrefix, $"{args.multiLineSuffix}\n");
+                }
+                else
+                {
+                    // Empty line or middle of line: use block format
+                    await FormatText(args.multiLinePrefix, args.multiLineSuffix);
+                }
+            }
+            else
+            {
+                // For bold, italic, strikethrough: use single line format
+                await FormatText(args.singleLinePrefix, args.singleLineSuffix);
+            }
+        }
     }
 
     private async Task HandleInsertList(string prefix)

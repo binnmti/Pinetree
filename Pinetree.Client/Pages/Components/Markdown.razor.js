@@ -491,8 +491,8 @@ export function enableContinuousList(element) {
         while (lineStart > 0 && text[lineStart - 1] !== '\n')
             lineStart--;
         const currentLine = text.substring(lineStart, selStart);
+        // Check for checkbox patterns first (most specific)
         const checkboxPattern = /^(\s*)(-\s+\[[ x]?\])\s+/;
-        const bulletPattern = /^(\s*)([-+*]|(\d+)\.|\>)\s+/;
         const checkboxMatch = currentLine.match(checkboxPattern);
         if (checkboxMatch) {
             e.preventDefault();
@@ -502,11 +502,14 @@ export function enableContinuousList(element) {
             });
             return;
         }
+        // Check for bullet lists and numbered lists, but exclude quotation (>)
+        const bulletPattern = /^(\s*)([-+*]|(\d+)\.)\s+/;
         const bulletMatch = currentLine.match(bulletPattern);
         if (bulletMatch) {
             e.preventDefault();
             handleMatch(bulletMatch, currentLine, lineStart, selStart, (match) => {
                 let marker = match[0];
+                // Handle numbered lists by incrementing the number
                 if (match[3]) {
                     const num = parseInt(match[3]);
                     marker = marker.replace(/\d+/, (num + 1).toString());
@@ -514,6 +517,8 @@ export function enableContinuousList(element) {
                 return currentLine.trim() === match[0].trim() ? '' : marker;
             });
         }
+        // Note: Quotation (>) is intentionally excluded from continuous list functionality
+        // Users can manually add quotation marks when needed
     });
 }
 export function setupScrollSync(textArea, previewContainer) {
@@ -1206,8 +1211,7 @@ function setupTextAreaScrollBehavior(textArea) {
                 const visibleLines = Math.floor(textArea.clientHeight / lineHeight);
                 const currentLine = textArea.value.substring(0, currentSelectionStart).split('\n').length;
                 const scrollLine = Math.floor(lastUserScrollTop / lineHeight) + 1;
-                const isInVisibleArea = currentLine >= scrollLine &&
-                    currentLine <= (scrollLine + visibleLines - 4); // 下部余白を考慮
+                const isInVisibleArea = currentLine >= scrollLine && currentLine <= (scrollLine + visibleLines - 4); // 下部余白を考慮
                 if (isInVisibleArea) {
                     textArea.scrollTop = lastUserScrollTop;
                 }
