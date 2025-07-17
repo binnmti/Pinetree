@@ -904,22 +904,44 @@
     private async Task InsertList(string prefix)
     {
         var selection = await _jsModule.InvokeAsync<TextSelection>("getTextAreaSelection", TextAreaRef);
-        string result;
-        var lines = selection.Text.Split('\n');
+        
         if (selection.Text.Length > 0)
         {
-            result = string.Join("\n", lines.Select(line => $"{prefix}{line}"));
+            // Handle selected text: insert prefix at the beginning of each line
+            var lines = selection.Text.Split('\n');
+            var result = string.Join("\n", lines.Select(line => $"{prefix}{line}"));
+            await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, result);
+            
+            // Position cursor after the last prefix
+            var newCaretPosition = selection.End + prefix.Length * lines.Length;
+            await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, newCaretPosition, newCaretPosition);
         }
         else
         {
-            result = $"{prefix}";
+            // No selection: insert prefix at the beginning of current line
+            var content = await JS.GetTextAreaValueAsync();
+            var cursorPos = selection.Start;
+            
+            // Find the current line boundaries
+            var lineStart = content.LastIndexOf('\n', cursorPos - 1) + 1;
+            var lineEnd = content.IndexOf('\n', cursorPos);
+            if (lineEnd == -1) lineEnd = content.Length;
+            
+            // Insert prefix at the beginning of the current line
+            var beforeLine = content.Substring(0, lineStart);
+            var currentLine = content.Substring(lineStart, lineEnd - lineStart);
+            var afterLine = content.Substring(lineEnd);
+            
+            var newContent = beforeLine + prefix + currentLine + afterLine;
+            await _jsModule.InvokeAsync<string>("setTextAreaValue", TextAreaRef, newContent, true);
+            
+            // Position cursor after the prefix
+            var newCursorPos = lineStart + prefix.Length + (cursorPos - lineStart);
+            await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, newCursorPos, newCursorPos);
         }
-        await _jsModule.InvokeAsync<bool>("replaceTextAreaSelection", TextAreaRef, result);
-        var newCaretPosition = selection.End + prefix.Length * lines.Length;
-        await _jsModule.InvokeVoidAsync("setCaretPosition", TextAreaRef, newCaretPosition, newCaretPosition);
 
-        var content = await JS.GetTextAreaValueAsync();
-        UpdateContent(content);
+        var updatedContent = await JS.GetTextAreaValueAsync();
+        UpdateContent(updatedContent);
     }
 
     private async Task InsertLink()
