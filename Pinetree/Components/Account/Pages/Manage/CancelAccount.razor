@@ -1,60 +1,69 @@
-﻿@page "/Account/Manage/PersonalData"
+@page "/Account/Manage/CancelAccount"
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
 @using Pinetree.Data
 @using Pinetree.Services
 
-@inject IdentityUserAccessor UserAccessor
 @inject UserManager<ApplicationUser> UserManager
+@inject IdentityUserAccessor UserAccessor
 @inject UserDataDeletionService UserDataDeletionService
 @inject IdentityRedirectManager RedirectManager
-@inject ILogger<PersonalData> Logger
+@inject ILogger<CancelAccount> Logger
 
-<PageTitle>Personal Data</PageTitle>
+<PageTitle>Cancel Account</PageTitle>
 
 <StatusMessage Message="@message" />
-<h3>Personal Data</h3>
 
-<div class="row">
-    <div class="col-md-6">
-        <p>Your account contains personal data that you have given us. This page allows you to download or delete that data.</p>
-        <p>
-            <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
-        </p>
-        
-        <div class="mb-3">
-            <form action="Account/Manage/DownloadPersonalData" method="post">
-                <AntiforgeryToken />
-                <button class="btn btn-primary" type="submit">
-                    <i class="bi bi-download"></i> Download Personal Data
+<h3>Cancel Your Account</h3>
+
+<div class="alert alert-danger" role="alert">
+    <h4 class="alert-heading">⚠️ This will permanently delete all your data!</h4>
+    <p>
+        <strong>This action cannot be undone.</strong> When you cancel your account, we will permanently delete:
+    </p>
+    <ul>
+        <li>Your account and profile information</li>
+        <li>All your content and documents (Pinecones)</li>
+        <li>All uploaded files and images</li>
+        <li>Storage usage records</li>
+        <li>Activity audit logs</li>
+        <li>Any other personal data associated with your account</li>
+    </ul>
+    <hr>
+    <p class="mb-0">
+        If you just want to download your data before leaving, you can 
+        <a href="Account/Manage/DownloadPersonalData" class="alert-link">download your personal data</a> first.
+    </p>
+</div>
+
+@if (!showConfirmation)
+{
+    <div class="row">
+        <div class="col-md-8">
+            <p>We're sorry to see you go. Before you cancel your account, please consider:</p>
+            <ul>
+                <li>Downloading your personal data if you want to keep a copy</li>
+                <li>Whether you might want to use the service again in the future</li>
+                <li>Contacting support if you're having technical issues that we might help resolve</li>
+            </ul>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <a href="Account/Manage/DownloadPersonalData" class="btn btn-outline-primary me-md-2">
+                    <i class="bi bi-download"></i> Download My Data First
+                </a>
+                <button class="btn btn-danger" @onclick="ShowConfirmation">
+                    <i class="bi bi-exclamation-triangle"></i> Continue with Account Cancellation
                 </button>
-            </form>
-        </div>
-
-        @if (!showDeleteConfirmation)
-        {
-            <button class="btn btn-danger" @onclick="ShowDeleteConfirmation">
-                <i class="bi bi-exclamation-triangle"></i> Delete All Data and Cancel Account
-            </button>
-        }
-        else
-        {
-            <div class="alert alert-danger mt-3" role="alert">
-                <h5 class="alert-heading">⚠️ Permanent Data Deletion</h5>
-                <p><strong>This action will permanently delete ALL of your data including:</strong></p>
-                <ul class="mb-3">
-                    <li>Your account and profile information</li>
-                    <li>All your content and documents</li>
-                    <li>All uploaded files and images</li>
-                    <li>Storage usage records</li>
-                    <li>Activity audit logs</li>
-                    <li>Any other personal data associated with your account</li>
-                </ul>
-                <p class="mb-0"><strong>This cannot be undone!</strong></p>
             </div>
-
-            <EditForm Model="Input" FormName="delete-all-data" OnValidSubmit="OnValidSubmitAsync" method="post">
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-6">
+            <EditForm Model="Input" FormName="cancel-account" OnValidSubmit="OnValidSubmitAsync" method="post">
                 <DataAnnotationsValidator />
                 <ValidationSummary class="text-danger" role="alert" />
                 
@@ -72,16 +81,16 @@
                 <div class="form-check mb-3">
                     <InputCheckbox @bind-Value="Input.ConfirmDeletion" class="form-check-input" id="confirmDeletion" />
                     <label class="form-check-label" for="confirmDeletion">
-                        <strong>I understand this will permanently delete all my data and cannot be undone.</strong>
+                        <strong>I understand that this action cannot be undone and all my data will be permanently deleted.</strong>
                     </label>
                     <ValidationMessage For="() => Input.ConfirmDeletion" class="text-danger" />
                 </div>
                 
                 <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-                    <button type="button" class="btn btn-outline-secondary me-md-2" @onclick="HideDeleteConfirmation">
-                        Cancel
+                    <button type="button" class="btn btn-outline-secondary me-md-2" @onclick="HideConfirmation">
+                        <i class="bi bi-arrow-left"></i> Go Back
                     </button>
-                    <button class="btn btn-danger" type="submit" disabled="@isDeleting">
+                    <button class="btn btn-danger btn-lg" type="submit" disabled="@isDeleting">
                         @if (isDeleting)
                         {
                             <span class="spinner-border spinner-border-sm me-2" role="status"></span>
@@ -90,30 +99,20 @@
                         else
                         {
                             <i class="bi bi-trash"></i>
-                            <span>Delete Everything</span>
+                            <span>Yes, Delete Everything and Cancel My Account</span>
                         }
                     </button>
                 </div>
             </EditForm>
-        }
-        
-        <div class="mt-3">
-            <p class="text-muted">
-                <small>
-                    You can also use the 
-                    <a href="Account/Manage/CancelAccount" class="text-decoration-none">Cancel Account</a> 
-                    page for a more detailed cancellation process.
-                </small>
-            </p>
         </div>
     </div>
-</div>
+}
 
 @code {
     private string? message;
     private ApplicationUser user = default!;
     private bool requirePassword;
-    private bool showDeleteConfirmation = false;
+    private bool showConfirmation = false;
     private bool isDeleting = false;
 
     [CascadingParameter]
@@ -129,16 +128,15 @@
         requirePassword = await UserManager.HasPasswordAsync(user);
     }
 
-    private void ShowDeleteConfirmation()
+    private void ShowConfirmation()
     {
-        showDeleteConfirmation = true;
-        message = null;
+        showConfirmation = true;
         StateHasChanged();
     }
 
-    private void HideDeleteConfirmation()
+    private void HideConfirmation()
     {
-        showDeleteConfirmation = false;
+        showConfirmation = false;
         message = null;
         StateHasChanged();
     }
@@ -171,14 +169,14 @@
                 return;
             }
 
-            Logger.LogInformation("User with ID '{UserId}' successfully deleted all their data from PersonalData page.", user.Id);
+            Logger.LogInformation("User with ID '{UserId}' successfully cancelled their account and deleted all data.", user.Id);
             
             // Redirect to home page since user is signed out
             RedirectManager.RedirectTo("/");
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error occurred during data deletion from PersonalData page for user: {UserId}", user.Id);
+            Logger.LogError(ex, "Error occurred during account cancellation for user: {UserId}", user.Id);
             message = "Error: An unexpected error occurred while deleting your data. Please try again or contact support.";
             isDeleting = false;
         }

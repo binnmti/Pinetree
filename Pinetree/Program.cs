@@ -51,6 +51,7 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ISensitiveDataDetectorService, SensitiveDataDetectorService>();
 builder.Services.AddScoped<ISecureLoggerService, SecureLoggerService>();
 builder.Services.AddScoped<FontSettingsService>();
+builder.Services.AddScoped<UserDataDeletionService>();
 
 builder.Services.AddHostedService<AuditCleanupService>();
 builder.Services.AddHostedService<TrashCleanupService>();
